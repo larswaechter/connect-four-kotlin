@@ -3,10 +3,6 @@ package connect.four
 import java.io.File
 import kotlin.math.ceil
 
-/**
- * TODO: Create interface
- */
-
 typealias StorageEntry = Triple<Move, Float, Boolean>
 
 class Storage(private val movesPlayed: Int) {
@@ -42,36 +38,52 @@ class Storage(private val movesPlayed: Int) {
         file.appendText(res)
     }
 
-    private fun getFile(): File = getFile(this.movesPlayed)
+    private fun getFile(): File = getFile(this.filename)
 
     companion object {
-        private var storageRegistered: Boolean = false
+        private var tablesRegistered: Boolean = false
         private const val numberOfTranspositionTables = 14
-        private val storage: Array<Storage?> = Array(numberOfTranspositionTables) { null }
+        private const val transpositionTablesPath = "src/main/resources/transposition_tables"
+        private val storages: Array<Storage?> = Array(numberOfTranspositionTables) { null }
 
         fun storageEntryToString(key: Int, entry: StorageEntry): String =
                 "$key ${entry.first.column} ${entry.second} ${entry.third}"
 
-        fun registerStorage() {
-            for (i in storage.indices) {
+        /**
+         * Register all storages
+         */
+        fun registerStorages() {
+            for (i in storages.indices) {
                 println("Register storage #$i...")
-                storage[i] = Storage((i + 1) * 3)
+                storages[i] = Storage((i + 1) * 3)
             }
-            storageRegistered = true
+            tablesRegistered = true
         }
 
+        /**
+         * Get storage based on moves played
+         *
+         * @param [movesPlayed] number of played moves
+         * @return Storage
+         */
         fun doStorageLookup(movesPlayed: Int): Storage {
-            if (!storageRegistered) registerStorage()
-            return this.storage[ceil((movesPlayed.toDouble() / 3)).toInt() - 1]!!
+            if (!tablesRegistered) registerStorages()
+            return this.storages[ceil((movesPlayed.toDouble() / 3)).toInt() - 1]!!
         }
 
+        /**
+         * Feed transposition tables amount-times with boards of movesPlayed-moves
+         *
+         * @param [amount] number of data records
+         * @param [movesPlayed] number of played moves
+         * */
         fun feedByMovesPlayed(amount: Int, movesPlayed: Int) {
             val storage = Storage(movesPlayed)
             val newHashMap: HashMap<Int, StorageEntry> = HashMap()
             var count = 0
 
             for (i in 1..amount) {
-                val game = this.getRandomGame(movesPlayed)
+                val game = ConnectFour().playRandomMoves(movesPlayed)
                 val hashCode = game.board.contentHashCode()
 
                 // TODO: Call minimax
@@ -87,13 +99,29 @@ class Storage(private val movesPlayed: Int) {
             println("Added $count / $amount new data records.")
         }
 
-        fun getRandomGame(movesPlayed: Int): ConnectFour = ConnectFour().playRandomMoves(movesPlayed)
+        /**
+         * Get storage file based on moves played
+         *
+         * @param [movesPlayed] number of played moves
+         * @return file
+         */
+        fun getFile(movesPlayed: Int): File =
+                File(transpositionTablesPath + this.getTableFilename(movesPlayed))
 
-        fun getFile(movesPlayed: Int): File {
-            val path = "src/main/resources/transposition_tables/" + this.getTableFilename(movesPlayed)
-            return File(path)
-        }
+        /**
+         * Get storage file based on filename
+         *
+         * @param [filename] transposition table file name
+         * @return file
+         */
+        fun getFile(filename: String): File = File("$transpositionTablesPath/$filename")
 
+        /**
+         * Get table file name based on moves played
+         *
+         * @param [movesPlayed] number of played moves
+         * @return file name
+         */
         fun getTableFilename(movesPlayed: Int): String =
                 when (movesPlayed) {
                     in 1..3 -> "00_table_1_3.txt"
@@ -113,6 +141,12 @@ class Storage(private val movesPlayed: Int) {
                     else -> ""
                 }
 
+        /**
+         * Create HashMap from storage .txt file
+         *
+         * @param [movesPlayed] number of played moves
+         * @return HashMap for played moves
+         */
         fun getHashMapFromStorage(movesPlayed: Int): HashMap<Int, StorageEntry> {
             val file = this.getFile(movesPlayed)
             val map: HashMap<Int, StorageEntry> = HashMap()
