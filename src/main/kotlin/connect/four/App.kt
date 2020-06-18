@@ -5,6 +5,18 @@ package connect.four
 
 fun main() {
     var game = ConnectFour()
-    game = game.move(Move(0)).move(Move(1))
-    println(game.getPossibleMoves().size)
+
+    // Storage.feedByMovesPlayed(5, 3)
+
+    Storage.feedByMovesPlayed(10000, 15)
+    println(Storage.doStorageLookup(15).hashMap.size)
+
+
+    // storage.addGameToStorage(game)
+
+
+    // println(storage.getRandomGame(30))
+
+    // println(storage.getHashMapFromStorage(1)[331312312]!!.second)
+
 }
