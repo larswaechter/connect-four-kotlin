@@ -8,8 +8,8 @@ fun main() {
 
     // Storage.feedByMovesPlayed(5, 3)
 
-    Storage.feedByMovesPlayed(10000, 15)
-    println(Storage.doStorageLookup(15).hashMap.size)
+    // Storage.feedByMovesPlayed(10000, 15)
+    println(Storage.doStorageLookup(4).map.size)
 
 
     // storage.addGameToStorage(game)

@@ -1,6 +1,7 @@
 package connect.four
 
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 
@@ -10,10 +11,6 @@ fun Array<IntArray>.copyMatrix() = Array(size) { get(it).clone() }
 class ConnectFour(
         val board: Array<IntArray> = Array(7) { IntArray(6) },
         val currentPlayer: Int = 1) {
-
-    init {
-
-    }
 
     fun move(move: Move): ConnectFour {
         assert(move.column in 0..6)
@@ -47,11 +44,14 @@ class ConnectFour(
         }
     }
 
-    fun getNumberOfPlayedMoves(): Int = this.board.sumBy { col -> col.count { cell -> cell != 0 } }
-
-    fun isValidBoard(): Boolean = true
-
     fun isGameOver(): Boolean = !this.board.any { n -> n.any { m -> m == 0 } }
+
+    /**
+     * Get index in storage based on played moves
+     *
+     * @return storage index
+     */
+    fun getStorageIndex(): Int = Storage.getStorageIndexFromPlayedMoves(this.getNumberOfPlayedMoves())
 
     fun evaluate(depth: Int): Float {
         var bestScore = 0F
@@ -118,6 +118,8 @@ class ConnectFour(
         for (col in this.board.indices) if (!this.isColFull(col)) possibleMoves.add(Move(col))
         return possibleMoves.toList()
     }
+
+    private fun getNumberOfPlayedMoves(): Int = this.board.sumBy { col -> col.count { cell -> cell != 0 } }
 
     private fun isColFull(col: Int): Boolean = !this.board[col].contains(0)
 
