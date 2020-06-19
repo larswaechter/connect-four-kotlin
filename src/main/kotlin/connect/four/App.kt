@@ -4,19 +4,13 @@
 package connect.four
 
 fun main() {
-    var game = ConnectFour()
-
     // Storage.feedByMovesPlayed(5, 3)
 
     // Storage.feedByMovesPlayed(10000, 15)
-    println(Storage.doStorageLookup(4).map.size)
+    // println(Storage.doStorageLookup(4).map.size)
 
+    val game = ConnectFour()
 
-    // storage.addGameToStorage(game)
-
-
-    // println(storage.getRandomGame(30))
-
-    // println(storage.getHashMapFromStorage(1)[331312312]!!.second)
+    game.bestMove()
 
 }

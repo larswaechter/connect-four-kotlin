@@ -9,10 +9,10 @@ import kotlin.math.min
 fun Array<IntArray>.copyMatrix() = Array(size) { get(it).clone() }
 
 class ConnectFour(
-        val board: Array<IntArray> = Array(7) { IntArray(6) },
-        val currentPlayer: Int = 1) {
+        override val board: Array<IntArray> = Array(7) { IntArray(6) },
+        override val currentPlayer: Int = 1) : Minimax<Move> {
 
-    fun move(move: Move): ConnectFour {
+    override fun move(move: Move): ConnectFour {
         assert(move.column in 0..6)
         assert(!this.isColFull(move.column))
 
@@ -21,6 +21,11 @@ class ConnectFour(
         newBoard[move.column][row] = this.currentPlayer
 
         return ConnectFour(newBoard, -currentPlayer)
+    }
+
+    fun bestMove(): ConnectFour {
+        val bestMove = this.minimax()
+        return this.move(bestMove.first!!)
     }
 
     /**
@@ -44,16 +49,21 @@ class ConnectFour(
         }
     }
 
-    fun isGameOver(): Boolean = !this.board.any { n -> n.any { m -> m == 0 } }
+    /**
+     * Check if no more moves are possible or a player has one
+     *
+     * @return is game over
+     */
+    override fun isGameOver(): Boolean = !this.board.any { n -> n.any { m -> m == 0 } }
 
     /**
      * Get index in storage based on played moves
      *
      * @return storage index
      */
-    fun getStorageIndex(): Int = Storage.getStorageIndexFromPlayedMoves(this.getNumberOfPlayedMoves())
+    override fun getStorageIndex(): Int = Storage.getStorageIndexFromPlayedMoves(this.getNumberOfPlayedMoves())
 
-    fun evaluate(depth: Int): Float {
+    override fun evaluate(depth: Int): Float {
         var bestScore = 0F
 
         // Check vertically
@@ -111,13 +121,13 @@ class ConnectFour(
         return if (this.currentPlayer == 1) max(newScore, bestScore) else min(newScore, bestScore)
     }
 
-    private fun getRandomMove(possibleMoves: List<Move> = this.getPossibleMoves()): Move = possibleMoves.random()
-
-    private fun getPossibleMoves(): List<Move> {
+    override fun getPossibleMoves(): List<Move> {
         val possibleMoves: MutableList<Move> = mutableListOf()
         for (col in this.board.indices) if (!this.isColFull(col)) possibleMoves.add(Move(col))
         return possibleMoves.toList()
     }
+
+    override fun getNumberOfRemainingMoves(): Int = this.board.sumBy { col -> col.count { cell -> cell == 0 } }
 
     private fun getNumberOfPlayedMoves(): Int = this.board.sumBy { col -> col.count { cell -> cell != 0 } }
 

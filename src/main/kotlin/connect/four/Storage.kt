@@ -3,7 +3,8 @@ package connect.four
 import java.io.File
 import kotlin.math.ceil
 
-typealias StorageRecord = Triple<Move, Float, Boolean>
+// Move, Score, CurrentPLayer
+typealias StorageRecord = Triple<Move, Float, Int>
 
 class Storage(private val index: Int) {
     private val filename: String
@@ -54,6 +55,18 @@ class Storage(private val index: Int) {
     }
 
     /**
+     * Register storage
+     */
+    fun register() = run { storages[this.index] = this }
+
+    /**
+     * Check if storage is registered
+     *
+     * @return whether storage is registered
+     */
+    fun isRegistered(): Boolean = storages[this.index] != null
+
+    /**
      * Get storage .txt file
      *
      * @return file
@@ -71,7 +84,7 @@ class Storage(private val index: Int) {
 
         file.forEachLine {
             val elements = it.split(" ")
-            map[elements[0].toInt()] = Triple(Move(elements[1].toInt()), elements[2].toFloat(), elements[3].toBoolean())
+            map[elements[0].toInt()] = Triple(Move(elements[1].toInt()), elements[2].toFloat(), elements[3].toInt())
         }
 
         return map
@@ -108,7 +121,7 @@ class Storage(private val index: Int) {
         fun registerStorages() {
             for (i in storages.indices) {
                 println("Register storage #$i...")
-                storages[i] = Storage(i)
+                Storage(i).register()
             }
             storagesRegistered = true
         }
@@ -120,6 +133,7 @@ class Storage(private val index: Int) {
          * @return Storage
          */
         fun doStorageLookup(index: Int): Storage {
+            assert(index in 1 until numberOfTranspositionTables)
             if (!storagesRegistered) registerStorages()
             return storages[index]!!
         }
@@ -144,7 +158,7 @@ class Storage(private val index: Int) {
                 // Board is not stored yet
                 if (!storage.map.containsKey(hashCode) && !newHashMap.containsKey(hashCode)) {
                     count++
-                    newHashMap[hashCode] = Triple(Move(2), 10F, true)
+                    newHashMap[hashCode] = Triple(Move(2), 10F, 1)
                 }
             }
 
