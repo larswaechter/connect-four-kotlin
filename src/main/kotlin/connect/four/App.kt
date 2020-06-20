@@ -3,8 +3,9 @@
  */
 package connect.four
 
+
 fun main() {
-    // Storage.feedByMovesPlayed(5, 3)
+    Minimax.Storage.feedByMovesPlayed(5000, 41)
 
     // Storage.feedByMovesPlayed(10000, 15)
     // println(Storage.doStorageLookup(4).map.size)
@@ -14,22 +15,16 @@ fun main() {
 
     // val game = ConnectFour().playRandomMoves(15)
 
-
-    for (i in 40 downTo 40) {
-       Minimax.Storage.feedByMovesPlayed(20000, i)
-    }
-
-
     /*
 
-    game.board[0][5] = 1
-    game.board[1][4] = 1
-    game.board[2][3] = 1
-    game.board[3][2] = 1
+    val game = ConnectFour.playRandomMoves(10)
+    val invGame = ConnectFour(board = game.board.inverseMatrix())
 
     println(game)
-    println(game.fourInARow())
+    game.getStorageRecordKeys().forEach { println(it) }
+    println()
+    println(invGame)
+    invGame.getStorageRecordKeys().forEach { println(it) }
 
      */
-
 }

@@ -65,7 +65,7 @@ interface Minimax<Board, Move> {
          * Register storage
          */
         fun register() {
-            if(!this.isRegistered()) {
+            if (!this.isRegistered()) {
                 println("Register storage #${this.index}...")
                 this.initMap()
                 storages[this.index] = this
@@ -115,7 +115,7 @@ interface Minimax<Board, Move> {
             private val storages: Array<Storage?> = Array(numberOfTranspositionTables) { null }
 
             /**
-             * Convert HashMap value to string
+             * Convert HashMap value to string.
              * This method is mainly used to format the HashMap values for the storage .txt file
              *
              * @param [key] HashMap key
@@ -134,7 +134,7 @@ interface Minimax<Board, Move> {
             fun getStorageIndexFromPlayedMoves(playedMoves: Int): Int = ceil((playedMoves.toDouble() / 3)).toInt() - 1
 
             /**
-             * Register all storages
+             * Register all storages.
              * You might want to do this on app start
              */
             fun registerStorages() {
@@ -163,23 +163,27 @@ interface Minimax<Board, Move> {
              * */
             fun feedByMovesPlayed(amount: Int, movesPlayed: Int) {
                 val storage = Storage(getStorageIndexFromPlayedMoves(movesPlayed))
-                storage.register()
+                println("Start feeding storage #${storage.index}...")
 
                 val newHashMap: HashMap<Int, StorageRecord> = HashMap()
                 var count = 0
 
+                outer@
                 for (i in 1..amount) {
                     val game = ConnectFour.playRandomMoves(movesPlayed)
                     assert(game.getNumberOfRemainingMoves() > 0)
 
-                    val hashCode = game.getStorageRecordKey()
-                    val move = game.minimax()
+                    val storageRecordKeys = game.getStorageRecordKeys()
 
-                    // Board is not stored yet
-                    if (!storage.map.containsKey(hashCode) && !newHashMap.containsKey(hashCode)) {
-                        count++
-                        newHashMap[hashCode] = Triple(move.first!!, move.second, move.third)
-                    }
+                    // Check if board is already stored
+                    for (storageRecordKey in storageRecordKeys)
+                        if (storage.map.containsKey(storageRecordKey) || newHashMap.containsKey(storageRecordKey))
+                            continue@outer
+
+
+                    count++
+                    val move = game.minimax()
+                    newHashMap[storageRecordKeys[0]] = Triple(move.first!!, move.second, move.third)
                 }
 
                 storage.appendFile(newHashMap, false)
@@ -266,9 +270,20 @@ interface Minimax<Board, Move> {
     fun getStorageIndex(): Int
 
     /**
-     * Get key of current board for storage record
+     * Get base key of current board for storage record
+     *
+     * @return
      */
-    fun getStorageRecordKey(): Int
+    fun getBaseStorageRecordKey(): Int
+
+    /**
+     * Get all possible storage keys for the current board.
+     * This includes symmetries for example.
+     * Index 0 should be baseStorageRecordKey.
+     *
+     * @return storage keys the board might be saved under
+     */
+    fun getStorageRecordKeys(): List<Int>
 
     /**
      * Minimax algorithm that finds best move
@@ -287,16 +302,16 @@ interface Minimax<Board, Move> {
         // Recursion anchor -> Evaluate board
         if (depth == 0 || game.isGameOver()) return Triple(null, game.evaluate(depth), game.currentPlayer)
 
+        // Check if board exists in storage
         val storageIndex = game.getStorageIndex()
         if (storageIndex >= 0) {
             val storage = Storage.doStorageLookup(storageIndex)
-            val storageRecordKey = this.getStorageRecordKey()
-
-            // Check if board exists in storage
-            if (storage.map.containsKey(storageRecordKey)) {
-                val storedBoard = storage.map[storageRecordKey]!!
-                val newScore = if (storedBoard.third == game.currentPlayer) storedBoard.second else storedBoard.second * storedBoard.third * game.currentPlayer
-                return Triple(storedBoard.first, newScore, game.currentPlayer)
+            this.getStorageRecordKeys().forEach { storageRecordKey ->
+                if (storage.map.containsKey(storageRecordKey)) {
+                    val storedBoard = storage.map[storageRecordKey]!!
+                    val newScore = if (storedBoard.third == game.currentPlayer) storedBoard.second else storedBoard.second * storedBoard.third * game.currentPlayer
+                    return Triple(storedBoard.first, newScore, game.currentPlayer)
+                }
             }
         }
 

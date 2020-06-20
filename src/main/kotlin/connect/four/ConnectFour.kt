@@ -1,12 +1,25 @@
 package connect.four
 
-import kotlin.math.abs
-import kotlin.math.ceil
-import kotlin.math.max
-import kotlin.math.min
+import kotlin.math.*
 
 // Helper method to deeply copy matrix
-fun Array<IntArray>.copyMatrix() = Array(size) { get(it).clone() }
+fun Array<IntArray>.copyMatrix(): Array<IntArray> = Array(size) { get(it).clone() }
+
+// Helper method to mirror matrix on center Y axis
+fun Array<IntArray>.mirrorYAxis(): Array<IntArray> {
+    val newArr = this.copyMatrix()
+    for (col in 0 until floor(newArr.size.toDouble() / 2).toInt()) {
+        for (row in newArr[col].indices) {
+            val tmp = newArr[col][row]
+            newArr[col][row] = newArr[newArr.size - 1 - col][row]
+            newArr[newArr.size - 1 - col][row] = tmp
+        }
+    }
+    return newArr
+}
+
+// Helper method to inverse matrix
+fun Array<IntArray>.inverseMatrix(): Array<IntArray> = Array(size) { get(it).clone().map { n -> -n }.toIntArray() }
 
 class ConnectFour(
         override val board: Array<IntArray> = Array(7) { IntArray(6) },
@@ -43,7 +56,19 @@ class ConnectFour(
 
     override fun getStorageIndex(): Int = Minimax.Storage.getStorageIndexFromPlayedMoves(this.getNumberOfPlayedMoves())
 
-    override fun getStorageRecordKey(): Int = this.board.contentDeepHashCode()
+    override fun getBaseStorageRecordKey(): Int = this.board.contentDeepHashCode()
+
+    override fun getStorageRecordKeys(): List<Int> {
+        val key1 = this.getBaseStorageRecordKey()
+        val key2 = this.board.inverseMatrix().contentDeepHashCode() // Inverse
+
+        val boardMirrored = this.board.mirrorYAxis()
+
+        val key3 = boardMirrored.contentDeepHashCode() // Mirror
+        val key4 = boardMirrored.inverseMatrix().contentDeepHashCode() // Mirror and Inverse
+
+        return listOf(key1, key2, key3, key4)
+    }
 
     override fun isGameOver(): Boolean = this.fourInARow() || this.getNumberOfRemainingMoves() == 0
 
