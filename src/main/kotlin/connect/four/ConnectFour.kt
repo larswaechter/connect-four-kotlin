@@ -23,32 +23,6 @@ class ConnectFour(
         return ConnectFour(newBoard, -currentPlayer)
     }
 
-    fun bestMove(): ConnectFour {
-        val bestMove = this.minimax()
-        return this.move(bestMove.first!!)
-    }
-
-    /**
-     * Play exactly n given random moves with ending up in a draw position
-     * This method is mainly used to create different random game positions for the transposition tables
-     *
-     * @param [n] number of moves to play
-     * @return game with n played moves
-     */
-    fun playRandomMoves(n: Int): ConnectFour {
-        outer@
-        while (true) {
-            var game = ConnectFour(board = this.board.copyMatrix(), currentPlayer = this.currentPlayer)
-            for (i in 1..n) {
-                val beforeMove = game
-                val possibleMoves: List<Move> = beforeMove.getPossibleMoves()
-                do game = beforeMove.move(beforeMove.getRandomMove(possibleMoves))
-                while (possibleMoves.size > 1 && game.fourInARow())
-            }
-            return game
-        }
-    }
-
     /**
      * Check if no more moves are possible or a player has one
      *
@@ -61,7 +35,12 @@ class ConnectFour(
      *
      * @return storage index
      */
-    override fun getStorageIndex(): Int = Storage.getStorageIndexFromPlayedMoves(this.getNumberOfPlayedMoves())
+    override fun getStorageIndex(): Int = Minimax.Storage.getStorageIndexFromPlayedMoves(this.getNumberOfPlayedMoves())
+
+    /**
+     * Get key of current board for storage record
+     */
+    override fun getStorageRecordKey(): Int = 123123
 
     override fun evaluate(depth: Int): Float {
         var bestScore = 0F
@@ -89,6 +68,51 @@ class ConnectFour(
         }
 
         return this.currentPlayer * bestScore
+    }
+
+    override fun getPossibleMoves(): List<Move> {
+        val possibleMoves: MutableList<Move> = mutableListOf()
+        for (col in this.board.indices) if (!this.isColFull(col)) possibleMoves.add(Move(col))
+        return possibleMoves.toList()
+    }
+
+    override fun getNumberOfRemainingMoves(): Int = this.board.sumBy { col -> col.count { cell -> cell == 0 } }
+
+    override fun toString(): String {
+        var res = ""
+
+        for (i in 0..5) {
+            for (j in 0..6) res += this.board[j][i].toString() + "\t"
+            res += "\n"
+        }
+
+        return res;
+    }
+
+    fun bestMove(): ConnectFour {
+        val bestMove = this.minimax()
+        return this.move(bestMove.first!!)
+    }
+
+    /**
+     * Play exactly n given random moves with ending up in a draw position
+     * This method is mainly used to create different random game positions for the transposition tables
+     *
+     * @param [n] number of moves to play
+     * @return game with n played moves
+     */
+    fun playRandomMoves(n: Int): ConnectFour {
+        outer@
+        while (true) {
+            var game = ConnectFour(board = this.board.copyMatrix(), currentPlayer = this.currentPlayer)
+            for (i in 1..n) {
+                val beforeMove = game
+                val possibleMoves: List<Move> = beforeMove.getPossibleMoves()
+                do game = beforeMove.move(beforeMove.getRandomMove(possibleMoves))
+                while (possibleMoves.size > 1 && game.fourInARow())
+            }
+            return game
+        }
     }
 
     private fun fourInARow(): Boolean {
@@ -121,26 +145,7 @@ class ConnectFour(
         return if (this.currentPlayer == 1) max(newScore, bestScore) else min(newScore, bestScore)
     }
 
-    override fun getPossibleMoves(): List<Move> {
-        val possibleMoves: MutableList<Move> = mutableListOf()
-        for (col in this.board.indices) if (!this.isColFull(col)) possibleMoves.add(Move(col))
-        return possibleMoves.toList()
-    }
-
-    override fun getNumberOfRemainingMoves(): Int = this.board.sumBy { col -> col.count { cell -> cell == 0 } }
-
     private fun getNumberOfPlayedMoves(): Int = this.board.sumBy { col -> col.count { cell -> cell != 0 } }
 
     private fun isColFull(col: Int): Boolean = !this.board[col].contains(0)
-
-    override fun toString(): String {
-        var res = ""
-
-        for (i in 0..5) {
-            for (j in 0..6) res += this.board[j][i].toString() + "\t"
-            res += "\n"
-        }
-
-        return res;
-    }
 }
