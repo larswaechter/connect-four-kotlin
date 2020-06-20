@@ -12,8 +12,24 @@ fun main() {
     // Minimax.Storage.feedByMovesPlayed(10000, 15)
     // println(Minimax.Storage.doStorageLookup(4).map.size)
 
-    val game = ConnectFour()
+    // val game = ConnectFour().playRandomMoves(15)
 
-    game.bestMove()
+
+    for (i in 40 downTo 40) {
+       Minimax.Storage.feedByMovesPlayed(20000, i)
+    }
+
+
+    /*
+
+    game.board[0][5] = 1
+    game.board[1][4] = 1
+    game.board[2][3] = 1
+    game.board[3][2] = 1
+
+    println(game)
+    println(game.fourInARow())
+
+     */
 
 }

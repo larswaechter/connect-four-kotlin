@@ -3,22 +3,23 @@ package connect.four
 import java.io.File
 import kotlin.math.ceil
 
-typealias StorageRecord = Triple<Move, Float, Int>
+typealias StorageRecord = Triple<Move?, Float, Int>
 
 /**
  * Interface for implementing Minimax algorithm in two-player zero-sum games
  * including storage for already evaluated board positions
  *
+ * @param [Board] the type of the game board
  * @param [Move] the type of a move
  */
-interface Minimax<Move> {
+interface Minimax<Board, Move> {
     class Storage(private val index: Int) {
         private val filename: String
-        val map: HashMap<Int, StorageRecord>
+        private var mapInitialized: Boolean = false
+        var map: HashMap<Int, StorageRecord> = HashMap()
 
         init {
             this.filename = getTableFilename(this.index)
-            this.map = this.loadHashMap()
         }
 
         /**
@@ -63,7 +64,13 @@ interface Minimax<Move> {
         /**
          * Register storage
          */
-        fun register() = run { storages[this.index] = this }
+        fun register() {
+            if(!this.isRegistered()) {
+                println("Register storage #${this.index}...")
+                this.initMap()
+                storages[this.index] = this
+            }
+        }
 
         /**
          * Check if storage is registered
@@ -80,11 +87,11 @@ interface Minimax<Move> {
         private fun getFile(): File = File("$transpositionTablesPath/${this.filename}")
 
         /**
-         * Load HashMap from storage .txt file
+         * Read HashMap from storage .txt file
          *
          * @return HashMap for played moves
          */
-        private fun loadHashMap(): HashMap<Int, StorageRecord> {
+        private fun readMap(): HashMap<Int, StorageRecord> {
             val file = this.getFile()
             val map: HashMap<Int, StorageRecord> = HashMap()
 
@@ -96,10 +103,15 @@ interface Minimax<Move> {
             return map
         }
 
+        private fun initMap() {
+            this.map = this.readMap()
+            this.mapInitialized = true
+        }
+
         companion object {
             private const val numberOfTranspositionTables = 14
             private const val transpositionTablesPath = "src/main/resources/transposition_tables"
-            private var storagesRegistered: Boolean = false
+            private var allStoragesRegistered: Boolean = false
             private val storages: Array<Storage?> = Array(numberOfTranspositionTables) { null }
 
             /**
@@ -123,13 +135,11 @@ interface Minimax<Move> {
 
             /**
              * Register all storages
+             * You might want to do this on app start
              */
             fun registerStorages() {
-                for (i in storages.indices) {
-                    println("Register storage #$i...")
-                    Storage(i).register()
-                }
-                storagesRegistered = true
+                for (i in storages.indices) Storage(i).register()
+                allStoragesRegistered = true
             }
 
             /**
@@ -140,7 +150,8 @@ interface Minimax<Move> {
              */
             fun doStorageLookup(index: Int): Storage {
                 assert(index in 1 until numberOfTranspositionTables)
-                if (!storagesRegistered) registerStorages()
+                val storage = Storage(index)
+                if (!storage.isRegistered()) storage.register()
                 return storages[index]!!
             }
 
@@ -152,11 +163,13 @@ interface Minimax<Move> {
              * */
             fun feedByMovesPlayed(amount: Int, movesPlayed: Int) {
                 val storage = Storage(getStorageIndexFromPlayedMoves(movesPlayed))
+                storage.register()
+
                 val newHashMap: HashMap<Int, StorageRecord> = HashMap()
                 var count = 0
 
                 for (i in 1..amount) {
-                    val game = ConnectFour().playRandomMoves(movesPlayed)
+                    val game = ConnectFour.playRandomMoves(movesPlayed)
                     assert(game.getNumberOfRemainingMoves() > 0)
 
                     val hashCode = game.getStorageRecordKey()
@@ -192,7 +205,7 @@ interface Minimax<Move> {
     /**
      * Game board
      */
-    val board: Array<IntArray>
+    val board: Board
 
     /**
      * Current player
@@ -215,6 +228,11 @@ interface Minimax<Move> {
      */
     fun getPossibleMoves(): List<Move>
 
+    /**
+     * Get maximum number of remaining moves until game is finished
+     *
+     * @return max number of remaining moves
+     */
     fun getNumberOfRemainingMoves(): Int
 
     /**
@@ -230,7 +248,7 @@ interface Minimax<Move> {
      * @param [move] move to perform
      * @return new game with applied move
      */
-    fun move(move: Move): Minimax<Move>
+    fun move(move: Move): Minimax<Board, Move>
 
     /**
      * Pick random move from possible moves list
@@ -261,10 +279,10 @@ interface Minimax<Move> {
      * @return triple of (Move, Score, CurrentPlayer)
      */
     fun minimax(
-            game: Minimax<Move> = this,
-            depth: Int = this.getNumberOfRemainingMoves(),
+            game: Minimax<Board, Move> = this,
+            depth: Int = game.getNumberOfRemainingMoves(),
             maximize: Boolean = game.currentPlayer == 1
-    ): Triple<Move?, Float, Int> {
+    ): StorageRecord {
 
         // Recursion anchor -> Evaluate board
         if (depth == 0 || game.isGameOver()) return Triple(null, game.evaluate(depth), game.currentPlayer)
@@ -276,7 +294,7 @@ interface Minimax<Move> {
 
             // Check if board exists in storage
             if (storage.map.containsKey(storageRecordKey)) {
-                val storedBoard = storage.map[storageRecordKey]!! as Triple<Move?, Float, Int>
+                val storedBoard = storage.map[storageRecordKey]!!
                 val newScore = if (storedBoard.third == game.currentPlayer) storedBoard.second else storedBoard.second * storedBoard.third * game.currentPlayer
                 return Triple(storedBoard.first, newScore, game.currentPlayer)
             }
@@ -292,6 +310,6 @@ interface Minimax<Move> {
                 minOrMax = Pair(move, moveScore)
         }
 
-        return Triple(minOrMax.first, minOrMax.second, game.currentPlayer)
+        return Triple(minOrMax.first, minOrMax.second, game.currentPlayer) as StorageRecord
     }
 }
