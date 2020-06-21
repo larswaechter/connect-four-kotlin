@@ -62,6 +62,7 @@ class ConnectFour(
 
         /**
          * Applying the following actions to the board do not change the its evaluation
+         * but the Move might change, so we also return a move-transform method
          *
          * - Inverse board: -1 to 1 and vice versa
          * - Mirror board on center y-Axis

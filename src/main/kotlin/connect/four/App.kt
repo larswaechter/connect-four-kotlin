@@ -5,7 +5,10 @@ package connect.four
 
 
 fun main() {
-    Minimax.Storage.feedByMovesPlayed(5000, 40)
+    for(i in 1..4) Minimax.Storage.feedByMovesPlayed(10000, 32)
+
+    // Minimax.Storage.feedByMovesPlayed(1, 34)
+
 
     // Storage.feedByMovesPlayed(10000, 15)
     // println(Storage.doStorageLookup(4).map.size)

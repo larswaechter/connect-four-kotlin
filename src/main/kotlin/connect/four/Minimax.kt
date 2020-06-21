@@ -103,6 +103,20 @@ interface Minimax<Board, Move> {
             return map
         }
 
+        /**
+         * Read StorageRecordKeys from storage .txt file
+         *
+         * @return HashSet of RecordKeys
+         */
+        fun readStorageRecordKeysAsHashSet(): HashSet<Int> {
+            val file = this.getFile()
+            val set: HashSet<Int> = HashSet()
+
+            file.forEachLine { set.add(it.split(" ")[0].toInt()) }
+
+            return set
+        }
+
         private fun initMap() {
             this.map = this.readMap()
             this.mapInitialized = true
@@ -145,6 +159,7 @@ interface Minimax<Board, Move> {
 
             /**
              * Get storage based on storage index
+             * Always use this method to access a storage
              *
              * @param [index] storage index
              * @return Storage
@@ -162,7 +177,8 @@ interface Minimax<Board, Move> {
              * @param [movesPlayed] number of played moves
              * */
             fun feedByMovesPlayed(amount: Int, movesPlayed: Int) {
-                val storage = Storage(getStorageIndexFromPlayedMoves(movesPlayed))
+                val storage = doStorageLookup(getStorageIndexFromPlayedMoves(movesPlayed))
+
                 println("Start feeding storage #${storage.index}...")
 
                 val newHashMap: HashMap<Int, StorageRecord> = HashMap()
@@ -177,16 +193,15 @@ interface Minimax<Board, Move> {
 
                     // Check if board is already stored
                     for (storageRecordKey in storageRecordKeys)
-                        if (storage.map.containsKey(storageRecordKey.first) || newHashMap.containsKey(storageRecordKey.first))
+                        if (storage.map.contains(storageRecordKey.first) || newHashMap.containsKey(storageRecordKey.first))
                             continue@outer
-
 
                     count++
                     val move = game.minimax()
                     newHashMap[storageRecordKeys[0].first] = Triple(move.first!!, move.second, move.third)
                 }
 
-                storage.appendFile(newHashMap, false)
+                storage.appendFile(newHashMap)
                 println("${storage.filename}: Added $count / $amount new data records.")
             }
 
@@ -289,13 +304,13 @@ interface Minimax<Board, Move> {
      * Minimax algorithm that finds best move
      *
      * @param [game]
-     * @param [depth] maximal tree depth
+     * @param [depth] maximal tree depth (maximal number of moves to anticipate)
      * @param [maximize] maximize or minimize
      * @return triple of (Move, Score, CurrentPlayer)
      */
     fun minimax(
             game: Minimax<Board, Move> = this,
-            depth: Int = game.getNumberOfRemainingMoves(),
+            depth: Int = 10,
             maximize: Boolean = game.currentPlayer == 1
     ): StorageRecord {
 
@@ -310,7 +325,7 @@ interface Minimax<Board, Move> {
                 if (storage.map.containsKey(storageRecordKey.first)) {
                     val storedBoard = storage.map[storageRecordKey.first]!! // Load from storage
                     val newScore = if (storedBoard.third == game.currentPlayer) storedBoard.second else storedBoard.second * storedBoard.third * game.currentPlayer
-                    val newMove = storageRecordKey.second(storedBoard.first!!) // Call move-transform method for given storageRecordKey
+                    val newMove = storageRecordKey.second(storedBoard.first!!) // Transform move for given storageRecordKey
                     return StorageRecord(newMove, newScore, game.currentPlayer)
                 }
             }
