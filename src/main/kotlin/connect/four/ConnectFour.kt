@@ -2,10 +2,18 @@ package connect.four
 
 import kotlin.math.*
 
-// Helper method to deeply copy matrix
+/**
+ * Helper method to deeply copy matrix
+ *
+ * @return deeply copied matrix
+ */
 fun Array<IntArray>.copyMatrix(): Array<IntArray> = Array(size) { get(it).clone() }
 
-// Helper method to mirror matrix on center Y axis
+/**
+ * Helper method to mirror matrix on center Y axis
+ *
+ * @return mirrored matrix
+ */
 fun Array<IntArray>.mirrorYAxis(): Array<IntArray> {
     val newArr = this.copyMatrix()
     for (col in 0 until floor(newArr.size.toDouble() / 2).toInt()) {
@@ -18,17 +26,22 @@ fun Array<IntArray>.mirrorYAxis(): Array<IntArray> {
     return newArr
 }
 
-// Helper method to inverse matrix
+/**
+ * Helper method to inverse matrix
+ *
+ * @return inversed matrix
+ */
 fun Array<IntArray>.inverseMatrix(): Array<IntArray> = Array(size) { get(it).clone().map { n -> -n }.toIntArray() }
 
 class ConnectFour(
         override val board: Array<IntArray> = Array(7) { IntArray(6) },
-        override val currentPlayer: Int = 1) : Minimax<Array<IntArray>, Move> {
+        override val currentPlayer: Int = 1,
+        override val difficulty: Int = 5) : Minimax<Array<IntArray>, Move> {
 
     companion object {
         /**
-         * Play exactly n given random moves with ending up in a draw position
-         * This method is mainly used to create different random game positions for the transposition tables
+         * Play exactly n given random moves with ending up in a draw position.
+         * This method is mainly used to create different random game positions for the transposition tables.
          *
          * @param [n] number of moves to play
          * @return game with n played moves
@@ -61,7 +74,7 @@ class ConnectFour(
     override fun getStorageRecordKeys(): List<Pair<Int, (move: Move) -> Move>> {
 
         /**
-         * Applying the following actions to the board do not change the its evaluation
+         * Applying the following actions to the board do not change its evaluation
          * but the Move might change, so we also return a move-transform method
          *
          * - Inverse board: -1 to 1 and vice versa
@@ -69,13 +82,13 @@ class ConnectFour(
          * - Mirror board and inverse
          */
 
-        val key1: Pair<Int, (move: Move) -> Move> = Pair(this.getBaseStorageRecordKey(), {move -> move})
-        val key2: Pair<Int, (move: Move) -> Move> = Pair(this.board.inverseMatrix().contentDeepHashCode(), {move -> move}) // Inverse
+        val key1: Pair<Int, (move: Move) -> Move> = Pair(this.getBaseStorageRecordKey(), { move -> move })
+        val key2: Pair<Int, (move: Move) -> Move> = Pair(this.board.inverseMatrix().contentDeepHashCode(), { move -> move }) // Inverse
 
         val boardMirrored = this.board.mirrorYAxis()
 
-        val key3: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.contentDeepHashCode(), {move -> move.mirrorYAxis()}) // Mirror
-        val key4: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.inverseMatrix().contentDeepHashCode(), {move -> move.mirrorYAxis()}) // Mirror and Inverse
+        val key3: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.contentDeepHashCode(), { move -> move.mirrorYAxis() }) // Mirror
+        val key4: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.inverseMatrix().contentDeepHashCode(), { move -> move.mirrorYAxis() }) // Mirror and Inverse
 
         return listOf(key1, key2, key3, key4)
     }
@@ -92,7 +105,7 @@ class ConnectFour(
                 val sumAbs = abs(sum)
                 if (sumAbs == 4)
                     return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 200F
-                bestScore = this.calcScore(sum, bestScore)
+                bestScore = this.calcEvaluationScore(sum, bestScore)
             }
         }
 
@@ -103,7 +116,7 @@ class ConnectFour(
                 val sumAbs = abs(sum)
                 if (sumAbs == 4)
                     return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 200F
-                bestScore = this.calcScore(sum, bestScore)
+                bestScore = this.calcEvaluationScore(sum, bestScore)
             }
         }
 
@@ -114,7 +127,7 @@ class ConnectFour(
                 val sumAbs = abs(sum)
                 if (sumAbs == 4)
                     return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 200F
-                bestScore = this.calcScore(sum, bestScore)
+                bestScore = this.calcEvaluationScore(sum, bestScore)
             }
         }
 
@@ -125,7 +138,7 @@ class ConnectFour(
                 val sumAbs = abs(sum)
                 if (sumAbs == 4)
                     return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 200F
-                bestScore = this.calcScore(sum, bestScore)
+                bestScore = this.calcEvaluationScore(sum, bestScore)
             }
         }
 
@@ -151,11 +164,22 @@ class ConnectFour(
         return res
     }
 
+    /**
+     * Perform best possible move for current player
+     *
+     * @return game with applied best move
+     */
     fun bestMove(): ConnectFour {
         val bestMove = this.minimax()
         return this.move(bestMove.first!!)
     }
 
+    /**
+     * Check if four chips of the same player are in one row.
+     * Vertically, horizontally and diagonal.
+     *
+     * @return if four in a row
+     */
     fun fourInARow(): Boolean {
         // Check vertically
         for (row in this.board.indices) {
@@ -192,7 +216,13 @@ class ConnectFour(
         return false
     }
 
-    private fun calcScore(sum: Int, bestScore: Float): Float {
+    /**
+     * Calculate board evaluation score based on number of chips in a row and already existing best score
+     *
+     * @params [sum] number of chips in a row
+     * @param [bestScore] already existing best score
+     */
+    private fun calcEvaluationScore(sum: Int, bestScore: Float): Float {
         val newScore = when (sum) {
             3 -> (if (sum == abs(sum) * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 100F
             2 -> (if (sum == abs(sum) * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 50F
@@ -202,7 +232,18 @@ class ConnectFour(
         return if (this.currentPlayer == 1) max(newScore, bestScore) else min(newScore, bestScore)
     }
 
+    /**
+     * Get number of how many moves were already played
+     *
+     * @return number of played moves
+     */
     private fun getNumberOfPlayedMoves(): Int = this.board.sumBy { col -> col.count { cell -> cell != 0 } }
 
+    /**
+     * Check if the given column is full
+     *
+     * @param [col] index of column in matrix
+     * @return if column is ful
+     */
     private fun isColFull(col: Int): Boolean = !this.board[col].contains(0)
 }

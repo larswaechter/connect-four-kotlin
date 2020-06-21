@@ -47,7 +47,7 @@ interface Minimax<Board, Move> {
          * @param [map] new HashMap to append
          * @param [updateMap] update current map instance
          */
-        fun appendFile(map: HashMap<Int, StorageRecord>, updateMap: Boolean = true) {
+        fun appendMapToFile(map: HashMap<Int, StorageRecord>, updateMap: Boolean = true) {
             val file = this.getFile()
             var res = ""
 
@@ -77,7 +77,7 @@ interface Minimax<Board, Move> {
          *
          * @return whether storage is registered
          */
-        fun isRegistered(): Boolean = storages[this.index] != null
+        private fun isRegistered(): Boolean = storages[this.index] != null
 
         /**
          * Get storage .txt file
@@ -124,6 +124,7 @@ interface Minimax<Board, Move> {
 
         companion object {
             private const val numberOfTranspositionTables = 14
+            private const val treeDepthTranspositionTables = 10
             private const val transpositionTablesPath = "src/main/resources/transposition_tables"
             private var allStoragesRegistered: Boolean = false
             private val storages: Array<Storage?> = Array(numberOfTranspositionTables) { null }
@@ -197,11 +198,11 @@ interface Minimax<Board, Move> {
                             continue@outer
 
                     count++
-                    val move = game.minimax()
+                    val move = game.minimax(depth = treeDepthTranspositionTables)
                     newHashMap[storageRecordKeys[0].first] = Triple(move.first!!, move.second, move.third)
                 }
 
-                storage.appendFile(newHashMap)
+                storage.appendMapToFile(newHashMap)
                 println("${storage.filename}: Added $count / $amount new data records.")
             }
 
@@ -232,9 +233,14 @@ interface Minimax<Board, Move> {
     val currentPlayer: Int
 
     /**
+     * Maximal minimax tree depth (AI difficulty)
+     */
+    val difficulty: Int
+
+    /**
      * Evaluate game state for current player.
-     *  For player +1, a higher value is better. (maximizer)
-     *  For player -1, a lower value is better. (minimizer)
+     *  For player 1 (maximizer) a higher value is better.
+     *  For player -1 (minimizer) a lower value is better.
      *
      * @return Positive or negative integer
      */
@@ -285,9 +291,10 @@ interface Minimax<Board, Move> {
     fun getStorageIndex(): Int
 
     /**
-     * Get base key of current board for storage record
+     * Get base key of current board for storage record.
+     * Boards positions are saved under this key.
      *
-     * @return
+     * @return base key
      */
     fun getBaseStorageRecordKey(): Int
 
@@ -303,14 +310,14 @@ interface Minimax<Board, Move> {
     /**
      * Minimax algorithm that finds best move
      *
-     * @param [game]
+     * @param [game] game to apply minimax on
      * @param [depth] maximal tree depth (maximal number of moves to anticipate)
      * @param [maximize] maximize or minimize
      * @return triple of (Move, Score, CurrentPlayer)
      */
     fun minimax(
             game: Minimax<Board, Move> = this,
-            depth: Int = 10,
+            depth: Int = this.difficulty,
             maximize: Boolean = game.currentPlayer == 1
     ): StorageRecord {
 
