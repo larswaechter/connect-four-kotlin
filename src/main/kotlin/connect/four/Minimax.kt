@@ -126,7 +126,8 @@ interface Minimax<Board, Move> {
                     "$key ${entry.first} ${entry.second} ${entry.third}"
 
             /**
-             * Get storage index based on played moves
+             * Get storage index based on played moves.
+             * Range of 3 per file
              *
              * @param [playedMoves] played moves
              * @return storage index
@@ -149,9 +150,8 @@ interface Minimax<Board, Move> {
              * @return Storage
              */
             fun doStorageLookup(index: Int): Storage {
-                assert(index in 1 until numberOfTranspositionTables)
-                val storage = Storage(index)
-                if (!storage.isRegistered()) storage.register()
+                assert(index in 0 until numberOfTranspositionTables)
+                Storage(index).register()
                 return storages[index]!!
             }
 
@@ -177,13 +177,13 @@ interface Minimax<Board, Move> {
 
                     // Check if board is already stored
                     for (storageRecordKey in storageRecordKeys)
-                        if (storage.map.containsKey(storageRecordKey) || newHashMap.containsKey(storageRecordKey))
+                        if (storage.map.containsKey(storageRecordKey.first) || newHashMap.containsKey(storageRecordKey.first))
                             continue@outer
 
 
                     count++
                     val move = game.minimax()
-                    newHashMap[storageRecordKeys[0]] = Triple(move.first!!, move.second, move.third)
+                    newHashMap[storageRecordKeys[0].first] = Triple(move.first!!, move.second, move.third)
                 }
 
                 storage.appendFile(newHashMap, false)
@@ -277,13 +277,13 @@ interface Minimax<Board, Move> {
     fun getBaseStorageRecordKey(): Int
 
     /**
-     * Get all possible storage keys for the current board.
-     * This includes symmetries for example.
+     * Get all possible storage keys for the current board with according methods to transform the associated move.
+     * This might include symmetries or inverted boards for example.
      * Index 0 should be baseStorageRecordKey.
      *
      * @return storage keys the board might be saved under
      */
-    fun getStorageRecordKeys(): List<Int>
+    fun getStorageRecordKeys(): List<Pair<Int, (move: connect.four.Move) -> connect.four.Move>>
 
     /**
      * Minimax algorithm that finds best move
@@ -300,17 +300,18 @@ interface Minimax<Board, Move> {
     ): StorageRecord {
 
         // Recursion anchor -> Evaluate board
-        if (depth == 0 || game.isGameOver()) return Triple(null, game.evaluate(depth), game.currentPlayer)
+        if (depth == 0 || game.isGameOver()) return StorageRecord(null, game.evaluate(depth), game.currentPlayer)
 
         // Check if board exists in storage
         val storageIndex = game.getStorageIndex()
         if (storageIndex >= 0) {
             val storage = Storage.doStorageLookup(storageIndex)
             this.getStorageRecordKeys().forEach { storageRecordKey ->
-                if (storage.map.containsKey(storageRecordKey)) {
-                    val storedBoard = storage.map[storageRecordKey]!!
+                if (storage.map.containsKey(storageRecordKey.first)) {
+                    val storedBoard = storage.map[storageRecordKey.first]!! // Load from storage
                     val newScore = if (storedBoard.third == game.currentPlayer) storedBoard.second else storedBoard.second * storedBoard.third * game.currentPlayer
-                    return Triple(storedBoard.first, newScore, game.currentPlayer)
+                    val newMove = storageRecordKey.second(storedBoard.first!!) // Call move-transform method for given storageRecordKey
+                    return StorageRecord(newMove, newScore, game.currentPlayer)
                 }
             }
         }

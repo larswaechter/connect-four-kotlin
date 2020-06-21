@@ -58,14 +58,23 @@ class ConnectFour(
 
     override fun getBaseStorageRecordKey(): Int = this.board.contentDeepHashCode()
 
-    override fun getStorageRecordKeys(): List<Int> {
-        val key1 = this.getBaseStorageRecordKey()
-        val key2 = this.board.inverseMatrix().contentDeepHashCode() // Inverse
+    override fun getStorageRecordKeys(): List<Pair<Int, (move: Move) -> Move>> {
+
+        /**
+         * Applying the following actions to the board do not change the its evaluation
+         *
+         * - Inverse board: -1 to 1 and vice versa
+         * - Mirror board on center y-Axis
+         * - Mirror board and inverse
+         */
+
+        val key1: Pair<Int, (move: Move) -> Move> = Pair(this.getBaseStorageRecordKey(), {move -> move})
+        val key2: Pair<Int, (move: Move) -> Move> = Pair(this.board.inverseMatrix().contentDeepHashCode(), {move -> move}) // Inverse
 
         val boardMirrored = this.board.mirrorYAxis()
 
-        val key3 = boardMirrored.contentDeepHashCode() // Mirror
-        val key4 = boardMirrored.inverseMatrix().contentDeepHashCode() // Mirror and Inverse
+        val key3: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.contentDeepHashCode(), {move -> move.mirrorYAxis()}) // Mirror
+        val key4: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.inverseMatrix().contentDeepHashCode(), {move -> move.mirrorYAxis()}) // Mirror and Inverse
 
         return listOf(key1, key2, key3, key4)
     }
