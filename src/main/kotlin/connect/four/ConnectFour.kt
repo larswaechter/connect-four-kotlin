@@ -109,11 +109,12 @@ class ConnectFour(
             val newScore = when (sum) {
                 3 -> (if (sum == abs(sum) * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 100F
                 2 -> (if (sum == abs(sum) * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 50F
-                else -> return 0F
+                else -> 0F
             }
 
             return if (this.currentPlayer == 1) max(newScore, bestScore) else min(newScore, bestScore)
         }
+
 
         // Evaluate vertically
         for (row in this.board.indices) {
