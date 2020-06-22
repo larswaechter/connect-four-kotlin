@@ -124,7 +124,7 @@ interface Minimax<Board, Move> {
 
         companion object {
             private const val numberOfTranspositionTables = 14
-            private const val treeDepthTranspositionTables = 10
+            private const val treeDepthTranspositionTables = 8
             private const val transpositionTablesPath = "src/main/resources/transposition_tables"
             private var allStoragesRegistered: Boolean = false
             private val storages: Array<Storage?> = Array(numberOfTranspositionTables) { null }
@@ -198,7 +198,7 @@ interface Minimax<Board, Move> {
                             continue@outer
 
                     count++
-                    val move = game.minimax(depth = treeDepthTranspositionTables)
+                    val move = game.minimax(currentDepth = treeDepthTranspositionTables)
                     newHashMap[storageRecordKeys[0].first] = Triple(move.first!!, move.second, move.third)
                 }
 
@@ -220,6 +220,14 @@ interface Minimax<Board, Move> {
                 return "${id}_table_${from}_${to}.txt"
             }
         }
+    }
+
+    companion object {
+        /**
+         * Best possible score for a board evaluation
+         * In this case one player should have won and the game ended
+         */
+        const val maxBoardEvaluationScore: Float = 200F
     }
 
     /**
@@ -267,6 +275,7 @@ interface Minimax<Board, Move> {
      */
     fun isGameOver(): Boolean
 
+
     /**
      * Do move and return new game
      *
@@ -311,18 +320,20 @@ interface Minimax<Board, Move> {
      * Minimax algorithm that finds best move
      *
      * @param [game] game to apply minimax on
-     * @param [depth] maximal tree depth (maximal number of moves to anticipate)
+     * @param [startingDepth] tree depth on start
+     * @param [currentDepth] maximal tree depth (maximal number of moves to anticipate)
      * @param [maximize] maximize or minimize
      * @return triple of (Move, Score, CurrentPlayer)
      */
     fun minimax(
             game: Minimax<Board, Move> = this,
-            depth: Int = this.difficulty,
+            startingDepth: Int = this.difficulty,
+            currentDepth: Int = this.difficulty,
             maximize: Boolean = game.currentPlayer == 1
     ): StorageRecord {
 
         // Recursion anchor -> Evaluate board
-        if (depth == 0 || game.isGameOver()) return StorageRecord(null, game.evaluate(depth), game.currentPlayer)
+        if (currentDepth == 0 || game.isGameOver()) return StorageRecord(null, game.evaluate(currentDepth), game.currentPlayer)
 
         // Check if board exists in storage
         val storageIndex = game.getStorageIndex()
@@ -338,14 +349,37 @@ interface Minimax<Board, Move> {
             }
         }
 
+        val possibleMoves = game.getPossibleMoves()
+
+        // If there's a move which results in a win for the current player we return this move.
+        // This way we don't have to evaluate other possible moves.
+        possibleMoves.forEach { move ->
+            if (game.move(move).isGameOver())
+                return Triple(move, game.currentPlayer * maxBoardEvaluationScore, game.currentPlayer) as StorageRecord
+        }
+
+        // List of moves and their evaluations
+        val evaluations = mutableListOf<Pair<Move?, Float>>()
+
         // Call recursively from here on for each move to find best one
         var minOrMax: Pair<Move?, Float> = Pair(null, if (maximize) Float.NEGATIVE_INFINITY else Float.POSITIVE_INFINITY)
-        for (move in game.getPossibleMoves()) {
-            val moveScore = this.minimax(game.move(move), depth - 1, !maximize).second
+        for (move in possibleMoves) {
+            val newGame = game.move(move)
+            val moveScore = this.minimax(newGame, startingDepth, currentDepth - 1, !maximize).second
+
+            val evaluation = Pair(move, moveScore)
+            evaluations.add(evaluation)
 
             // Check for maximum or minimum
             if ((maximize && moveScore > minOrMax.second) || (!maximize && moveScore < minOrMax.second))
-                minOrMax = Pair(move, moveScore)
+                minOrMax = evaluation
+        }
+
+        // If all possible moves have the same evaluation we return a random one
+        // We only do this if the move to return is the final one that is returned to the user
+        if (currentDepth == startingDepth && evaluations.stream().allMatch() { it.second == evaluations.first().second }) {
+            val randomMove = evaluations.random()
+            return Triple(randomMove.first, randomMove.second, game.currentPlayer) as StorageRecord
         }
 
         return Triple(minOrMax.first, minOrMax.second, game.currentPlayer) as StorageRecord

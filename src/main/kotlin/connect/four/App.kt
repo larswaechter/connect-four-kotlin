@@ -5,15 +5,18 @@ package connect.four
 
 
 fun main() {
+
+    /*
     val game = ConnectFour()
 
-    game.board[0][5] = -1
-    game.board[0][4] = -1
-    game.board[0][3] = -1
-
+    game.board[0][5] = 1
+    game.board[0][4] = 1
 
     println(game.bestMove())
-    // for(i in 1..4) Minimax.Storage.feedByMovesPlayed(10000, 32)
+
+     */
+
+    for(i in 1..4) Minimax.Storage.feedByMovesPlayed(10000, 38)
 
     // Minimax.Storage.feedByMovesPlayed(1, 34)
 

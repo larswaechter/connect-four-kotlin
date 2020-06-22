@@ -33,10 +33,11 @@ fun Array<IntArray>.mirrorYAxis(): Array<IntArray> {
  */
 fun Array<IntArray>.inverseMatrix(): Array<IntArray> = Array(size) { get(it).clone().map { n -> -n }.toIntArray() }
 
+// TODO: difficulty = 5
 class ConnectFour(
         override val board: Array<IntArray> = Array(7) { IntArray(6) },
         override val currentPlayer: Int = 1,
-        override val difficulty: Int = 5) : Minimax<Array<IntArray>, Move> {
+        override val difficulty: Int = 8) : Minimax<Array<IntArray>, Move> {
 
     companion object {
         /**
@@ -98,14 +99,30 @@ class ConnectFour(
     override fun evaluate(depth: Int): Float {
         var bestScore = 0F
 
+        /**
+         * Calculate board evaluation score based on number of chips in a row and already existing best score
+         *
+         * @params [sum] number of chips in a row
+         * @return score
+         */
+        fun calcScore(sum: Int): Float {
+            val newScore = when (sum) {
+                3 -> (if (sum == abs(sum) * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 100F
+                2 -> (if (sum == abs(sum) * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 50F
+                else -> return 0F
+            }
+
+            return if (this.currentPlayer == 1) max(newScore, bestScore) else min(newScore, bestScore)
+        }
+
         // Evaluate vertically
         for (row in this.board.indices) {
             for (col in 0 until this.board[row].size - 3) {
                 val sum = this.board[row][col] + this.board[row][col + 1] + this.board[row][col + 2] + this.board[row][col + 3]
                 val sumAbs = abs(sum)
                 if (sumAbs == 4)
-                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 200F
-                bestScore = this.calcEvaluationScore(sum, bestScore)
+                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * Minimax.maxBoardEvaluationScore
+                bestScore = calcScore(sum)
             }
         }
 
@@ -115,8 +132,8 @@ class ConnectFour(
                 val sum = this.board[row][col] + this.board[row + 1][col] + this.board[row + 2][col] + this.board[row + 3][col]
                 val sumAbs = abs(sum)
                 if (sumAbs == 4)
-                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 200F
-                bestScore = this.calcEvaluationScore(sum, bestScore)
+                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * Minimax.maxBoardEvaluationScore
+                bestScore = calcScore(sum)
             }
         }
 
@@ -126,8 +143,8 @@ class ConnectFour(
                 val sum = this.board[col][row] + this.board[col - 1][row + 1] + this.board[col - 2][row + 2] + this.board[col - 3][row + 3]
                 val sumAbs = abs(sum)
                 if (sumAbs == 4)
-                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 200F
-                bestScore = this.calcEvaluationScore(sum, bestScore)
+                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * Minimax.maxBoardEvaluationScore
+                bestScore = calcScore(sum)
             }
         }
 
@@ -137,8 +154,8 @@ class ConnectFour(
                 val sum = this.board[col][row] + this.board[col - 1][row - 1] + this.board[col - 2][row - 2] + this.board[col - 3][row - 3]
                 val sumAbs = abs(sum)
                 if (sumAbs == 4)
-                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 200F
-                bestScore = this.calcEvaluationScore(sum, bestScore)
+                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * Minimax.maxBoardEvaluationScore
+                bestScore = calcScore(sum)
             }
         }
 
@@ -169,10 +186,7 @@ class ConnectFour(
      *
      * @return game with applied best move
      */
-    fun bestMove(): ConnectFour {
-        val bestMove = this.minimax()
-        return this.move(bestMove.first!!)
-    }
+    fun bestMove(): ConnectFour = this.move(this.minimax().first!!)
 
     /**
      * Check if four chips of the same player are in one row.
@@ -214,22 +228,6 @@ class ConnectFour(
         }
 
         return false
-    }
-
-    /**
-     * Calculate board evaluation score based on number of chips in a row and already existing best score
-     *
-     * @params [sum] number of chips in a row
-     * @param [bestScore] already existing best score
-     */
-    private fun calcEvaluationScore(sum: Int, bestScore: Float): Float {
-        val newScore = when (sum) {
-            3 -> (if (sum == abs(sum) * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 100F
-            2 -> (if (sum == abs(sum) * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 50F
-            else -> return 0F
-        }
-
-        return if (this.currentPlayer == 1) max(newScore, bestScore) else min(newScore, bestScore)
     }
 
     /**
