@@ -179,6 +179,7 @@ interface Minimax<Board, Move> {
              * */
             fun feedByMovesPlayed(amount: Int, movesPlayed: Int) {
                 val storage = doStorageLookup(getStorageIndexFromPlayedMoves(movesPlayed))
+                val startTime = System.currentTimeMillis()
 
                 println("Start feeding storage #${storage.index}...")
 
@@ -203,7 +204,9 @@ interface Minimax<Board, Move> {
                 }
 
                 storage.appendMapToFile(newHashMap)
-                println("${storage.filename}: Added $count / $amount new data records.")
+
+                val duration = startTime -System.currentTimeMillis()
+                println("${storage.filename}: Added $count / $amount new data records in ${duration}s.")
             }
 
             /**
@@ -267,6 +270,13 @@ interface Minimax<Board, Move> {
      * @return max number of remaining moves
      */
     fun getNumberOfRemainingMoves(): Int
+
+    /**
+     * Check if a player has one
+     *
+     * @return is game over
+     */
+    fun hasWinner(): Boolean
 
     /**
      * Check if no more moves are possible or a player has one
@@ -354,7 +364,7 @@ interface Minimax<Board, Move> {
         // If there's a move which results in a win for the current player we return this move.
         // This way we don't have to evaluate other possible moves.
         possibleMoves.forEach { move ->
-            if (game.move(move).isGameOver())
+            if (game.move(move).hasWinner())
                 return Triple(move, game.currentPlayer * maxBoardEvaluationScore, game.currentPlayer) as StorageRecord
         }
 
