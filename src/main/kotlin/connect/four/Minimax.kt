@@ -205,7 +205,7 @@ interface Minimax<Board, Move> {
 
                 storage.appendMapToFile(newHashMap)
 
-                val duration = startTime -System.currentTimeMillis()
+                val duration = (System.currentTimeMillis() - startTime) / 1000
                 println("${storage.filename}: Added $count / $amount new data records in ${duration}s.")
             }
 
