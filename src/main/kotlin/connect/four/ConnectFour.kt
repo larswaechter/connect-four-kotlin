@@ -96,6 +96,8 @@ class ConnectFour(
 
     override fun isGameOver(): Boolean = this.fourInARow() || this.getNumberOfRemainingMoves() == 0
 
+    override fun hasWinner(): Boolean = this.fourInARow()
+
     override fun evaluate(depth: Int): Float {
         var bestScore = 0F
 
