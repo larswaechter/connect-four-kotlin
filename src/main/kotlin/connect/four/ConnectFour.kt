@@ -33,11 +33,15 @@ fun Array<IntArray>.mirrorYAxis(): Array<IntArray> {
  */
 fun Array<IntArray>.inverseMatrix(): Array<IntArray> = Array(size) { get(it).clone().map { n -> -n }.toIntArray() }
 
-// TODO: difficulty = 5
+
 class ConnectFour(
         override val board: Array<IntArray> = Array(7) { IntArray(6) },
         override val currentPlayer: Int = 1,
-        override val difficulty: Int = 8) : Minimax<Array<IntArray>, Move> {
+        override val difficulty: Int = 8,
+        private val numberOfPlayedMoves: Int = 0) : Minimax<Array<IntArray>, Move> {
+
+    override val storageIndex = ceil((this.numberOfPlayedMoves.toDouble() / 3)).toInt() - 1
+    override val storageRecordPrimaryKey: Int = this.board.contentDeepHashCode()
 
     companion object {
         /**
@@ -65,31 +69,35 @@ class ConnectFour(
         val row = this.board[move.column].indexOfLast { n -> n == 0 }
         newBoard[move.column][row] = this.currentPlayer
 
-        return ConnectFour(newBoard, -currentPlayer)
+        return ConnectFour(newBoard, -currentPlayer, this.difficulty, this.numberOfPlayedMoves + 1)
     }
 
-    override fun getStorageIndex(): Int = Minimax.Storage.getStorageIndexFromPlayedMoves(this.getNumberOfPlayedMoves())
-
-    override fun getBaseStorageRecordKey(): Int = this.board.contentDeepHashCode()
+    // override fun getStorageIndex(): Int = ceil((this.numberOfPlayedMoves.toDouble() / 3)).toInt() - 1
 
     override fun getStorageRecordKeys(): List<Pair<Int, (move: Move) -> Move>> {
 
         /**
          * Applying the following actions to the board do not change its evaluation
-         * but the Move might change, so we also return a move-transform method
+         * but the Move might change, so we also return a move-transform method:
          *
          * - Inverse board: -1 to 1 and vice versa
          * - Mirror board on center y-Axis
          * - Mirror board and inverse
          */
 
-        val key1: Pair<Int, (move: Move) -> Move> = Pair(this.getBaseStorageRecordKey(), { move -> move })
-        val key2: Pair<Int, (move: Move) -> Move> = Pair(this.board.inverseMatrix().contentDeepHashCode(), { move -> move }) // Inverse
+        // baseRecordKey
+        val key1: Pair<Int, (move: Move) -> Move> = Pair(this.storageRecordPrimaryKey, { move -> move })
+
+        // Inverse
+        val key2: Pair<Int, (move: Move) -> Move> = Pair(this.board.inverseMatrix().contentDeepHashCode(), { move -> move })
 
         val boardMirrored = this.board.mirrorYAxis()
 
-        val key3: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.contentDeepHashCode(), { move -> move.mirrorYAxis() }) // Mirror
-        val key4: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.inverseMatrix().contentDeepHashCode(), { move -> move.mirrorYAxis() }) // Mirror and Inverse
+        // Mirror
+        val key3: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.contentDeepHashCode(), { move -> move.mirrorYAxis() })
+
+        // Mirror and Inverse -> We also have to mirror the move
+        val key4: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.inverseMatrix().contentDeepHashCode(), { move -> move.mirrorYAxis() })
 
         return listOf(key1, key2, key3, key4)
     }
@@ -103,6 +111,9 @@ class ConnectFour(
 
         /**
          * Calculate board evaluation score based on number of chips in a row and already existing best score
+         * - 4 in a row: 200 (see below)
+         * - 3 in a row: 100
+         * - 2 in a row:  50
          *
          * @params [sum] number of chips in a row
          * @return score
@@ -116,7 +127,6 @@ class ConnectFour(
 
             return if (this.currentPlayer == 1) max(newScore, bestScore) else min(newScore, bestScore)
         }
-
 
         // Evaluate vertically
         for (row in this.board.indices) {
@@ -189,7 +199,7 @@ class ConnectFour(
      *
      * @return game with applied best move
      */
-    fun bestMove(): ConnectFour = this.move(this.minimax().first!!)
+    fun bestMove(): ConnectFour = this.move(if (this.difficulty == 0) this.getRandomMove() else this.minimax().move!!)
 
     /**
      * Check if four chips of the same player are in one row.
@@ -198,6 +208,8 @@ class ConnectFour(
      * @return if four in a row
      */
     fun fourInARow(): Boolean {
+        if(this.numberOfPlayedMoves < 4) return false
+
         // Check vertically
         for (row in this.board.indices) {
             for (col in 0 until this.board[row].size - 3) {
@@ -232,13 +244,6 @@ class ConnectFour(
 
         return false
     }
-
-    /**
-     * Get number of how many moves were already played
-     *
-     * @return number of played moves
-     */
-    private fun getNumberOfPlayedMoves(): Int = this.board.sumBy { col -> col.count { cell -> cell != 0 } }
 
     /**
      * Check if the given column is full

@@ -1,13 +1,10 @@
 package connect.four
 
 import java.io.File
-import kotlin.math.ceil
-
-typealias StorageRecord = Triple<Move?, Float, Int>
 
 /**
  * Interface for implementing Minimax algorithm in two-player zero-sum games
- * including storage for already evaluated board positions
+ * including storage based on .txt files for already evaluated board positions
  *
  * @param [Board] the type of the game board
  * @param [Move] the type of a move
@@ -16,45 +13,113 @@ interface Minimax<Board, Move> {
     class Storage(private val index: Int) {
         private val filename: String
         private var mapInitialized: Boolean = false
-        var map: HashMap<Int, StorageRecord> = HashMap()
+        var map: HashMap<Int, StorageRecord<Move>> = HashMap()
 
-        init {
-            this.filename = getTableFilename(this.index)
-        }
+        companion object {
+            private const val numberOfTranspositionTables = 14
+            private const val treeDepthTranspositionTables = 8
+            private const val transpositionTablesPath = "src/main/resources/transposition_tables"
+            private val storages: Array<Storage?> = Array(numberOfTranspositionTables) { null }
 
-        /**
-         * Write current map instance to storage .txt file
-         *
-         * @param [updateMap] update current map instance
-         */
-        fun syncFile(updateMap: Boolean = true) {
-            val file = this.getFile()
-            var res = ""
-
-            this.map.clear()
-
-            this.map.forEach { (k, v) ->
-                if (updateMap) this.map[k] = v
-                res += hashMapEntryToString(k, v) + "\n"
+            /**
+             * Register all storages.
+             * You might want to do this on app start
+             */
+            fun registerStorages() {
+                for (i in storages.indices) Storage(i).register()
             }
 
-            file.writeText(res)
+            /**
+             * Get storage based on storage index
+             * Always use this method to access a storage
+             *
+             * @param [index] storage index
+             * @return Storage
+             */
+            fun doStorageLookup(index: Int): Storage {
+                assert(index in 0 until numberOfTranspositionTables)
+                Storage(index).register()
+                return storages[index]!!
+            }
+
+            /**
+             * Seed transposition tables amount-times with boards of movesPlayed-moves
+             *
+             * @param [amount] number of data records
+             * @param [movesPlayed] number of played moves
+             * */
+            fun seedByMovesPlayed(amount: Int, movesPlayed: Int) {
+                println("\nStart seeding storage for #$movesPlayed played moves...")
+
+                val startTime = System.currentTimeMillis()
+                val newHashMap: HashMap<Int, StorageRecord<Move>> = HashMap()
+
+                var countNewRecords = 0
+                var countIterations = 0
+
+                var game: ConnectFour
+                var storage: Storage
+
+                outer@
+                do {
+                    game = ConnectFour.playRandomMoves(movesPlayed)
+                    storage = doStorageLookup(game.storageIndex)
+                    assert(game.getNumberOfRemainingMoves() > 0)
+
+                    countIterations++
+
+                    // Check if board is already stored -> Skip it
+                    for (storageRecordKey in game.getStorageRecordKeys())
+                        if (storage.map.contains(storageRecordKey.first) || newHashMap.containsKey(storageRecordKey.first))
+                            continue@outer
+
+                    countNewRecords++
+
+                    val storageRecord = game.minimax(currentDepth = treeDepthTranspositionTables, seeding = true)
+                    newHashMap[storageRecord.key!!] = storageRecord
+
+                } while (countIterations < amount)
+
+                // Write to .txt file
+                storage.appendMapToFile(newHashMap)
+
+                val duration = (System.currentTimeMillis() - startTime) / 1000
+                println("${storage.filename}: Added $countNewRecords / $amount new data records in ${duration}s.")
+            }
+
+            /**
+             * Get table file name based on storage index
+             *
+             * @param [storageIndex] storage index
+             * @return file name
+             */
+            fun getStorageFilename(storageIndex: Int): String {
+                assert(storageIndex < numberOfTranspositionTables)
+                val id = if (storageIndex < 10) "0$storageIndex" else "$storageIndex"
+                val from = storageIndex * 3 + 1
+                val to = from + 2
+                return "${id}_table_${from}_${to}.txt"
+            }
+        }
+
+        init {
+            this.filename = getStorageFilename(this.index)
         }
 
         /**
-         * Append new HashMap to storage .txt file
+         * Append new HashMap to storage .txt file (persistent)
          *
          * @param [map] new HashMap to append
          * @param [updateMap] update current map instance
          */
-        fun appendMapToFile(map: HashMap<Int, StorageRecord>, updateMap: Boolean = true) {
+        fun appendMapToFile(map: HashMap<Int, StorageRecord<Move>>, updateMap: Boolean = true) {
             val file = this.getFile()
             var res = ""
 
             map.forEach { (k, v) ->
                 if (!this.map.containsKey(k)) {
                     if (updateMap) this.map[k] = v
-                    res += hashMapEntryToString(k, v) + "\n"
+                    res += "$v\n"
                 }
             }
 
@@ -91,143 +156,60 @@ interface Minimax<Board, Move> {
          *
          * @return HashMap for played moves
          */
-        private fun readMap(): HashMap<Int, StorageRecord> {
+        private fun readMap(): HashMap<Int, StorageRecord<Move>> {
             val file = this.getFile()
-            val map: HashMap<Int, StorageRecord> = HashMap()
+            val map: HashMap<Int, StorageRecord<Move>> = HashMap()
 
             file.forEachLine {
-                val elements = it.split(" ")
-                map[elements[0].toInt()] = Triple(Move.ofStorageEntry(elements[1]), elements[2].toFloat(), elements[3].toInt())
+                val storageRecord = StorageRecord.ofStorageRecordString(it)
+                map[storageRecord.key!!] = storageRecord
             }
 
             return map
-        }
-
-        /**
-         * Read StorageRecordKeys from storage .txt file
-         *
-         * @return HashSet of RecordKeys
-         */
-        fun readStorageRecordKeysAsHashSet(): HashSet<Int> {
-            val file = this.getFile()
-            val set: HashSet<Int> = HashSet()
-
-            file.forEachLine { set.add(it.split(" ")[0].toInt()) }
-
-            return set
         }
 
         private fun initMap() {
             this.map = this.readMap()
             this.mapInitialized = true
         }
+    }
+
+    /**
+     * This class is used to represent records in the transposition tables.
+     * - [toString] method is used to represent class in tables.
+     *
+     * @property [key] baseRecordKey for given board. Used to load record from storage
+     * @property [move] best move for given board
+     * @property [score] evaluated score of move
+     * @property [player] player who did the move
+     */
+    class StorageRecord<Move>(
+            val key: Int?,
+            val move: Move?,
+            val score: Float,
+            val player: Int) {
 
         companion object {
-            private const val numberOfTranspositionTables = 14
-            private const val treeDepthTranspositionTables = 8
-            private const val transpositionTablesPath = "src/main/resources/transposition_tables"
-            private var allStoragesRegistered: Boolean = false
-            private val storages: Array<Storage?> = Array(numberOfTranspositionTables) { null }
-
             /**
-             * Convert HashMap value to string.
-             * This method is mainly used to format the HashMap values for the storage .txt file
+             * Create instance from storage record entry
              *
-             * @param [key] HashMap key
-             * @param [entry] HashMap entry
-             * @return String to write
+             * @param [storageRecordString] storage record string
+             * @return instance of class
              */
-            fun hashMapEntryToString(key: Int, entry: StorageRecord): String =
-                    "$key ${entry.first} ${entry.second} ${entry.third}"
-
-            /**
-             * Get storage index based on played moves.
-             * Range of 3 per file
-             *
-             * @param [playedMoves] played moves
-             * @return storage index
-             */
-            fun getStorageIndexFromPlayedMoves(playedMoves: Int): Int = ceil((playedMoves.toDouble() / 3)).toInt() - 1
-
-            /**
-             * Register all storages.
-             * You might want to do this on app start
-             */
-            fun registerStorages() {
-                for (i in storages.indices) Storage(i).register()
-                allStoragesRegistered = true
+            fun ofStorageRecordString(storageRecordString: String): StorageRecord<Move> {
+                val elements = storageRecordString.split(" ")
+                return StorageRecord(elements[0].toInt(), Move.ofStorageEntry(elements[1]), elements[2].toFloat(), elements[3].toInt())
             }
+        }
 
-            /**
-             * Get storage based on storage index
-             * Always use this method to access a storage
-             *
-             * @param [index] storage index
-             * @return Storage
-             */
-            fun doStorageLookup(index: Int): Storage {
-                assert(index in 0 until numberOfTranspositionTables)
-                Storage(index).register()
-                return storages[index]!!
-            }
-
-            /**
-             * Feed transposition tables amount-times with boards of movesPlayed-moves
-             *
-             * @param [amount] number of data records
-             * @param [movesPlayed] number of played moves
-             * */
-            fun feedByMovesPlayed(amount: Int, movesPlayed: Int) {
-                val storage = doStorageLookup(getStorageIndexFromPlayedMoves(movesPlayed))
-                val startTime = System.currentTimeMillis()
-
-                println("Start feeding storage #${storage.index}...")
-
-                val newHashMap: HashMap<Int, StorageRecord> = HashMap()
-                var count = 0
-
-                outer@
-                for (i in 1..amount) {
-                    val game = ConnectFour.playRandomMoves(movesPlayed)
-                    assert(game.getNumberOfRemainingMoves() > 0)
-
-                    val storageRecordKeys = game.getStorageRecordKeys()
-
-                    // Check if board is already stored
-                    for (storageRecordKey in storageRecordKeys)
-                        if (storage.map.contains(storageRecordKey.first) || newHashMap.containsKey(storageRecordKey.first))
-                            continue@outer
-
-                    count++
-                    val move = game.minimax(currentDepth = treeDepthTranspositionTables)
-                    newHashMap[storageRecordKeys[0].first] = Triple(move.first!!, move.second, move.third)
-                }
-
-                storage.appendMapToFile(newHashMap)
-
-                val duration = (System.currentTimeMillis() - startTime) / 1000
-                println("${storage.filename}: Added $count / $amount new data records in ${duration}s.")
-            }
-
-            /**
-             * Get table file name based on storage index
-             *
-             * @param [storageIndex] storage index
-             * @return file name
-             */
-            fun getTableFilename(storageIndex: Int): String {
-                assert(storageIndex < numberOfTranspositionTables)
-                val id = if (storageIndex < 10) "0$storageIndex" else "$storageIndex"
-                val from = storageIndex * 3 + 1
-                val to = from + 2
-                return "${id}_table_${from}_${to}.txt"
-            }
+        override fun toString(): String {
+            return "$key $move $score $player"
         }
     }
 
     companion object {
         /**
-         * Best possible score for a board evaluation
+         * Best possible score for a board evaluation.
          * In this case one player should have won and the game ended
          */
         const val maxBoardEvaluationScore: Float = 200F
@@ -249,9 +231,21 @@ interface Minimax<Board, Move> {
     val difficulty: Int
 
     /**
-     * Evaluate game state for current player.
-     *  For player 1 (maximizer) a higher value is better.
-     *  For player -1 (minimizer) a lower value is better.
+     * Storage index for current board.
+     * Here, the index is based on the number of played moves.
+     */
+    val storageIndex: Int
+
+    /**
+     * Primary key of current board for storage record.
+     * Board evaluations are stored under this key.
+     */
+    val storageRecordPrimaryKey: Int
+
+    /**
+     * Evaluate game state for current player:
+     * - For player 1 (maximizer) a higher value is better.
+     * - For player -1 (minimizer) a lower value is better.
      *
      * @return Positive or negative integer
      */
@@ -272,14 +266,14 @@ interface Minimax<Board, Move> {
     fun getNumberOfRemainingMoves(): Int
 
     /**
-     * Check if a player has one
+     * Check if a player has won
      *
      * @return is game over
      */
     fun hasWinner(): Boolean
 
     /**
-     * Check if no more moves are possible or a player has one
+     * Check if no more moves are possible or a player has won
      *
      * @return is game over
      */
@@ -303,26 +297,11 @@ interface Minimax<Board, Move> {
     fun getRandomMove(possibleMoves: List<Move> = this.getPossibleMoves()): Move = possibleMoves.random()
 
     /**
-     * Get index in storage based on played moves
-     *
-     * @return storage index
-     */
-    fun getStorageIndex(): Int
-
-    /**
-     * Get base key of current board for storage record.
-     * Boards positions are saved under this key.
-     *
-     * @return base key
-     */
-    fun getBaseStorageRecordKey(): Int
-
-    /**
      * Get all possible storage keys for the current board with according methods to transform the associated move.
-     * This might include symmetries or inverted boards for example.
-     * Index 0 should be baseStorageRecordKey.
+     * - This might include symmetries or inverted boards for example
+     * - Index 0 should be [storageRecordPrimaryKey]
      *
-     * @return storage keys the board might be saved under
+     * @return storage keys the board might be stored under
      */
     fun getStorageRecordKeys(): List<Pair<Int, (move: connect.four.Move) -> connect.four.Move>>
 
@@ -333,65 +312,84 @@ interface Minimax<Board, Move> {
      * @param [startingDepth] tree depth on start
      * @param [currentDepth] maximal tree depth (maximal number of moves to anticipate)
      * @param [maximize] maximize or minimize
-     * @return triple of (Move, Score, CurrentPlayer)
+     * @param [seeding] is algorithm used for storage seeding
+     * @return storage record
      */
     fun minimax(
             game: Minimax<Board, Move> = this,
             startingDepth: Int = this.difficulty,
-            currentDepth: Int = this.difficulty,
-            maximize: Boolean = game.currentPlayer == 1
-    ): StorageRecord {
+            currentDepth: Int = startingDepth,
+            maximize: Boolean = game.currentPlayer == 1,
+            seeding: Boolean = false
+    ): StorageRecord<Move> {
 
         // Recursion anchor -> Evaluate board
-        if (currentDepth == 0 || game.isGameOver()) return StorageRecord(null, game.evaluate(currentDepth), game.currentPlayer)
+        if (currentDepth == 0 || game.isGameOver())
+            return StorageRecord(null, null, game.evaluate(currentDepth), game.currentPlayer)
 
         // Check if board exists in storage
-        val storageIndex = game.getStorageIndex()
+        val storageIndex = game.storageIndex
+        var existsInStorage = false
+
         if (storageIndex >= 0) {
-            val storage = Storage.doStorageLookup(storageIndex)
-            this.getStorageRecordKeys().forEach { storageRecordKey ->
+            val storage = Storage.doStorageLookup(storageIndex) // Load storage#
+
+            // We check every possible key under which the field could be stored
+            game.getStorageRecordKeys().forEach { storageRecordKey ->
                 if (storage.map.containsKey(storageRecordKey.first)) {
-                    val storedBoard = storage.map[storageRecordKey.first]!! // Load from storage
-                    val newScore = if (storedBoard.third == game.currentPlayer) storedBoard.second else storedBoard.second * storedBoard.third * game.currentPlayer
-                    val newMove = storageRecordKey.second(storedBoard.first!!) // Transform move for given storageRecordKey
-                    return StorageRecord(newMove, newScore, game.currentPlayer)
+                    existsInStorage = true
+                    val storageRecord = storage.map[storageRecordKey.first]!! // Load from storage
+
+                    // We can only use the stored board if it's player matches the current player
+                    if (storageRecord.player == game.currentPlayer) {
+                        val newMove = storageRecordKey.second(storageRecord.move!!) // Transform move for given storageRecordKey
+                        return StorageRecord(storageRecord.key, newMove as Move, storageRecord.score, storageRecord.player)
+                    }
                 }
             }
         }
 
         val possibleMoves = game.getPossibleMoves()
 
-        // If there's a move which results in a win for the current player we return this move.
+        // If there's a move which results in a win for the current player we immediately return this move.
         // This way we don't have to evaluate other possible moves.
         possibleMoves.forEach { move ->
-            if (game.move(move).hasWinner())
-                return Triple(move, game.currentPlayer * maxBoardEvaluationScore, game.currentPlayer) as StorageRecord
+            val tmpGame = game.move(move)
+            if (tmpGame.hasWinner())
+                return StorageRecord(tmpGame.storageRecordPrimaryKey, move, game.currentPlayer * maxBoardEvaluationScore, game.currentPlayer)
         }
 
-        // List of moves and their evaluations
+        // List of moves and their evaluations for current board
         val evaluations = mutableListOf<Pair<Move?, Float>>()
 
         // Call recursively from here on for each move to find best one
         var minOrMax: Pair<Move?, Float> = Pair(null, if (maximize) Float.NEGATIVE_INFINITY else Float.POSITIVE_INFINITY)
         for (move in possibleMoves) {
             val newGame = game.move(move)
-            val moveScore = this.minimax(newGame, startingDepth, currentDepth - 1, !maximize).second
+            val moveScore = this.minimax(newGame, startingDepth, currentDepth - 1, !maximize).score
 
             val evaluation = Pair(move, moveScore)
-            evaluations.add(evaluation)
+
+            if (!seeding) evaluations.add(evaluation)
 
             // Check for maximum or minimum
             if ((maximize && moveScore > minOrMax.second) || (!maximize && moveScore < minOrMax.second))
                 minOrMax = evaluation
         }
 
-        // If all possible moves have the same evaluation we return a random one
+        // If all possible moves have the same evaluation score we return a random one
         // We only do this if the move to return is the final one that is returned to the user
-        if (currentDepth == startingDepth && evaluations.stream().allMatch() { it.second == evaluations.first().second }) {
+        if (!seeding && currentDepth == startingDepth && evaluations.size > 1 && evaluations.stream().allMatch() { it.second == evaluations.first().second }) {
             val randomMove = evaluations.random()
-            return Triple(randomMove.first, randomMove.second, game.currentPlayer) as StorageRecord
+            return StorageRecord(game.storageRecordPrimaryKey, randomMove.first, randomMove.second, game.currentPlayer)
         }
 
-        return Triple(minOrMax.first, minOrMax.second, game.currentPlayer) as StorageRecord
+        val finalMove = StorageRecord(game.storageRecordPrimaryKey, minOrMax.first, minOrMax.second, game.currentPlayer)
+
+        // We add board temporary to storage if it does not already in it exist.
+        if (!seeding && !existsInStorage && storageIndex >= 0)
+            Storage.doStorageLookup(storageIndex).map[game.storageRecordPrimaryKey] = finalMove as StorageRecord<connect.four.Move>
+
+        return finalMove
     }
 }

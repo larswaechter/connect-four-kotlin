@@ -6,39 +6,46 @@ package connect.four
 
 fun main() {
 
+    // train()
+
+    Minimax.Storage.seedByMovesPlayed(2000, 40)
+    Minimax.Storage.seedByMovesPlayed(2000, 40)
+
+
+    // println(ConnectFour(difficulty = 42).bestMove())
+
     /*
-    val game = ConnectFour()
 
-    game.board[0][5] = 1
-    game.board[0][4] = 1
+    val start = System.currentTimeMillis()
 
+    val game = ConnectFour.playRandomMoves(1)
     println(game.bestMove())
+    println((System.currentTimeMillis() - start) / 1000)
 
      */
 
-    for(i in 1..4) Minimax.Storage.feedByMovesPlayed(10000, 38)
 
-    // Minimax.Storage.feedByMovesPlayed(1, 34)
+}
 
+fun train() {
+    for (i in 3 downTo 1) {
+        for (k in 1..3) Minimax.Storage.seedByMovesPlayed(2500, i)
+    }
+}
 
-    // Storage.feedByMovesPlayed(10000, 15)
-    // println(Storage.doStorageLookup(4).map.size)
+fun playGame() {
+    var game = ConnectFour(difficulty = 4)
 
-    // Minimax.Storage.feedByMovesPlayed(10000, 15)
-    // println(Minimax.Storage.doStorageLookup(4).map.size)
+    while (!game.isGameOver()) {
+        println(game)
+        print("Enter move: ")
 
-    // val game = ConnectFour().playRandomMoves(15)
+        val move = Move(readLine()!!.toInt())
+        game = game.move(move)
 
-    /*
-
-    val game = ConnectFour.playRandomMoves(10)
-    val invGame = ConnectFour(board = game.board.inverseMatrix())
+        if(game.isGameOver()) break
+        game = game.bestMove()
+    }
 
     println(game)
-    game.getStorageRecordKeys().forEach { println(it) }
-    println()
-    println(invGame)
-    invGame.getStorageRecordKeys().forEach { println(it) }
-
-     */
 }
