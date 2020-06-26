@@ -59,7 +59,7 @@ class ConnectFour(
             var game = ConnectFour(currentPlayer = startingPlayer)
             for (i in 1..n) {
                 game = game.move(game.getRandomMove())
-                if (game.fourInARow()) return playRandomMoves(n)
+                if (game.fourInARow()) return playRandomMoves(n, startingPlayer)
             }
             return game
         }

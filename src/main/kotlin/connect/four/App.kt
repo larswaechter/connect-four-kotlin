@@ -8,8 +8,9 @@ fun main() {
 
     // train()
 
+
     Minimax.Storage.seedByMovesPlayed(2000, 40)
-    Minimax.Storage.seedByMovesPlayed(2000, 40)
+    // Minimax.Storage.seedByMovesPlayed(2000, 40)
 
 
     // println(ConnectFour(difficulty = 42).bestMove())
