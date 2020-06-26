@@ -11,7 +11,7 @@ import java.io.File
  */
 interface Minimax<Board, Move> {
     class Storage(private val index: Int) {
-        private val filename: String
+        private val filename: String = getFilename(this.index)
         private var mapInitialized: Boolean = false
         var map: HashMap<Int, StorageRecord<Move>> = HashMap()
 
@@ -58,7 +58,7 @@ interface Minimax<Board, Move> {
                 val newHashMap: HashMap<Int, StorageRecord<Move>> = HashMap()
 
                 // Make sure that we evaluate bestMove for the npc (player -1)
-                val startingPlayer = if(movesPlayed % 2 == 0 ) -1 else 1
+                val startingPlayer = if (movesPlayed % 2 == 0) -1 else 1
 
                 var countNewRecords = 0
                 var countIterations = 0
@@ -102,7 +102,7 @@ interface Minimax<Board, Move> {
              * @param [storageIndex] storage index
              * @return file name
              */
-            fun getStorageFilename(storageIndex: Int): String {
+            fun getFilename(storageIndex: Int): String {
                 assert(storageIndex < numberOfTranspositionTables)
                 val id = if (storageIndex < 10) "0$storageIndex" else "$storageIndex"
                 val from = storageIndex * 3 + 1
@@ -111,23 +111,22 @@ interface Minimax<Board, Move> {
             }
         }
 
-        init {
-            this.filename = getStorageFilename(this.index)
-        }
+
 
         /**
-         * Append new HashMap to storage .txt file (persistent)
+         * Append new HashMap to storage .txt file (persistent) and update map instance
          *
          * @param [map] new HashMap to append
          * @param [updateMap] update current map instance
          */
-        fun appendMapToFile(map: HashMap<Int, StorageRecord<Move>>, updateMap: Boolean = true) {
+        fun appendMapToFile(map: HashMap<Int, StorageRecord<Move>>) {
             val file = this.getFile()
             var res = ""
 
             map.forEach { (k, v) ->
+                // Prevent duplicates
                 if (!this.map.containsKey(k)) {
-                    if (updateMap) this.map[k] = v
+                    this.map[k] = v
                     res += "$v\n"
                 }
             }
@@ -351,7 +350,8 @@ interface Minimax<Board, Move> {
                     existsInStorage = true
                     val storageRecord = storage.map[storageRecordKey.first]!! // Load from storage
 
-                    // We can only use the stored board if it's player matches the current player
+                    // We can only use the stored board if it's player matches the current player since both players
+                    // has their own chessmen and not shared ones.
                     // Here the player should always be the npc (player -1)
                     if (storageRecord.player == game.currentPlayer) {
                         val newMove = storageRecordKey.second(storageRecord.move!! as Move) // Transform move for given storageRecordKey
@@ -398,7 +398,7 @@ interface Minimax<Board, Move> {
 
         val finalMove = StorageRecord(game.storageRecordPrimaryKey, minOrMax.first, minOrMax.second, game.currentPlayer)
 
-        // We add board temporary to storage if it does not already in it exist.
+        // We add board evaluation temporary to storage if it does not already exist in it.
         if (!seeding && !existsInStorage && storageIndex >= 0)
             Storage.doStorageLookup(storageIndex).map[game.storageRecordPrimaryKey] = finalMove as StorageRecord<connect.four.Move>
 
