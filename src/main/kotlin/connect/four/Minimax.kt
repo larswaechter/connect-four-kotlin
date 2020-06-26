@@ -43,7 +43,10 @@ interface Minimax<Board, Move> {
             }
 
             /**
-             * Seed transposition tables amount-times with boards of movesPlayed-moves
+             * Seed transposition tables amount-times with boards of movesPlayed-moves.
+             *
+             * Make sure that we evaluate boards and their best moves only for the npc (player -1)
+             * since the human player (player 1) always plays for himself.
              *
              * @param [amount] number of data records
              * @param [movesPlayed] number of played moves
@@ -54,6 +57,9 @@ interface Minimax<Board, Move> {
                 val startTime = System.currentTimeMillis()
                 val newHashMap: HashMap<Int, StorageRecord<Move>> = HashMap()
 
+                // Make sure that we evaluate bestMove for the npc (player -1)
+                val startingPlayer = if(movesPlayed % 2 == 0 ) -1 else 1
+
                 var countNewRecords = 0
                 var countIterations = 0
 
@@ -62,8 +68,11 @@ interface Minimax<Board, Move> {
 
                 outer@
                 do {
-                    game = ConnectFour.playRandomMoves(movesPlayed)
+                    game = ConnectFour.playRandomMoves(movesPlayed, startingPlayer)
                     storage = doStorageLookup(game.storageIndex)
+
+                    // Make sure that we evaluate bestMove for the npc (player -1)
+                    assert(game.currentPlayer == -1)
                     assert(game.getNumberOfRemainingMoves() > 0)
 
                     countIterations++
@@ -222,6 +231,8 @@ interface Minimax<Board, Move> {
 
     /**
      * Current player
+     * - Player 1 should be human player
+     * - Player -1 should be the npc
      */
     val currentPlayer: Int
 
@@ -247,7 +258,7 @@ interface Minimax<Board, Move> {
      * - For player 1 (maximizer) a higher value is better.
      * - For player -1 (minimizer) a lower value is better.
      *
-     * @return Positive or negative integer
+     * @return Positive or negative float
      */
     fun evaluate(depth: Int): Float
 
@@ -303,7 +314,7 @@ interface Minimax<Board, Move> {
      *
      * @return storage keys the board might be stored under
      */
-    fun getStorageRecordKeys(): List<Pair<Int, (move: connect.four.Move) -> connect.four.Move>>
+    fun getStorageRecordKeys(): List<Pair<Int, (move: Move) -> Move>>
 
     /**
      * Minimax algorithm that finds best move
@@ -341,9 +352,10 @@ interface Minimax<Board, Move> {
                     val storageRecord = storage.map[storageRecordKey.first]!! // Load from storage
 
                     // We can only use the stored board if it's player matches the current player
+                    // Here the player should always be the npc (player -1)
                     if (storageRecord.player == game.currentPlayer) {
-                        val newMove = storageRecordKey.second(storageRecord.move!!) // Transform move for given storageRecordKey
-                        return StorageRecord(storageRecord.key, newMove as Move, storageRecord.score, storageRecord.player)
+                        val newMove = storageRecordKey.second(storageRecord.move!! as Move) // Transform move for given storageRecordKey
+                        return StorageRecord(storageRecord.key, newMove, storageRecord.score, storageRecord.player)
                     }
                 }
             }

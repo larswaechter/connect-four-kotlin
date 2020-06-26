@@ -40,6 +40,7 @@ class ConnectFour(
         override val difficulty: Int = 8,
         private val numberOfPlayedMoves: Int = 0) : Minimax<Array<IntArray>, Move> {
 
+    // Storage index based on number of played moves -> In steps of three
     override val storageIndex = ceil((this.numberOfPlayedMoves.toDouble() / 3)).toInt() - 1
     override val storageRecordPrimaryKey: Int = this.board.contentDeepHashCode()
 
@@ -48,11 +49,14 @@ class ConnectFour(
          * Play exactly n given random moves with ending up in a draw position.
          * This method is mainly used to create different random game positions for the transposition tables.
          *
+         * TODO: Replace recursive call with undoing last x (4?) moves
+         *
          * @param [n] number of moves to play
+         * @param [startingPlayer] starting player
          * @return game with n played moves
          */
-        fun playRandomMoves(n: Int): ConnectFour {
-            var game = ConnectFour()
+        fun playRandomMoves(n: Int, startingPlayer: Int = 1): ConnectFour {
+            var game = ConnectFour(currentPlayer = startingPlayer)
             for (i in 1..n) {
                 game = game.move(game.getRandomMove())
                 if (game.fourInARow()) return playRandomMoves(n)
@@ -72,8 +76,6 @@ class ConnectFour(
         return ConnectFour(newBoard, -currentPlayer, this.difficulty, this.numberOfPlayedMoves + 1)
     }
 
-    // override fun getStorageIndex(): Int = ceil((this.numberOfPlayedMoves.toDouble() / 3)).toInt() - 1
-
     override fun getStorageRecordKeys(): List<Pair<Int, (move: Move) -> Move>> {
 
         /**
@@ -85,7 +87,7 @@ class ConnectFour(
          * - Mirror board and inverse
          */
 
-        // baseRecordKey
+        // primaryRecordKey
         val key1: Pair<Int, (move: Move) -> Move> = Pair(this.storageRecordPrimaryKey, { move -> move })
 
         // Inverse
