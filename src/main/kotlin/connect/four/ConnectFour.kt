@@ -38,7 +38,8 @@ class ConnectFour(
         override val board: Array<IntArray> = Array(7) { IntArray(6) },
         override val currentPlayer: Int = 1,
         override val difficulty: Int = 8,
-        private val numberOfPlayedMoves: Int = 0) : Minimax<Array<IntArray>, Move> {
+        private val numberOfPlayedMoves: Int = 0,
+        val multiplayer: Boolean = false) : Minimax<Array<IntArray>, Move> {
 
     // Storage index based on number of played moves -> In steps of three
     override val storageIndex = ceil((this.numberOfPlayedMoves.toDouble() / 3)).toInt() - 1
@@ -204,7 +205,7 @@ class ConnectFour(
         for (i in 0..6) {
             res += "<div class='column col-auto' data-column='$i'>"
             for (j in 0..5) {
-                val playerColor = when(this.board[i][j]) {
+                val playerColor = when (this.board[i][j]) {
                     1 -> "red"
                     -1 -> "yellow"
                     else -> ""
@@ -286,7 +287,8 @@ class ConnectFour(
                     board = this.board.copyMatrix(),
                     currentPlayer = this.currentPlayer,
                     difficulty = this.difficulty,
-                    numberOfPlayedMoves = this.numberOfPlayedMoves
+                    numberOfPlayedMoves = this.numberOfPlayedMoves,
+                    multiplayer = this.multiplayer
             )
 
             // Play random moves until game is over

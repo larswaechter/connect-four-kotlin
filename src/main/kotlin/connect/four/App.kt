@@ -7,27 +7,38 @@ import io.javalin.Javalin
 
 class App {
     init {
-        var game = ConnectFour()
+        val games: HashMap<String, ConnectFour> = hashMapOf()
 
         val app = Javalin.create { config ->
             config.addStaticFiles("/public")
         }.start(7070)
 
-        app.get("/game") {ctx ->
-            ctx.html(game.toHTML())
+        app.get("/start/:id") { ctx ->
+            val id = ctx.pathParam("id")
+            val newGame = ConnectFour()
+            games[id] = newGame
+            ctx.html(newGame.toHTML())
         }
 
-        app.get("/move/:column") {ctx ->
+        app.get("/:id/move/:column") { ctx ->
+            val paramID = ctx.pathParam("id")
             val paramColumn = ctx.pathParam("column")
 
             // Validate parameter
-            if(paramColumn.matches(Regex("^[0-6]\$"))) {
+            if (games.containsKey(paramID) && paramColumn.matches(Regex("^[0-6]\$"))) {
+                var game = games[paramID]!!
                 val column = paramColumn.toInt()
                 game = game.move(Move(column))
 
-                if(game.hasWinner()) {
+                if (!game.multiplayer) game = game.move(game.getRandomMove())
+
+                games[paramID] = game
+
+                if (game.hasWinner()) {
+                    games.remove(paramID)
                     ctx.html(game.toHTML())
-                } else if(game.getNumberOfRemainingMoves() == 0) {
+                } else if (game.getNumberOfRemainingMoves() == 0) {
+                    games.remove(paramID)
                     ctx.html(game.toHTML())
                 } else {
                     ctx.html(game.toHTML())
@@ -80,7 +91,7 @@ fun playGame() {
         val move = Move(readLine()!!.toInt())
         game = game.move(move)
 
-        if(game.isGameOver()) break
+        if (game.isGameOver()) break
         game = game.bestMove()
     }
 

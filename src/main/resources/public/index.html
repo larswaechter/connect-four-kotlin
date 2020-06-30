@@ -1,17 +1,70 @@
 <html lang="de">
-    <head>
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" crossorigin="anonymous">
-        <link rel="stylesheet" href="assets/index.css">
-    </head>
-    <body>
-        <div class="container p-4">
-            <div class="row">
-                <div class="col-12">
-                    <h1 class="text-center">4-Gewinnt</h1>
-                </div>
-                <div class="col-12" id="board-wrapper"></div>
+<head>
+    <title>Vier-Gewinnt</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="assets/index.css">
+</head>
+<body>
+<nav class="navbar navbar-dark bg-dark">
+    <span class="navbar-brand mb-0 h1">Vier-Gewinnt</span>
+</nav>
+<div class="container p-4">
+    <div class="row">
+        <div class="col-12" id="welcome">
+            <div class="jumbotron">
+                <h1 class="display-4">Willkommen!</h1>
+                <p class="lead">This is a simple hero unit, a simple jumbotron-style component for calling extra
+                    attention to featured content or information.</p>
+                <hr class="my-4">
+                <p>It uses utility classes for typography and spacing to space content out within the larger
+                    container.</p>
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#setup-modal">
+                    Start new game
+                </button>
             </div>
         </div>
-    </body>
-    <script src="assets/index.js"></script>
+        <div class="col-12" id="board-wrapper"></div>
+    </div>
+</div>
+<!-- Modal -->
+<div class="modal fade" id="setup-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">New game</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="players">Select players</label>
+                    <select class="form-control" id="players">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="difficulty">Select difficulty</label>
+                    <select class="form-control" id="difficulty">
+                        <option value="1">Easy</option>
+                        <option value="2">Medium</option>
+                        <option value="3">Hard</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="start-game">Start</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" crossorigin="anonymous"></script>
+<script src="assets/index.js"></script>
 </html>
