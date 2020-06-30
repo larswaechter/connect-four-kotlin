@@ -1,0 +1,29 @@
+.board {
+    background-color: black;
+    width: max-content;
+}
+
+.board .column {
+    padding: 10px;
+}
+
+.board .column:hover {
+    background: rgba(139, 139, 139, 0.425);
+    cursor: pointer;
+}
+
+.board .stone {
+    background-color: white;
+    border-radius: 30px;
+    height: 35px;
+    width: 35px;
+    margin: 12px;
+}
+
+.board .stone.red {
+    background-color: red;
+}
+
+.board .stone.yellow {
+    background-color: yellow;
+}

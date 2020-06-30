@@ -104,11 +104,13 @@ class ConnectFour(
         return listOf(key1, key2, key3, key4)
     }
 
-    override fun isGameOver(): Boolean = this.fourInARow() || this.getNumberOfRemainingMoves() == 0
+    override fun isGameOver(): Boolean = this.fourInARow() || this.numberOfPlayedMoves == 42
 
     override fun hasWinner(): Boolean = this.fourInARow()
 
-    override fun evaluate(depth: Int): Float {
+    override fun evaluate(depth: Int): Float = this.mcm()
+
+    fun evaluate2(depth: Int): Float {
         var bestScore = 0F
 
         /**
@@ -196,6 +198,27 @@ class ConnectFour(
         return res
     }
 
+    fun toHTML(): String {
+        var res = "<div class='board row mx-auto shadow-lg'>"
+
+        for (i in 0..6) {
+            res += "<div class='column col-auto' data-column='$i'>"
+            for (j in 0..5) {
+                val playerColor = when(this.board[i][j]) {
+                    1 -> "red"
+                    -1 -> "yellow"
+                    else -> ""
+                }
+                res += "<div class='stone $playerColor'></div>"
+            }
+            res += "</div>"
+        }
+
+        res += "</div>"
+
+        return res
+    }
+
     /**
      * Perform best possible move for current player
      *
@@ -210,7 +233,7 @@ class ConnectFour(
      * @return if four in a row
      */
     fun fourInARow(): Boolean {
-        if(this.numberOfPlayedMoves < 4) return false
+        if (this.numberOfPlayedMoves < 7) return false
 
         // Check vertically
         for (row in this.board.indices) {
@@ -245,6 +268,53 @@ class ConnectFour(
         }
 
         return false
+    }
+
+    /**
+     * Monte Carlo method for board evaluation.
+     * Play 100 random games and evaluate based on number of wins
+     *
+     * @return number of wins
+     */
+    fun mcm(): Float {
+        // Defeats - Draws - Wins for current player
+        var stats = Triple(0, 0, 0)
+
+        // Simulate 100 games
+        for (i in 1..100) {
+            var game = ConnectFour(
+                    board = this.board.copyMatrix(),
+                    currentPlayer = this.currentPlayer,
+                    difficulty = this.difficulty,
+                    numberOfPlayedMoves = this.numberOfPlayedMoves
+            )
+
+            // Play random moves until game is over
+            while (!game.isGameOver()) {
+                game = game.move(game.getRandomMove())
+            }
+
+            // Update stats based on winner
+            when (game.getWinner()) {
+                0 -> stats = Triple(stats.first, stats.second + 1, stats.third)
+                this.currentPlayer -> Triple(stats.first, stats.second, stats.third + 1)
+                -this.currentPlayer -> Triple(stats.first + 1, stats.second, stats.third)
+            }
+        }
+
+        // Return number of wins for current player
+        return (this.currentPlayer * stats.third).toFloat()
+    }
+
+    /**
+     * Get winner of the game
+     *
+     * @return player 1 / -1 or 0 if draw
+     */
+    private fun getWinner(): Int {
+        assert(this.isGameOver())
+
+        return if (this.fourInARow()) return -this.currentPlayer else 0
     }
 
     /**

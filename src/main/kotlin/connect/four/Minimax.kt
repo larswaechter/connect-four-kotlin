@@ -117,7 +117,6 @@ interface Minimax<Board, Move> {
          * Append new HashMap to storage .txt file (persistent) and update map instance
          *
          * @param [map] new HashMap to append
-         * @param [updateMap] update current map instance
          */
         fun appendMapToFile(map: HashMap<Int, StorageRecord<Move>>) {
             val file = this.getFile()
@@ -220,7 +219,7 @@ interface Minimax<Board, Move> {
          * Best possible score for a board evaluation.
          * In this case one player should have won and the game ended
          */
-        const val maxBoardEvaluationScore: Float = 200F
+        const val maxBoardEvaluationScore: Float = 100F
     }
 
     /**
@@ -347,7 +346,6 @@ interface Minimax<Board, Move> {
             // We check every possible key under which the field could be stored
             game.getStorageRecordKeys().forEach { storageRecordKey ->
                 if (storage.map.containsKey(storageRecordKey.first)) {
-                    existsInStorage = true
                     val storageRecord = storage.map[storageRecordKey.first]!! // Load from storage
 
                     // We can only use the stored board if it's player matches the current player since both players
@@ -357,6 +355,7 @@ interface Minimax<Board, Move> {
                         val newMove = storageRecordKey.second(storageRecord.move!! as Move) // Transform move for given storageRecordKey
                         return StorageRecord(storageRecord.key, newMove, storageRecord.score, storageRecord.player)
                     }
+                    existsInStorage = true
                 }
             }
         }
@@ -389,12 +388,16 @@ interface Minimax<Board, Move> {
                 minOrMax = evaluation
         }
 
+        /*
+
         // If all possible moves have the same evaluation score we return a random one
         // We only do this if the move to return is the final one that is returned to the user
         if (!seeding && currentDepth == startingDepth && evaluations.size > 1 && evaluations.stream().allMatch() { it.second == evaluations.first().second }) {
             val randomMove = evaluations.random()
             return StorageRecord(game.storageRecordPrimaryKey, randomMove.first, randomMove.second, game.currentPlayer)
         }
+
+         */
 
         val finalMove = StorageRecord(game.storageRecordPrimaryKey, minOrMax.first, minOrMax.second, game.currentPlayer)
 

@@ -30,9 +30,20 @@ dependencies {
 
     // Use the Kotlin JUnit integration.
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit'
+
+    // Add Javalin dependency
+    compile 'io.javalin:javalin:3.9.0'
+
+    // Add slf4j Logger dependency
+    compile "org.slf4j:slf4j-simple:1.7.28"
 }
 
 application {
     // Define the main class for the application.
     mainClassName = 'connect.four.AppKt'
+}
+
+run {
+    standardInput = System.in
+    enableAssertions = true
 }

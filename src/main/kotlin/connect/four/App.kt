@@ -3,13 +3,49 @@
  */
 package connect.four
 
+import io.javalin.Javalin
+
+class App {
+    init {
+        var game = ConnectFour()
+
+        val app = Javalin.create { config ->
+            config.addStaticFiles("/public")
+        }.start(7070)
+
+        app.get("/game") {ctx ->
+            ctx.html(game.toHTML())
+        }
+
+        app.get("/move/:column") {ctx ->
+            val paramColumn = ctx.pathParam("column")
+
+            // Validate parameter
+            if(paramColumn.matches(Regex("^[0-6]\$"))) {
+                val column = paramColumn.toInt()
+                game = game.move(Move(column))
+
+                if(game.hasWinner()) {
+                    ctx.html(game.toHTML())
+                } else if(game.getNumberOfRemainingMoves() == 0) {
+                    ctx.html(game.toHTML())
+                } else {
+                    ctx.html(game.toHTML())
+                }
+            }
+        }
+    }
+}
+
 
 fun main() {
+
+    App()
 
     // train()
 
 
-    Minimax.Storage.seedByMovesPlayed(2000, 40)
+    // Minimax.Storage.seedByMovesPlayed(2000, 40)
     // Minimax.Storage.seedByMovesPlayed(2000, 40)
 
 
