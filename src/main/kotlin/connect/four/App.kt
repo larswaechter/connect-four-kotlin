@@ -6,6 +6,55 @@ package connect.four
 
 fun main() {
 
+    // val game = ConnectFour(difficulty = 15)
+    // println(game.bestMove())
+
+    playGame()
+
+    /*
+    for(i in 9 downTo 1) {
+        for(k in 1..3) Minimax.Storage.feedByMovesPlayed(5000, i)
+    }
+
+     */
+
+    /*
+
+    val game = ConnectFour(currentPlayer = -1)
+    game.board[0][5] = 1
+    game.board[0][4] = -1
+    game.board[1][5] = 1
+    game.board[2][5] = 1
+    game.board[5][5] = -1
+
+    // println(game)
+    // println(game.getBestMove())
+
+    val game2 = ConnectFour(board = game.board.mirrorYAxis(), currentPlayer = -1)
+    println(game2)
+    println(game2.getBestMove())
+
+     */
+
+    return
+
+    playGame()
+    return
+
+    /*
+
+    val game = ConnectFour.playRandomMoves(40)
+    println(game)
+
+
+    println(game.getBestMove())
+
+    return
+    playGame()
+    return
+
+     */
+
     /*
     val game = ConnectFour()
 
@@ -15,8 +64,6 @@ fun main() {
     println(game.bestMove())
 
      */
-
-    for(i in 1..4) Minimax.Storage.feedByMovesPlayed(10000, 38)
 
     // Minimax.Storage.feedByMovesPlayed(1, 34)
 
@@ -41,4 +88,16 @@ fun main() {
     invGame.getStorageRecordKeys().forEach { println(it) }
 
      */
+}
+
+fun playGame() {
+    var game = ConnectFour(difficulty = 15)
+    while (!game.isGameOver()) {
+        println(game)
+        print("Enter move: ")
+        game = game.move(Move(readLine()!!.toInt()))
+        if(game.isGameOver()) break
+        game = game.bestMove()
+    }
+    println(game)
 }

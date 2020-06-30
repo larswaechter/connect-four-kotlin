@@ -1,5 +1,6 @@
 package connect.four
 
+import kotlin.concurrent.fixedRateTimer
 import kotlin.math.*
 
 /**
@@ -91,7 +92,7 @@ class ConnectFour(
         val key3: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.contentDeepHashCode(), { move -> move.mirrorYAxis() }) // Mirror
         val key4: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.inverseMatrix().contentDeepHashCode(), { move -> move.mirrorYAxis() }) // Mirror and Inverse
 
-        return listOf(key1, key2, key3, key4)
+        return listOf(key1, key3)
     }
 
     override fun isGameOver(): Boolean = this.fourInARow() || this.getNumberOfRemainingMoves() == 0
@@ -109,12 +110,14 @@ class ConnectFour(
          */
         fun calcScore(sum: Int): Float {
             val newScore = when (sum) {
-                3 -> (if (sum == abs(sum) * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 100F
-                2 -> (if (sum == abs(sum) * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 50F
+                3 -> if (sum == abs(sum) * this.currentPlayer) 100F else -100F
+                2 -> if (sum == abs(sum) * this.currentPlayer) 50F else -50F
                 else -> 0F
             }
 
-            return if (this.currentPlayer == 1) max(newScore, bestScore) else min(newScore, bestScore)
+            return 0F
+
+            return max(newScore, bestScore)
         }
 
 
@@ -124,7 +127,7 @@ class ConnectFour(
                 val sum = this.board[row][col] + this.board[row][col + 1] + this.board[row][col + 2] + this.board[row][col + 3]
                 val sumAbs = abs(sum)
                 if (sumAbs == 4)
-                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * Minimax.maxBoardEvaluationScore
+                    return if (sum == sumAbs * this.currentPlayer) Minimax.maxBoardEvaluationScore else -Minimax.maxBoardEvaluationScore
                 bestScore = calcScore(sum)
             }
         }
@@ -135,7 +138,7 @@ class ConnectFour(
                 val sum = this.board[row][col] + this.board[row + 1][col] + this.board[row + 2][col] + this.board[row + 3][col]
                 val sumAbs = abs(sum)
                 if (sumAbs == 4)
-                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * Minimax.maxBoardEvaluationScore
+                    return if (sum == sumAbs * this.currentPlayer) Minimax.maxBoardEvaluationScore else -Minimax.maxBoardEvaluationScore
                 bestScore = calcScore(sum)
             }
         }
@@ -146,7 +149,7 @@ class ConnectFour(
                 val sum = this.board[col][row] + this.board[col - 1][row + 1] + this.board[col - 2][row + 2] + this.board[col - 3][row + 3]
                 val sumAbs = abs(sum)
                 if (sumAbs == 4)
-                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * Minimax.maxBoardEvaluationScore
+                    return if (sum == sumAbs * this.currentPlayer) Minimax.maxBoardEvaluationScore else -Minimax.maxBoardEvaluationScore
                 bestScore = calcScore(sum)
             }
         }
@@ -157,7 +160,7 @@ class ConnectFour(
                 val sum = this.board[col][row] + this.board[col - 1][row - 1] + this.board[col - 2][row - 2] + this.board[col - 3][row - 3]
                 val sumAbs = abs(sum)
                 if (sumAbs == 4)
-                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * Minimax.maxBoardEvaluationScore
+                    return if (sum == sumAbs * this.currentPlayer) Minimax.maxBoardEvaluationScore else -Minimax.maxBoardEvaluationScore
                 bestScore = calcScore(sum)
             }
         }
@@ -184,12 +187,14 @@ class ConnectFour(
         return res
     }
 
+    fun getBestMove() = this.negamax()
+
     /**
      * Perform best possible move for current player
      *
      * @return game with applied best move
      */
-    fun bestMove(): ConnectFour = this.move(this.minimax().first!!)
+    fun bestMove(): ConnectFour = this.move(this.negamax().move!!)
 
     /**
      * Check if four chips of the same player are in one row.

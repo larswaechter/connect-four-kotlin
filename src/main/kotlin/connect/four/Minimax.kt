@@ -2,8 +2,8 @@ package connect.four
 
 import java.io.File
 import kotlin.math.ceil
-
-typealias StorageRecord = Triple<Move?, Float, Int>
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Interface for implementing Minimax algorithm in two-player zero-sum games
@@ -13,32 +13,13 @@ typealias StorageRecord = Triple<Move?, Float, Int>
  * @param [Move] the type of a move
  */
 interface Minimax<Board, Move> {
-    class Storage(private val index: Int) {
+    class Storage(val index: Int) {
         private val filename: String
         private var mapInitialized: Boolean = false
-        var map: HashMap<Int, StorageRecord> = HashMap()
+        var map: HashMap<Int, TableRecord<Move>> = HashMap()
 
         init {
             this.filename = getTableFilename(this.index)
-        }
-
-        /**
-         * Write current map instance to storage .txt file
-         *
-         * @param [updateMap] update current map instance
-         */
-        fun syncFile(updateMap: Boolean = true) {
-            val file = this.getFile()
-            var res = ""
-
-            this.map.clear()
-
-            this.map.forEach { (k, v) ->
-                if (updateMap) this.map[k] = v
-                res += hashMapEntryToString(k, v) + "\n"
-            }
-
-            file.writeText(res)
         }
 
         /**
@@ -47,14 +28,14 @@ interface Minimax<Board, Move> {
          * @param [map] new HashMap to append
          * @param [updateMap] update current map instance
          */
-        fun appendMapToFile(map: HashMap<Int, StorageRecord>, updateMap: Boolean = true) {
+        fun appendMapToFile(map: HashMap<Int, TableRecord<Move>>, updateMap: Boolean = true) {
             val file = this.getFile()
             var res = ""
 
             map.forEach { (k, v) ->
                 if (!this.map.containsKey(k)) {
                     if (updateMap) this.map[k] = v
-                    res += hashMapEntryToString(k, v) + "\n"
+                    res += v.toString() + "\n"
                 }
             }
 
@@ -91,30 +72,21 @@ interface Minimax<Board, Move> {
          *
          * @return HashMap for played moves
          */
-        private fun readMap(): HashMap<Int, StorageRecord> {
+        private fun readMap(): HashMap<Int, TableRecord<Move>> {
             val file = this.getFile()
-            val map: HashMap<Int, StorageRecord> = HashMap()
+            val map: HashMap<Int, TableRecord<Move>> = HashMap()
 
             file.forEachLine {
                 val elements = it.split(" ")
-                map[elements[0].toInt()] = Triple(Move.ofStorageEntry(elements[1]), elements[2].toFloat(), elements[3].toInt())
+                map[elements[0].toInt()] = TableRecord(
+                        key = elements[0].toInt(),
+                        depth = elements[1].toInt(),
+                        flag = Flag.valueOf(elements[2]),
+                        move = Move.ofStorageEntry(elements[3]),
+                        score = elements[4].toFloat())
             }
 
             return map
-        }
-
-        /**
-         * Read StorageRecordKeys from storage .txt file
-         *
-         * @return HashSet of RecordKeys
-         */
-        fun readStorageRecordKeysAsHashSet(): HashSet<Int> {
-            val file = this.getFile()
-            val set: HashSet<Int> = HashSet()
-
-            file.forEachLine { set.add(it.split(" ")[0].toInt()) }
-
-            return set
         }
 
         private fun initMap() {
@@ -128,17 +100,6 @@ interface Minimax<Board, Move> {
             private const val transpositionTablesPath = "src/main/resources/transposition_tables"
             private var allStoragesRegistered: Boolean = false
             private val storages: Array<Storage?> = Array(numberOfTranspositionTables) { null }
-
-            /**
-             * Convert HashMap value to string.
-             * This method is mainly used to format the HashMap values for the storage .txt file
-             *
-             * @param [key] HashMap key
-             * @param [entry] HashMap entry
-             * @return String to write
-             */
-            fun hashMapEntryToString(key: Int, entry: StorageRecord): String =
-                    "$key ${entry.first} ${entry.second} ${entry.third}"
 
             /**
              * Get storage index based on played moves.
@@ -183,7 +144,7 @@ interface Minimax<Board, Move> {
 
                 println("Start feeding storage #${storage.index}...")
 
-                val newHashMap: HashMap<Int, StorageRecord> = HashMap()
+                val newHashMap: HashMap<Int, TableRecord<Move>> = HashMap()
                 var count = 0
 
                 outer@
@@ -199,8 +160,8 @@ interface Minimax<Board, Move> {
                             continue@outer
 
                     count++
-                    val move = game.minimax(currentDepth = treeDepthTranspositionTables)
-                    newHashMap[storageRecordKeys[0].first] = Triple(move.first!!, move.second, move.third)
+                    val move = game.negamax(depth = treeDepthTranspositionTables)
+                    newHashMap[move.key!!] = move
                 }
 
                 storage.appendMapToFile(newHashMap)
@@ -222,6 +183,16 @@ interface Minimax<Board, Move> {
                 val to = from + 2
                 return "${id}_table_${from}_${to}.txt"
             }
+        }
+    }
+
+    enum class Flag {
+        EXACT, LOWERBOUND, UPPERBOUND
+    }
+
+    class TableRecord<Move>(val key: Int?, val depth: Int, val flag: Flag?, val move: Move?, val score: Float) {
+        override fun toString(): String {
+            return "$key $depth $flag $move $score"
         }
     }
 
@@ -327,34 +298,52 @@ interface Minimax<Board, Move> {
     fun getStorageRecordKeys(): List<Pair<Int, (move: connect.four.Move) -> connect.four.Move>>
 
     /**
-     * Minimax algorithm that finds best move
+     * Negamax algorithm that finds best move
+     * including Alpha / Beta pruning and transposition tables
      *
      * @param [game] game to apply minimax on
-     * @param [startingDepth] tree depth on start
-     * @param [currentDepth] maximal tree depth (maximal number of moves to anticipate)
-     * @param [maximize] maximize or minimize
      * @return triple of (Move, Score, CurrentPlayer)
      */
-    fun minimax(
+    fun negamax(
             game: Minimax<Board, Move> = this,
-            startingDepth: Int = this.difficulty,
-            currentDepth: Int = this.difficulty,
-            maximize: Boolean = game.currentPlayer == 1
-    ): StorageRecord {
+            depth: Int = this.difficulty,
+            alpha: Float = Float.NEGATIVE_INFINITY,
+            beta: Float = Float.POSITIVE_INFINITY,
+            storedBoards: HashMap<Int, TableRecord<Move>> = HashMap()
+    ): TableRecord<Move> {
 
         // Recursion anchor -> Evaluate board
-        if (currentDepth == 0 || game.isGameOver()) return StorageRecord(null, game.evaluate(currentDepth), game.currentPlayer)
+        if (depth == 0 || game.isGameOver())
+            return TableRecord(null, depth = depth, flag = null, move = null, score = game.evaluate(depth))
 
-        // Check if board exists in storage
+        // Alpha / Beta Window
+        var wAlpha = alpha
+        var wBeta = beta
+
+        // Check if board exists in storage for any possible storage key
+        // We might have to adjust the Alpha-Beta window
         val storageIndex = game.getStorageIndex()
-        if (storageIndex >= 0) {
-            val storage = Storage.doStorageLookup(storageIndex)
-            this.getStorageRecordKeys().forEach { storageRecordKey ->
-                if (storage.map.containsKey(storageRecordKey.first)) {
-                    val storedBoard = storage.map[storageRecordKey.first]!! // Load from storage
-                    val newScore = if (storedBoard.third == game.currentPlayer) storedBoard.second else storedBoard.second * storedBoard.third * game.currentPlayer
-                    val newMove = storageRecordKey.second(storedBoard.first!!) // Transform move for given storageRecordKey
-                    return StorageRecord(newMove, newScore, game.currentPlayer)
+        if (storageIndex >= 0 || true) {
+          //  val storage = Storage.doStorageLookup(storageIndex)
+            for (storageRecordKey in game.getStorageRecordKeys()) {
+                // Check if board exists in storage
+                if (storedBoards.containsKey(storageRecordKey.first)) {
+                    val storedBoard = storedBoards[storageRecordKey.first]!! // Load from storage
+
+                    // val storedBoard = storage.map[storageRecordKey.first]!! as TableRecord<Move> // Load from storage
+                    val newMove = storageRecordKey.second(storedBoard.move as connect.four.Move) // Transform move for given storageRecordKey
+
+                    if (storedBoard.depth >= depth) {
+                        val newBoard = TableRecord(storedBoard.key, storedBoard.depth, storedBoard.flag, newMove, storedBoard.score) as TableRecord<Move>
+                        when (storedBoard.flag) {
+                            Flag.EXACT -> return newBoard
+                            Flag.LOWERBOUND -> wAlpha = max(alpha, storedBoard.score)
+                            Flag.UPPERBOUND -> wBeta = min(beta, storedBoard.score)
+                        }
+
+                        if (wAlpha >= wBeta) return newBoard
+                        break
+                    }
                 }
             }
         }
@@ -364,34 +353,58 @@ interface Minimax<Board, Move> {
         // If there's a move which results in a win for the current player we return this move.
         // This way we don't have to evaluate other possible moves.
         possibleMoves.forEach { move ->
-            if (game.move(move).hasWinner())
-                return Triple(move, game.currentPlayer * maxBoardEvaluationScore, game.currentPlayer) as StorageRecord
+            val tmpGame = game.move(move)
+            if (tmpGame.hasWinner()) {
+                val flag: Flag
+                if (maxBoardEvaluationScore <= alpha) {
+                    flag = Flag.UPPERBOUND
+                } else if (maxBoardEvaluationScore >= wBeta) {
+                    flag = Flag.LOWERBOUND
+                } else {
+                    flag = Flag.EXACT
+                }
+
+                return TableRecord(tmpGame.getBaseStorageRecordKey(), depth, flag, move, maxBoardEvaluationScore)
+            }
         }
 
         // List of moves and their evaluations
         val evaluations = mutableListOf<Pair<Move?, Float>>()
 
         // Call recursively from here on for each move to find best one
-        var minOrMax: Pair<Move?, Float> = Pair(null, if (maximize) Float.NEGATIVE_INFINITY else Float.POSITIVE_INFINITY)
+        var maxScore: Pair<Move?, Float> = Pair(null, wAlpha)
         for (move in possibleMoves) {
+            // Apply move - We have to cast here since NimGame prescribes the return type NimGame
             val newGame = game.move(move)
-            val moveScore = this.minimax(newGame, startingDepth, currentDepth - 1, !maximize).second
-
-            val evaluation = Pair(move, moveScore)
-            evaluations.add(evaluation)
+            val moveScore = -this.negamax(game = newGame, depth = depth - 1, alpha = -wBeta, beta = -maxScore.second, storedBoards = storedBoards).score
 
             // Check for maximum or minimum
-            if ((maximize && moveScore > minOrMax.second) || (!maximize && moveScore < minOrMax.second))
-                minOrMax = evaluation
+            if (moveScore > maxScore.second) {
+                maxScore = Pair(move, moveScore)
+                if (moveScore >= wBeta) break
+            }
+        }
+
+        val flag: Flag
+        if (maxScore.second <= alpha) {
+            flag = Flag.UPPERBOUND
+        } else if (maxScore.second >= wBeta) {
+            flag = Flag.LOWERBOUND
+        } else {
+            flag = Flag.EXACT
         }
 
         // If all possible moves have the same evaluation we return a random one
         // We only do this if the move to return is the final one that is returned to the user
-        if (currentDepth == startingDepth && evaluations.stream().allMatch() { it.second == evaluations.first().second }) {
+        if (false && evaluations.stream().allMatch() { it.second == evaluations.first().second }) {
             val randomMove = evaluations.random()
-            return Triple(randomMove.first, randomMove.second, game.currentPlayer) as StorageRecord
+            return TableRecord(game.getBaseStorageRecordKey(), depth, flag, randomMove.first, randomMove.second)
         }
 
-        return Triple(minOrMax.first, minOrMax.second, game.currentPlayer) as StorageRecord
+        val tableRecord = TableRecord(game.getBaseStorageRecordKey(), depth, flag, maxScore.first, maxScore.second)
+
+        if(maxScore.first != null) storedBoards[game.getBaseStorageRecordKey()] = tableRecord
+
+        return tableRecord
     }
 }
