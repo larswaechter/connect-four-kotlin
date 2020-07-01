@@ -52,7 +52,7 @@ interface Minimax<Board, Move> {
             /**
              * Seed transposition tables amount-times with boards of movesPlayed-moves.
              *
-             * Make sure that we evaluate boards and their best moves only for the npc (player -1)
+             * Make sure that we evaluate boards and their best moves only for the AI (player -1)
              * since the human player (player 1) always plays for himself.
              *
              * @param [amount] number of data records
@@ -64,7 +64,7 @@ interface Minimax<Board, Move> {
                 val startTime = System.currentTimeMillis()
                 val newHashMap: HashMap<Int, StorageRecord<Move>> = HashMap()
 
-                // Make sure that we evaluate bestMove for the npc (player -1)
+                // Make sure that we evaluate bestMove for the AI (player -1)
                 val startingPlayer = if (movesPlayed % 2 == 0) -1 else 1
 
                 var countNewRecords = 0
@@ -78,7 +78,7 @@ interface Minimax<Board, Move> {
                     game = ConnectFour.playRandomMoves(movesPlayed, startingPlayer)
                     storage = doStorageLookup(game.storageIndex)
 
-                    // Make sure that we evaluate bestMove for the npc (player -1)
+                    // Make sure that we evaluate bestMove for the AI (player -1)
                     assert(game.currentPlayer == -1)
                     assert(game.getNumberOfRemainingMoves() > 0)
 
@@ -237,7 +237,7 @@ interface Minimax<Board, Move> {
     /**
      * Current player
      * - Player 1 should be human player
-     * - Player -1 should be the npc
+     * - Player -1 should be the AI
      */
     val currentPlayer: Int
 
@@ -358,7 +358,7 @@ interface Minimax<Board, Move> {
 
                     // We can only use the stored board if it's player matches the current player since both players
                     // has their own chessmen and not shared ones.
-                    // Here the player should always be the npc (player -1)
+                    // Here the player should always be the AI (player -1)
                     if (storageRecord.player == game.currentPlayer) {
                         val newMove = storageRecordKey.second(storageRecord.move!! as Move) // Transform move for given storageRecordKey
                         return StorageRecord(storageRecord.key, newMove, storageRecord.score, storageRecord.player)
