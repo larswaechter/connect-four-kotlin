@@ -5,7 +5,13 @@ package connect.four
 
 fun main() {
 
-    val bestMove = ConnectFour.playRandomMoves(40).mcm()
+    val game = ConnectFour.playRandomMoves(40)
+
+    println(game.board.inverseMatrix())
+
+    // Minimax.Storage.seedByMovesPlayed(5000, 40)
+
+    // val bestMove = ConnectFour.playRandomMoves(40).mcm()
 
 
     // Server()

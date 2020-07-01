@@ -7,7 +7,7 @@ import kotlin.math.*
  *
  * @return deeply copied matrix
  */
-fun Array<IntArray>.copyMatrix(): Array<IntArray> = Array(size) { get(it).clone() }
+fun Array<IntArray>.copyMatrix(): Array<IntArray> = Array(this.size) { get(it).clone() }
 
 /**
  * Helper method to mirror matrix on center Y axis
@@ -31,7 +31,7 @@ fun Array<IntArray>.mirrorYAxis(): Array<IntArray> {
  *
  * @return inversed matrix
  */
-fun Array<IntArray>.inverseMatrix(): Array<IntArray> = Array(size) { get(it).clone().map { n -> -n }.toIntArray() }
+fun Array<IntArray>.inverseMatrix(): Array<IntArray> = Array(this.size) { get(it).clone().map { n -> -n }.toIntArray() }
 
 
 class ConnectFour(
@@ -273,16 +273,17 @@ class ConnectFour(
 
     /**
      * Monte Carlo method for board evaluation.
-     * Play 100 random games and evaluate based on number of wins
+     * Simulate a number of random games and evaluate based on the number of wins
      *
+     * @param [numberOfSimulations] how many games to play
      * @return number of wins
      */
-    fun mcm(): Float {
+    fun mcm(numberOfSimulations: Int = 100): Float {
         // Defeats - Draws - Wins for current player
         var stats = Triple(0, 0, 0)
 
         // Simulate 100 games
-        for (i in 1..100) {
+        for (i in 1..numberOfSimulations) {
             var game = ConnectFour(
                     board = this.board.copyMatrix(),
                     currentPlayer = this.currentPlayer,
@@ -313,7 +314,6 @@ class ConnectFour(
      */
     private fun getWinner(): Int {
         assert(this.isGameOver())
-
         return if (this.fourInARow()) return -this.currentPlayer else 0
     }
 

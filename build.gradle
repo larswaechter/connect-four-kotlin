@@ -32,10 +32,10 @@ dependencies {
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit'
 
     // Add Javalin dependency
-    compile 'io.javalin:javalin:3.9.0'
+    implementation 'io.javalin:javalin:3.9.0'
 
     // Add slf4j Logger dependency
-    compile "org.slf4j:slf4j-simple:1.7.28"
+    implementation "org.slf4j:slf4j-simple:1.7.28"
 }
 
 application {
@@ -45,5 +45,5 @@ application {
 
 run {
     standardInput = System.in
-    enableAssertions = true
+    applicationDefaultJvmArgs = ['-ea']
 }
