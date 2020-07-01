@@ -8,14 +8,73 @@ import io.javalin.Javalin
 class App {
     init {
         val games: HashMap<String, ConnectFour> = hashMapOf()
+        val gameLobbies: HashMap<String, GameLobby> = hashMapOf()
 
         val app = Javalin.create { config ->
             config.addStaticFiles("/public")
         }.start(7070)
 
+        app.ws("/ws/create/:id") { ws ->
+            ws.onConnect { ctx ->
+                val id = ctx.pathParam("id")
+                val newGame = GameLobby(ctx, null, ctx.sessionId)
+                gameLobbies[id] = newGame
+                ctx.send("Waiting for another player...")
+            }
+
+            ws.onMessage() { ctx ->
+                val id = ctx.pathParam("id")!!
+                var lobby = gameLobbies[id]!!
+
+                if (ctx.sessionId == lobby.currentPlayerSessionID) {
+                    lobby.game = lobby.game.move(Move(ctx.message().toInt()))
+                    lobby.currentPlayerSessionID = lobby.playerTwoSocket!!.sessionId
+                    gameLobbies[id] = lobby
+                }
+
+                lobby.playerOneSocket!!.send(lobby.game.toHTML())
+                lobby.playerTwoSocket!!.send(lobby.game.toHTML())
+            }
+        }
+
+        app.ws("/ws/join/:id") { ws ->
+            ws.onConnect { ctx ->
+                val id = ctx.pathParam("id")
+
+                if (gameLobbies.containsKey(id)) {
+                    val game = gameLobbies[id]!!
+                    game.playerTwoSocket = ctx
+                    gameLobbies[id] = game
+
+                    game.playerOneSocket!!.send(game.game.toHTML())
+                    game.playerTwoSocket!!.send(game.game.toHTML())
+                } else {
+                    ctx.send("Lobby not found!")
+                }
+            }
+
+            ws.onMessage() { ctx ->
+                val id = ctx.pathParam("id")!!
+                var lobby = gameLobbies[id]!!
+
+                if (ctx.sessionId == lobby.currentPlayerSessionID) {
+                    lobby.game = lobby.game.move(Move(ctx.message().toInt()))
+                    lobby.currentPlayerSessionID = lobby.playerOneSocket!!.sessionId
+                    gameLobbies[id] = lobby
+                }
+
+                lobby.playerOneSocket!!.send(lobby.game.toHTML())
+                lobby.playerTwoSocket!!.send(lobby.game.toHTML())
+            }
+        }
+
         app.get("/start/:id") { ctx ->
             val id = ctx.pathParam("id")
-            val newGame = ConnectFour()
+            val players = ctx.queryParam("players")!!.toInt()
+            val difficulty = ctx.queryParam("difficulty")!!.toInt()
+
+            val newGame = ConnectFour(difficulty = difficulty, multiplayer = players == 2)
+
             games[id] = newGame
             ctx.html(newGame.toHTML())
         }

@@ -74,7 +74,7 @@ class ConnectFour(
         val row = this.board[move.column].indexOfLast { n -> n == 0 }
         newBoard[move.column][row] = this.currentPlayer
 
-        return ConnectFour(newBoard, -currentPlayer, this.difficulty, this.numberOfPlayedMoves + 1)
+        return ConnectFour(newBoard, -currentPlayer, this.difficulty, this.numberOfPlayedMoves + 1, this.multiplayer)
     }
 
     override fun getStorageRecordKeys(): List<Pair<Int, (move: Move) -> Move>> {
