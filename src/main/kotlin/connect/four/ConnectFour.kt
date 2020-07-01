@@ -2,6 +2,7 @@ package connect.four
 
 import kotlin.math.*
 
+
 /**
  * Helper method to deeply copy matrix
  *
@@ -37,7 +38,7 @@ fun Array<IntArray>.inverseMatrix(): Array<IntArray> = Array(this.size) { get(it
 class ConnectFour(
         override val board: Array<IntArray> = Array(7) { IntArray(6) },
         override val currentPlayer: Int = 1,
-        override val difficulty: Int = 8,
+        override val difficulty: Int = 10,
         private val numberOfPlayedMoves: Int = 0,
         val multiplayer: Boolean = false) : Minimax<Array<IntArray>, Move> {
 
@@ -77,30 +78,51 @@ class ConnectFour(
         return ConnectFour(newBoard, -currentPlayer, this.difficulty, this.numberOfPlayedMoves + 1, this.multiplayer)
     }
 
-    override fun getStorageRecordKeys(): List<Pair<Int, (move: Move) -> Move>> {
+    override fun getStorageRecordKeys(): List<Pair<Int, (storageRecord: Minimax.StorageRecord<Move>) -> Minimax.StorageRecord<Move>?>> {
 
         /**
          * Applying the following actions to the board do not change its evaluation
-         * but the Move might change, so we also return a move-transform method:
+         * but we might have to modify the StorageRecord entry which we return -> second pair value
          *
          * - Inverse board: -1 to 1 and vice versa
          * - Mirror board on center y-Axis
          * - Mirror board and inverse
          */
 
-        // primaryRecordKey
-        val key1: Pair<Int, (move: Move) -> Move> = Pair(this.storageRecordPrimaryKey, { move -> move })
+        // PrimaryRecordKey
+        val key1: Pair<Int, (storageRecord: Minimax.StorageRecord<Move>) -> Minimax.StorageRecord<Move>?> =
+                Pair(this.board.contentDeepHashCode(), { storageRecord ->
+                    if (this.currentPlayer == storageRecord.player) storageRecord
+                    else null
+                })
 
-        // Inverse
-        val key2: Pair<Int, (move: Move) -> Move> = Pair(this.board.inverseMatrix().contentDeepHashCode(), { move -> move })
+        // Inverse -> We have to inverse the score and player
+        val key2: Pair<Int, (storageRecord: Minimax.StorageRecord<Move>) -> Minimax.StorageRecord<Move>?> =
+                Pair(this.board.inverseMatrix().contentDeepHashCode(), { storageRecord ->
+                    if (this.currentPlayer != storageRecord.player)
+                        Minimax.StorageRecord(storageRecord.key, storageRecord.move!!, -storageRecord.score, -storageRecord.player)
+                    else null
+                })
 
         val boardMirrored = this.board.mirrorYAxis()
 
-        // Mirror
-        val key3: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.contentDeepHashCode(), { move -> move.mirrorYAxis() })
+        // Mirror -> We also have to mirror the move
+        val key3: Pair<Int, (storageRecord: Minimax.StorageRecord<Move>) -> Minimax.StorageRecord<Move>?> =
+                Pair(boardMirrored.contentDeepHashCode(), { storageRecord ->
+                    if (this.currentPlayer == storageRecord.player) {
+                        val newMove = storageRecord.move!!.mirrorYAxis()
+                        Minimax.StorageRecord(storageRecord.key, newMove, storageRecord.score, storageRecord.player)
+                    } else null
+                })
 
-        // Mirror and Inverse -> We also have to mirror the move
-        val key4: Pair<Int, (move: Move) -> Move> = Pair(boardMirrored.inverseMatrix().contentDeepHashCode(), { move -> move.mirrorYAxis() })
+        // Mirror and Inverse -> We also have to mirror the move and inverse the score and player
+        val key4: Pair<Int, (storageRecord: Minimax.StorageRecord<Move>) -> Minimax.StorageRecord<Move>?> =
+                Pair(boardMirrored.inverseMatrix().contentDeepHashCode(), { storageRecord ->
+                    if (this.currentPlayer != storageRecord.player) {
+                        val newMove = storageRecord.move!!.mirrorYAxis()
+                        Minimax.StorageRecord(storageRecord.key, newMove, -storageRecord.score, -storageRecord.player)
+                    } else null
+                })
 
         return listOf(key1, key2, key3, key4)
     }
@@ -183,7 +205,7 @@ class ConnectFour(
     override fun getPossibleMoves(shuffle: Boolean): List<Move> {
         val possibleMoves: MutableList<Move> = mutableListOf()
         for (col in this.board.indices) if (!this.isColFull(col)) possibleMoves.add(Move(col))
-        return if(shuffle) possibleMoves.shuffled() else possibleMoves.toList()
+        return if (shuffle) possibleMoves.shuffled() else possibleMoves.toList()
     }
 
     override fun getNumberOfRemainingMoves(): Int = this.board.sumBy { col -> col.count { cell -> cell == 0 } }
@@ -278,7 +300,7 @@ class ConnectFour(
      * @param [numberOfSimulations] how many games to play
      * @return number of wins
      */
-    fun mcm(numberOfSimulations: Int = 100): Float {
+    fun mcm(numberOfSimulations: Int = 200): Float {
         // Defeats - Draws - Wins for current player
         var stats = Triple(0, 0, 0)
 
@@ -302,6 +324,8 @@ class ConnectFour(
                 this.currentPlayer -> stats = Triple(stats.first, stats.second, stats.third + 1)
             }
         }
+
+        // println(stats.third)
 
         // Return number of wins for current player
         return (this.currentPlayer * stats.third).toFloat()

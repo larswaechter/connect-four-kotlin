@@ -119,7 +119,6 @@ interface Minimax<Board, Move> {
         }
 
 
-
         /**
          * Append new HashMap to storage .txt file (persistent) and update map instance
          *
@@ -226,7 +225,7 @@ interface Minimax<Board, Move> {
          * Best possible score for a board evaluation.
          * In this case one player should have won and the game ended
          */
-        const val maxBoardEvaluationScore: Float = 100F
+        const val maxBoardEvaluationScore: Float = 500F
     }
 
     /**
@@ -320,7 +319,7 @@ interface Minimax<Board, Move> {
      *
      * @return storage keys the board might be stored under
      */
-    fun getStorageRecordKeys(): List<Pair<Int, (move: Move) -> Move>>
+    fun getStorageRecordKeys(): List<Pair<Int, (storageRecord: StorageRecord<Move>) -> StorageRecord<Move>?>>
 
     /**
      * Minimax algorithm that finds best move
@@ -349,21 +348,17 @@ interface Minimax<Board, Move> {
         var existsInStorage = false
 
         if (storageIndex >= 0) {
-            val storage = Storage.doStorageLookup(storageIndex) // Load storage#
+            val storage = Storage.doStorageLookup(storageIndex) // Load storage
 
             // We check every possible key under which the field could be stored
             game.getStorageRecordKeys().forEach { storageRecordKey ->
                 if (storage.map.containsKey(storageRecordKey.first)) {
                     val storageRecord = storage.map[storageRecordKey.first]!! // Load from storage
-
-                    // We can only use the stored board if it's player matches the current player since both players
-                    // has their own chessmen and not shared ones.
-                    // Here the player should always be the AI (player -1)
-                    if (storageRecord.player == game.currentPlayer) {
-                        val newMove = storageRecordKey.second(storageRecord.move!! as Move) // Transform move for given storageRecordKey
-                        return StorageRecord(storageRecord.key, newMove, storageRecord.score, storageRecord.player)
-                    }
                     existsInStorage = true
+
+                    // Create new move based on key
+                    val newStorageRecord = storageRecordKey.second(storageRecord as StorageRecord<Move>)
+                    if (newStorageRecord != null) return newStorageRecord
                 }
             }
         }
@@ -378,34 +373,16 @@ interface Minimax<Board, Move> {
                 return StorageRecord(tmpGame.storageRecordPrimaryKey, move, game.currentPlayer * maxBoardEvaluationScore, game.currentPlayer)
         }
 
-        // List of moves and their evaluations for current board
-        val evaluations = mutableListOf<Pair<Move?, Float>>()
-
         // Call recursively from here on for each move to find best one
         var minOrMax: Pair<Move?, Float> = Pair(null, if (maximize) Float.NEGATIVE_INFINITY else Float.POSITIVE_INFINITY)
         for (move in possibleMoves) {
             val newGame = game.move(move)
             val moveScore = this.minimax(newGame, startingDepth, currentDepth - 1, !maximize).score
 
-            val evaluation = Pair(move, moveScore)
-
-            if (!seeding) evaluations.add(evaluation)
-
             // Check for maximum or minimum
             if ((maximize && moveScore > minOrMax.second) || (!maximize && moveScore < minOrMax.second))
-                minOrMax = evaluation
+                minOrMax = Pair(move, moveScore)
         }
-
-        /*
-
-        // If all possible moves have the same evaluation score we return a random one
-        // We only do this if the move to return is the final one that is returned to the user
-        if (!seeding && currentDepth == startingDepth && evaluations.size > 1 && evaluations.stream().allMatch() { it.second == evaluations.first().second }) {
-            val randomMove = evaluations.random()
-            return StorageRecord(game.storageRecordPrimaryKey, randomMove.first, randomMove.second, game.currentPlayer)
-        }
-
-         */
 
         val finalMove = StorageRecord(game.storageRecordPrimaryKey, minOrMax.first, minOrMax.second, game.currentPlayer)
 

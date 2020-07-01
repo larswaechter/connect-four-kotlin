@@ -5,9 +5,19 @@ package connect.four
 
 fun main() {
 
-    val game = ConnectFour.playRandomMoves(40)
+    Minimax.Storage.seedByMovesPlayed(5000, 40)
 
-    println(game.board.inverseMatrix())
+
+    /*
+
+    val game = ConnectFour.playRandomMoves(28)
+
+    println(game.currentPlayer)
+    println(game)
+
+    println(game.minimax())
+
+     */
 
     // Minimax.Storage.seedByMovesPlayed(5000, 40)
 
