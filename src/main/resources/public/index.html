@@ -1,5 +1,6 @@
 <html lang="de">
 <head>
+    <meta charset="utf-8"/>
     <title>Vier-Gewinnt</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
           crossorigin="anonymous">
@@ -20,44 +21,44 @@
                 <p>It uses utility classes for typography and spacing to space content out within the larger
                     container.</p>
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#setup-modal">
-                    Start new game
+                    Spiel starten
                 </button>
                 <button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#join-modal">
-                    Join game
+                    Spiel beitreten
                 </button>
             </div>
         </div>
         <div class="col-12" id="board-wrapper"></div>
     </div>
 </div>
-<!-- Modal -->
+<!-- Spiel starten - Modal -->
 <div class="modal fade" id="setup-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
      aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">New game</h5>
+                <h5 class="modal-title">Neues Spiel</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="players">Select players</label>
+                    <label for="players">Wähle Anzahl der Spieler</label>
                     <select class="form-control" id="players">
                         <option value="1">1</option>
                         <option value="2">2</option>
                     </select>
                 </div>
                 <div class="form-group d-none" id="players-mode-form">
-                    <label for="players">Select mode</label>
+                    <label for="players">Wähle Spielmodus</label>
                     <select class="form-control" id="players-mode">
-                        <option value="1">Local</option>
+                        <option value="1">Lokal</option>
                         <option value="2">Online</option>
                     </select>
                 </div>
                 <div class="form-group" id="difficulty-form">
-                    <label for="difficulty">Select difficulty</label>
+                    <label for="difficulty">Wähle Schwierigkeitsstufe</label>
                     <select class="form-control" id="difficulty">
                         <option value="1">Easy</option>
                         <option value="2">Medium</option>
@@ -66,20 +67,20 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="start-game">Start</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+                <button type="button" class="btn btn-primary" id="start-game">Starten</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal join -->
+<!-- Spiel beitreten - Modal -->
 <div class="modal fade" id="join-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
      aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Join game</h5>
+                <h5 class="modal-title">Spiel beitreten</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -91,8 +92,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="join-game">Join</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
+                <button type="button" class="btn btn-primary" id="join-game">Beitreten</button>
             </div>
         </div>
     </div>

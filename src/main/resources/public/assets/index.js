@@ -11,6 +11,8 @@ const $players = document.querySelector("#players")
 const $playersMode = document.querySelector("#players-mode")
 const $playersModeForm = document.querySelector("#players-mode-form")
 
+const $sessionID = document.querySelector("#sessionID")
+
 const $difficulty = document.querySelector("#difficulty")
 const $difficultyForm = document.querySelector("#difficulty-form")
 
@@ -108,7 +110,7 @@ const createOnlineGame = () => {
 }
 
 const joinOnlineGame = () => {
-    const sessionID = document.querySelector("#sessionID").value
+    const sessionID = $sessionID.value
     game = new OnlineGame(sessionID)
     game.join()
 }
@@ -128,9 +130,12 @@ $startBtn.addEventListener("click", function () {
 })
 
 $joinBtn.addEventListener("click", function () {
-    $("#join-modal").modal("hide")
-    $("#welcome").hide()
-    joinOnlineGame()
+    if($sessionID.value.length == 16) {
+        $sessionID.classList.remove("is-invalid")
+        $("#join-modal").modal("hide")
+        $("#welcome").hide()
+        joinOnlineGame()
+    } else $sessionID.classList.add("is-invalid")
 })
 
 $players.addEventListener("change", function () {
