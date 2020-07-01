@@ -10,6 +10,13 @@ import java.io.File
  * @param [Move] the type of a move
  */
 interface Minimax<Board, Move> {
+
+    /**
+     * Storage class used to represent different transposition tables as storages.
+     * Each instance holds its own transposition table.
+     *
+     * @param [index] storage index
+     */
     class Storage(private val index: Int) {
         private val filename: String = getFilename(this.index)
         private var mapInitialized: Boolean = false
