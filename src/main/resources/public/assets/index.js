@@ -1,7 +1,3 @@
-// window.onload = () => {
-
-let game = null;
-
 const $content = document.querySelector("#board-wrapper")
 
 const $startBtn = document.querySelector("#start-game")
@@ -15,6 +11,8 @@ const $sessionID = document.querySelector("#sessionID")
 
 const $difficulty = document.querySelector("#difficulty")
 const $difficultyForm = document.querySelector("#difficulty-form")
+
+let game = null;
 
 class Game {
     constructor(id) {
@@ -147,5 +145,3 @@ $players.addEventListener("change", function () {
         $difficultyForm.classList.remove("d-none")
     }
 })
-// }
-

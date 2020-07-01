@@ -180,10 +180,10 @@ class ConnectFour(
         return bestScore
     }
 
-    override fun getPossibleMoves(): List<Move> {
+    override fun getPossibleMoves(shuffle: Boolean): List<Move> {
         val possibleMoves: MutableList<Move> = mutableListOf()
         for (col in this.board.indices) if (!this.isColFull(col)) possibleMoves.add(Move(col))
-        return possibleMoves.toList()
+        return if(shuffle) possibleMoves.shuffled() else possibleMoves.toList()
     }
 
     override fun getNumberOfRemainingMoves(): Int = this.board.sumBy { col -> col.count { cell -> cell == 0 } }
@@ -292,15 +292,13 @@ class ConnectFour(
             )
 
             // Play random moves until game is over
-            while (!game.isGameOver()) {
-                game = game.move(game.getRandomMove())
-            }
+            while (!game.isGameOver()) game = game.move(game.getRandomMove())
 
             // Update stats based on winner
             when (game.getWinner()) {
+                -this.currentPlayer -> stats = Triple(stats.first + 1, stats.second, stats.third)
                 0 -> stats = Triple(stats.first, stats.second + 1, stats.third)
-                this.currentPlayer -> Triple(stats.first, stats.second, stats.third + 1)
-                -this.currentPlayer -> Triple(stats.first + 1, stats.second, stats.third)
+                this.currentPlayer -> stats = Triple(stats.first, stats.second, stats.third + 1)
             }
         }
 

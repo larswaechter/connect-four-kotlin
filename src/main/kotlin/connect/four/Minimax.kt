@@ -263,9 +263,10 @@ interface Minimax<Board, Move> {
     /**
      * Get list of all possible moves
      *
+     * @param [shuffle] shuffle list
      * @return List of possible moves
      */
-    fun getPossibleMoves(): List<Move>
+    fun getPossibleMoves(shuffle: Boolean = false): List<Move>
 
     /**
      * Get maximum number of remaining moves until game is finished

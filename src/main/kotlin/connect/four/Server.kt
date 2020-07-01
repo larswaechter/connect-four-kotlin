@@ -6,7 +6,7 @@ import io.javalin.websocket.WsMessageContext
 
 class Server {
     private val localGames: HashMap<String, ConnectFour> = hashMapOf()
-    private val onlineGames: HashMap<String, GameLobby> = hashMapOf()
+    private val onlineGames: HashMap<String, Lobby> = hashMapOf()
 
     enum class Alert {
         warning, danger
@@ -72,7 +72,7 @@ class Server {
                 // Validate session-id
                 if (this.isValidSessionID(id)) {
                     // Create new game lobby
-                    val newGame = GameLobby(ctx, null, ctx.sessionId)
+                    val newGame = Lobby(ctx, null, ctx.sessionId)
 
                     // Update in HashMap
                     this.onlineGames[id] = newGame

@@ -5,12 +5,15 @@ package connect.four
 
 fun main() {
 
-    Server()
+    val bestMove = ConnectFour.playRandomMoves(40).mcm()
+
+
+    // Server()
 
     // train()
 
 
-    // Minimax.Storage.seedByMovesPlayed(2000, 40)
+    // Minimax.Storage.seedByMovesPlayed(5, 40)
     // Minimax.Storage.seedByMovesPlayed(2000, 40)
 
 
