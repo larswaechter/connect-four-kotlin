@@ -4,69 +4,16 @@
 package connect.four
 
 import io.javalin.Javalin
+import io.javalin.websocket.WsMessageContext
 
 class App {
-    init {
-        val games: HashMap<String, ConnectFour> = hashMapOf()
-        val gameLobbies: HashMap<String, GameLobby> = hashMapOf()
+    private val games: HashMap<String, ConnectFour> = hashMapOf()
+    private val gameLobbies: HashMap<String, GameLobby> = hashMapOf()
 
+    init {
         val app = Javalin.create { config ->
             config.addStaticFiles("/public")
         }.start(7070)
-
-        app.ws("/ws/create/:id") { ws ->
-            ws.onConnect { ctx ->
-                val id = ctx.pathParam("id")
-                val newGame = GameLobby(ctx, null, ctx.sessionId)
-                gameLobbies[id] = newGame
-                ctx.send("Waiting for another player...")
-            }
-
-            ws.onMessage() { ctx ->
-                val id = ctx.pathParam("id")!!
-                var lobby = gameLobbies[id]!!
-
-                if (ctx.sessionId == lobby.currentPlayerSessionID) {
-                    lobby.game = lobby.game.move(Move(ctx.message().toInt()))
-                    lobby.currentPlayerSessionID = lobby.playerTwoSocket!!.sessionId
-                    gameLobbies[id] = lobby
-                }
-
-                lobby.playerOneSocket!!.send(lobby.game.toHTML())
-                lobby.playerTwoSocket!!.send(lobby.game.toHTML())
-            }
-        }
-
-        app.ws("/ws/join/:id") { ws ->
-            ws.onConnect { ctx ->
-                val id = ctx.pathParam("id")
-
-                if (gameLobbies.containsKey(id)) {
-                    val game = gameLobbies[id]!!
-                    game.playerTwoSocket = ctx
-                    gameLobbies[id] = game
-
-                    game.playerOneSocket!!.send(game.game.toHTML())
-                    game.playerTwoSocket!!.send(game.game.toHTML())
-                } else {
-                    ctx.send("Lobby not found!")
-                }
-            }
-
-            ws.onMessage() { ctx ->
-                val id = ctx.pathParam("id")!!
-                var lobby = gameLobbies[id]!!
-
-                if (ctx.sessionId == lobby.currentPlayerSessionID) {
-                    lobby.game = lobby.game.move(Move(ctx.message().toInt()))
-                    lobby.currentPlayerSessionID = lobby.playerOneSocket!!.sessionId
-                    gameLobbies[id] = lobby
-                }
-
-                lobby.playerOneSocket!!.send(lobby.game.toHTML())
-                lobby.playerTwoSocket!!.send(lobby.game.toHTML())
-            }
-        }
 
         app.get("/start/:id") { ctx ->
             val id = ctx.pathParam("id")
@@ -103,6 +50,63 @@ class App {
                     ctx.html(game.toHTML())
                 }
             }
+        }
+
+        app.ws("/ws/create/:id") { ws ->
+            ws.onConnect { ctx ->
+                val id = ctx.pathParam("id")
+
+                if (id.matches(Regex("[a-z]{16}"))) {
+                    val newGame = GameLobby(ctx, null, ctx.sessionId)
+                    gameLobbies[id] = newGame
+                    ctx.send("<p class='text-center'>Waiting for another player...</p>")
+                } else {
+                    ctx.send("Invalid session id")
+                }
+            }
+            ws.onMessage() { ctx -> this.handleWebsocketMessage(ctx) }
+        }
+
+        app.ws("/ws/join/:id") { ws ->
+            ws.onConnect { ctx ->
+                val id = ctx.pathParam("id")
+
+                if (id.matches(Regex("[a-z]{16}")) && gameLobbies.containsKey(id)) {
+                    val game = gameLobbies[id]!!
+                    game.playerTwoSocket = ctx
+                    gameLobbies[id] = game
+
+                    game.playerOneSocket!!.send(game.game.toHTML())
+                    game.playerTwoSocket!!.send(game.game.toHTML())
+                } else {
+                    ctx.send("Lobby not found!")
+                }
+            }
+
+            ws.onMessage() { ctx -> this.handleWebsocketMessage(ctx) }
+        }
+    }
+
+    private fun handleWebsocketMessage(ctx: WsMessageContext) {
+        val id = ctx.pathParam("id")!!
+        val column = ctx.message()
+
+        if (id.matches(Regex("[a-z]{16}")) && gameLobbies.containsKey(id) && column.matches(Regex("^[0-6]\$"))) {
+            val lobby = gameLobbies[id]!!
+
+            if (ctx.sessionId == lobby.currentPlayerSessionID) {
+                lobby.game = lobby.game.move(Move(column.toInt()))
+                lobby.currentPlayerSessionID = when (lobby.currentPlayerSessionID) {
+                    lobby.playerOneSocket!!.sessionId -> lobby.playerTwoSocket!!.sessionId
+                    else -> lobby.playerOneSocket!!.sessionId
+                }
+                gameLobbies[id] = lobby
+            }
+
+            lobby.playerOneSocket!!.send(lobby.game.toHTML())
+            lobby.playerTwoSocket!!.send(lobby.game.toHTML())
+        } else {
+            ctx.send("Invalid request!")
         }
     }
 }
