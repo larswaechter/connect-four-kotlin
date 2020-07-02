@@ -21,6 +21,8 @@ class Server {
             config.addStaticFiles("/public")
         }.start(7070)
 
+        Minimax.Storage.registerStorages<Move>()
+
         app.get("/start/:id") { ctx ->
             val id = ctx.pathParam("id")
             val paramPlayers = ctx.queryParam("players", "0")!!

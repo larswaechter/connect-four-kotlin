@@ -7,7 +7,6 @@ fun main() {
 
     Minimax.Storage.seedByMovesPlayed<Move>(5000, 40)
 
-
     /*
 
     val game = ConnectFour.playRandomMoves(28)

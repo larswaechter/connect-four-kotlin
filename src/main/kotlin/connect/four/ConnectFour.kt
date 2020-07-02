@@ -77,7 +77,7 @@ class ConnectFour(
         return ConnectFour(newBoard, -currentPlayer, this.difficulty, this.numberOfPlayedMoves + 1, this.multiplayer)
     }
 
-    override fun getStorageRecordKeys(): List<Pair<Int, (storageRecord: Minimax.StorageRecord<Move>) -> Minimax.StorageRecord<Move>?>> {
+    override fun getStorageRecordKeys(): List<Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?>> {
 
         /**
          * Applying the following actions to the board do not change its evaluation
@@ -89,37 +89,37 @@ class ConnectFour(
          */
 
         // PrimaryRecordKey
-        val key1: Pair<Int, (storageRecord: Minimax.StorageRecord<Move>) -> Minimax.StorageRecord<Move>?> =
+        val key1: Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
                 Pair(this.storageRecordPrimaryKey, { storageRecord ->
                     if (this.currentPlayer == storageRecord.player) storageRecord
                     else null
                 })
 
         // Inverse -> We have to inverse the score and player
-        val key2: Pair<Int, (storageRecord: Minimax.StorageRecord<Move>) -> Minimax.StorageRecord<Move>?> =
+        val key2: Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
                 Pair(this.board.inverseMatrix().contentDeepHashCode(), { storageRecord ->
                     if (this.currentPlayer != storageRecord.player)
-                        Minimax.StorageRecord(storageRecord.key, storageRecord.move!!, -storageRecord.score, -storageRecord.player)
+                        Minimax.Storage.Record(storageRecord.key, storageRecord.move!!, -storageRecord.score, -storageRecord.player)
                     else null
                 })
 
         val boardMirrored = this.board.mirrorYAxis()
 
         // Mirror -> We also have to mirror the move
-        val key3: Pair<Int, (storageRecord: Minimax.StorageRecord<Move>) -> Minimax.StorageRecord<Move>?> =
+        val key3: Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
                 Pair(boardMirrored.contentDeepHashCode(), { storageRecord ->
                     if (this.currentPlayer == storageRecord.player) {
                         val newMove = storageRecord.move!!.mirrorYAxis()
-                        Minimax.StorageRecord(storageRecord.key, newMove, storageRecord.score, storageRecord.player)
+                        Minimax.Storage.Record(storageRecord.key, newMove, storageRecord.score, storageRecord.player)
                     } else null
                 })
 
         // Mirror and Inverse -> We also have to mirror the move and inverse the score and player
-        val key4: Pair<Int, (storageRecord: Minimax.StorageRecord<Move>) -> Minimax.StorageRecord<Move>?> =
+        val key4: Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
                 Pair(boardMirrored.inverseMatrix().contentDeepHashCode(), { storageRecord ->
                     if (this.currentPlayer != storageRecord.player) {
                         val newMove = storageRecord.move!!.mirrorYAxis()
-                        Minimax.StorageRecord(storageRecord.key, newMove, -storageRecord.score, -storageRecord.player)
+                        Minimax.Storage.Record(storageRecord.key, newMove, -storageRecord.score, -storageRecord.player)
                     } else null
                 })
 
