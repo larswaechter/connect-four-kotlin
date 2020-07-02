@@ -5,7 +5,7 @@ package connect.four
 
 fun main() {
 
-    Minimax.Storage.seedByMovesPlayed(5000, 40)
+    Minimax.Storage.seedByMovesPlayed<Move>(5000, 40)
 
 
     /*
@@ -50,7 +50,7 @@ fun main() {
 
 fun train() {
     for (i in 3 downTo 1) {
-        for (k in 1..3) Minimax.Storage.seedByMovesPlayed(2500, i)
+        for (k in 1..3) Minimax.Storage.seedByMovesPlayed<Move>(2500, i)
     }
 }
 

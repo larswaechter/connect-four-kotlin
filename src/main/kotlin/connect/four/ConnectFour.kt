@@ -2,7 +2,6 @@ package connect.four
 
 import kotlin.math.*
 
-
 /**
  * Helper method to deeply copy matrix
  *
@@ -91,7 +90,7 @@ class ConnectFour(
 
         // PrimaryRecordKey
         val key1: Pair<Int, (storageRecord: Minimax.StorageRecord<Move>) -> Minimax.StorageRecord<Move>?> =
-                Pair(this.board.contentDeepHashCode(), { storageRecord ->
+                Pair(this.storageRecordPrimaryKey, { storageRecord ->
                     if (this.currentPlayer == storageRecord.player) storageRecord
                     else null
                 })

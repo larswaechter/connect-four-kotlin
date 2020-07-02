@@ -17,7 +17,7 @@ interface Minimax<Board, Move> {
      *
      * @param [index] storage index
      */
-    class Storage(private val index: Int) {
+    class Storage<Move>(private val index: Int) {
         private val filename: String = getFilename(this.index)
         private var mapInitialized: Boolean = false
         var map: HashMap<Int, StorageRecord<Move>> = HashMap()
@@ -26,14 +26,14 @@ interface Minimax<Board, Move> {
             private const val numberOfTranspositionTables = 14
             private const val treeDepthTranspositionTables = 8
             private const val transpositionTablesPath = "src/main/resources/transposition_tables"
-            private val storages: Array<Storage?> = Array(numberOfTranspositionTables) { null }
+            private val storages: Array<Storage<*>?> = Array(numberOfTranspositionTables) { null }
 
             /**
              * Register all storages.
              * You might want to do this on app start
              */
-            fun registerStorages() {
-                for (i in storages.indices) Storage(i).register()
+            fun <Move> registerStorages() {
+                for (i in storages.indices) Storage<Move>(i).register()
             }
 
             /**
@@ -43,10 +43,10 @@ interface Minimax<Board, Move> {
              * @param [index] storage index
              * @return Storage
              */
-            fun doStorageLookup(index: Int): Storage {
+            fun <Move> doStorageLookup(index: Int): Storage<Move> {
                 assert(index in 0 until numberOfTranspositionTables)
-                Storage(index).register()
-                return storages[index]!!
+                Storage<Move>(index).register()
+                return storages[index]!! as Storage<Move>
             }
 
             /**
@@ -58,28 +58,23 @@ interface Minimax<Board, Move> {
              * @param [amount] number of data records
              * @param [movesPlayed] number of played moves
              * */
-            fun seedByMovesPlayed(amount: Int, movesPlayed: Int) {
+            fun <Move> seedByMovesPlayed(amount: Int, movesPlayed: Int) {
                 println("\nStart seeding storage for #$movesPlayed played moves...")
 
                 val startTime = System.currentTimeMillis()
                 val newHashMap: HashMap<Int, StorageRecord<Move>> = HashMap()
 
-                // Make sure that we evaluate bestMove for the AI (player -1)
-                val startingPlayer = if (movesPlayed % 2 == 0) -1 else 1
-
                 var countNewRecords = 0
                 var countIterations = 0
 
                 var game: ConnectFour
-                var storage: Storage
+                var storage: Storage<Move>
 
                 outer@
                 do {
-                    game = ConnectFour.playRandomMoves(movesPlayed, startingPlayer)
+                    game = ConnectFour.playRandomMoves(movesPlayed)
                     storage = doStorageLookup(game.storageIndex)
 
-                    // Make sure that we evaluate bestMove for the AI (player -1)
-                    assert(game.currentPlayer == -1)
                     assert(game.getNumberOfRemainingMoves() > 0)
 
                     countIterations++
@@ -92,7 +87,7 @@ interface Minimax<Board, Move> {
                     countNewRecords++
 
                     val storageRecord = game.minimax(currentDepth = treeDepthTranspositionTables, seeding = true)
-                    newHashMap[storageRecord.key!!] = storageRecord
+                    newHashMap[storageRecord.key!!] = storageRecord as StorageRecord<Move>
 
                 } while (countIterations < amount)
 
@@ -169,12 +164,12 @@ interface Minimax<Board, Move> {
          *
          * @return HashMap for played moves
          */
-        private fun readMap(): HashMap<Int, StorageRecord<Move>> {
+        private fun <Move> readMap(): HashMap<Int, StorageRecord<Move>> {
             val file = this.getFile()
             val map: HashMap<Int, StorageRecord<Move>> = HashMap()
 
             file.forEachLine {
-                val storageRecord = StorageRecord.ofStorageRecordString(it)
+                val storageRecord = StorageRecord.ofStorageRecordString<Move>(it)
                 map[storageRecord.key!!] = storageRecord
             }
 
@@ -209,9 +204,9 @@ interface Minimax<Board, Move> {
              * @param [storageRecordString] storage record string
              * @return instance of class
              */
-            fun ofStorageRecordString(storageRecordString: String): StorageRecord<Move> {
+            fun <M> ofStorageRecordString(storageRecordString: String): StorageRecord<M> {
                 val elements = storageRecordString.split(" ")
-                return StorageRecord(elements[0].toInt(), Move.ofStorageEntry(elements[1]), elements[2].toFloat(), elements[3].toInt())
+                return StorageRecord(elements[0].toInt(), Move.ofStorageEntry(elements[1]), elements[2].toFloat(), elements[3].toInt()) as StorageRecord<M>
             }
         }
 
@@ -295,7 +290,6 @@ interface Minimax<Board, Move> {
      */
     fun isGameOver(): Boolean
 
-
     /**
      * Do move and return new game
      *
@@ -348,7 +342,7 @@ interface Minimax<Board, Move> {
         var existsInStorage = false
 
         if (storageIndex >= 0) {
-            val storage = Storage.doStorageLookup(storageIndex) // Load storage
+            val storage = Storage.doStorageLookup<Move>(storageIndex) // Load storage
 
             // We check every possible key under which the field could be stored
             game.getStorageRecordKeys().forEach { storageRecordKey ->
@@ -357,7 +351,7 @@ interface Minimax<Board, Move> {
                     existsInStorage = true
 
                     // Create new move based on key
-                    val newStorageRecord = storageRecordKey.second(storageRecord as StorageRecord<Move>)
+                    val newStorageRecord = storageRecordKey.second(storageRecord)
                     if (newStorageRecord != null) return newStorageRecord
                 }
             }
@@ -388,7 +382,7 @@ interface Minimax<Board, Move> {
 
         // We add board evaluation temporary to storage if it does not already exist in it.
         if (!seeding && !existsInStorage && storageIndex >= 0)
-            Storage.doStorageLookup(storageIndex).map[game.storageRecordPrimaryKey] = finalMove as StorageRecord<connect.four.Move>
+            Storage.doStorageLookup<Move>(storageIndex).map[game.storageRecordPrimaryKey] = finalMove
 
         return finalMove
     }
