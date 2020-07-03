@@ -180,6 +180,9 @@ class ConnectFour(
     fun getNumberOfPlayedMoves() = this.history.size
 
     fun toHTML(): String {
+
+        // TODO: If fourInARow() -> output getWinner()
+
         var res = "<div class='board row mx-auto shadow-lg'>"
 
         for (i in 0..6) {

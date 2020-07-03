@@ -185,6 +185,9 @@ können wir den Eintrag aus dem Speicher lesen und weiterverarbeiten.
 Im Code werden alle möglichen Schlüssel eines Boards mittels der Methode `getStorageRecordKeys` erzeugt und in einer Liste zurückgegeben.
 Zu jedem Schlüssel gibt es zusätzlich noch eine Processing-Methode, welche benötigt wird, um den Speicher-Eintrag zu verarbeiten.
 
+Die Implementierung dieses Systems zeigt die Methode `getStorageRecordKeys` in `ConnectFour.kt`.
+Sollten sich neue Symmetrien finden lassen, kann man diese sehr einfach im Nachhinein in das System einbauen.
+
 ##### Processing-Methode
 
 Die Processing Methode wird benötigt, da nicht ohne Weiteres ein aus dem Speicher geladener Eintrag
@@ -216,8 +219,6 @@ Der `first` Value entspricht dem Schlüssel und der `second` Value beinhaltet di
 Um einen Eintrag im Speicher auf die Kritieren eines Schlüssels zu überprüfen,
 wird dieser als Argument beim Aufruf der Processing Methode mitgegeben.
 
-
-
 Sind alle Kritieren für einen Schlüssel erfüllt, gibt die Processing Methode eine neue Instanz der Klasse `Minimax.Storage.Record`
 mit angepassten Werten zurück und Minimax returned diese Instanz. Sind die Kritieren nicht erfüllt, wird `null` zurückgegeben worauf der ursprünglich im Speicher gefundene Eintrag verworfen
 und der nächste Schlüssel innerhalb von Minimax geprüft wird.
@@ -234,7 +235,15 @@ Folgende Skizze soll nochmal den Ablauf einer solchen Schlüsselüberprüfung ve
 
 ### Stellungsbewertung bei imperfektem Spiel
 
-Monte-Carlo-Methode
+Damit der Minimax-Algorithmus ein Board aus der Sicht eines beliebigen Spielers bewerten kann, ist eine `evaluate`-Methode notwendig.
+Im Projekt wurde eine solche Evaluierung mittels der **Monte-Carlo-Methode** umgesetzt.
+
+Hierbei wird ausgehend von einer gegebenen Stellung abwechselnd für jeden Spieler ein zufälliger Zug ausgeführt
+bis das Spiel beendet ist (keine Züge mehr möglich oder ein Gewinner steht fest). Dieses Vorgehen
+wird eine beliebige Anzahl Mal wiederholt.
+
+Anhand der Anzahl der Gewinne für einen gegebenen Spieler wird ein Score ermittelt, welcher als Evaluations-Wert dient.
+ 
 
 ### Verwendung einer Datenbank mit Stellungswerten
 
