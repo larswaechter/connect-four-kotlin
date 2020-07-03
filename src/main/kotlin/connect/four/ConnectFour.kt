@@ -33,16 +33,24 @@ fun Array<IntArray>.mirrorYAxis(): Array<IntArray> {
  */
 fun Array<IntArray>.inverseMatrix(): Array<IntArray> = Array(this.size) { get(it).clone().map { n -> -n }.toIntArray() }
 
-
+/**
+ * Class that represents a connect-four game
+ *
+ * @param [board] board 7x6 matrix
+ * @param [currentPlayer] current player
+ * @param [difficulty] AI strength
+ * @param [history] history of boards
+ * @param [multiplayer] playing vs ai or another human player
+ */
 class ConnectFour(
         override val board: Array<IntArray> = Array(7) { IntArray(6) },
         override val currentPlayer: Int = 1,
         override val difficulty: Int = 10,
-        private val numberOfPlayedMoves: Int = 0,
+        private val history: List<Array<IntArray>> = listOf(),
         val multiplayer: Boolean = false) : Minimax<Array<IntArray>, Move> {
 
     // Storage index based on number of played moves -> In steps of three
-    override val storageIndex = ceil((this.numberOfPlayedMoves.toDouble() / 3)).toInt() - 1
+    override val storageIndex = ceil((this.getNumberOfPlayedMoves().toDouble() / 3)).toInt() - 1
     override val storageRecordPrimaryKey: Int = this.board.contentDeepHashCode()
 
     companion object {
@@ -50,17 +58,15 @@ class ConnectFour(
          * Play exactly n given random moves with ending up in a draw position.
          * This method is mainly used to create different random game positions for the transposition tables.
          *
-         * TODO: Replace recursive call with undoing last x (4?) moves
-         *
          * @param [n] number of moves to play
          * @param [startingPlayer] starting player
          * @return game with n played moves
          */
-        fun playRandomMoves(n: Int, startingPlayer: Int = 1): ConnectFour {
-            var game = ConnectFour(currentPlayer = startingPlayer)
+        fun playRandomMoves(n: Int): ConnectFour {
+            var game = ConnectFour()
             for (i in 1..n) {
                 game = game.move(game.getRandomMove())
-                if (game.fourInARow()) return playRandomMoves(n, startingPlayer)
+                if (game.fourInARow()) return playRandomMoves(n)
             }
             return game
         }
@@ -74,7 +80,27 @@ class ConnectFour(
         val row = this.board[move.column].indexOfLast { n -> n == 0 }
         newBoard[move.column][row] = this.currentPlayer
 
-        return ConnectFour(newBoard, -currentPlayer, this.difficulty, this.numberOfPlayedMoves + 1, this.multiplayer)
+        return ConnectFour(
+                newBoard,
+                -currentPlayer,
+                this.difficulty,
+                this.history.plusElement(this.board),
+                this.multiplayer
+        )
+    }
+
+    override fun undoMove(number: Int): ConnectFour {
+        assert(number <= this.history.size)
+
+        val nextPlayer: Int = if (number % 2 == 0) this.currentPlayer else -this.currentPlayer
+
+        return ConnectFour(
+                if(number > 0) this.history[this.history.size - number] else this.board,
+                nextPlayer,
+                this.difficulty,
+                this.history.subList(0, this.history.size - number),
+                this.multiplayer
+        )
     }
 
     override fun getStorageRecordKeys(): List<Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?>> {
@@ -126,80 +152,11 @@ class ConnectFour(
         return listOf(key1, key2, key3, key4)
     }
 
-    override fun isGameOver(): Boolean = this.fourInARow() || this.numberOfPlayedMoves == 42
+    override fun isGameOver(): Boolean = this.fourInARow() || this.getNumberOfPlayedMoves() == 42
 
     override fun hasWinner(): Boolean = this.fourInARow()
 
     override fun evaluate(depth: Int): Float = this.mcm()
-
-    fun evaluate2(depth: Int): Float {
-        var bestScore = 0F
-
-        /**
-         * Calculate board evaluation score based on number of chips in a row and already existing best score
-         * - 4 in a row: 200 (see below)
-         * - 3 in a row: 100
-         * - 2 in a row:  50
-         *
-         * @params [sum] number of chips in a row
-         * @return score
-         */
-        fun calcScore(sum: Int): Float {
-            val newScore = when (sum) {
-                3 -> (if (sum == abs(sum) * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 100F
-                2 -> (if (sum == abs(sum) * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * 50F
-                else -> 0F
-            }
-
-            return if (this.currentPlayer == 1) max(newScore, bestScore) else min(newScore, bestScore)
-        }
-
-        // Evaluate vertically
-        for (row in this.board.indices) {
-            for (col in 0 until this.board[row].size - 3) {
-                val sum = this.board[row][col] + this.board[row][col + 1] + this.board[row][col + 2] + this.board[row][col + 3]
-                val sumAbs = abs(sum)
-                if (sumAbs == 4)
-                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * Minimax.maxBoardEvaluationScore
-                bestScore = calcScore(sum)
-            }
-        }
-
-        // Evaluate horizontally
-        for (col in this.board[0].indices) {
-            for (row in 0 until this.board.size - 3) {
-                val sum = this.board[row][col] + this.board[row + 1][col] + this.board[row + 2][col] + this.board[row + 3][col]
-                val sumAbs = abs(sum)
-                if (sumAbs == 4)
-                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * Minimax.maxBoardEvaluationScore
-                bestScore = calcScore(sum)
-            }
-        }
-
-        // Evaluate diagonal top-right to bottom-left
-        for (col in 3 until this.board.size) {
-            for (row in 0 until this.board[col].size - 3) {
-                val sum = this.board[col][row] + this.board[col - 1][row + 1] + this.board[col - 2][row + 2] + this.board[col - 3][row + 3]
-                val sumAbs = abs(sum)
-                if (sumAbs == 4)
-                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * Minimax.maxBoardEvaluationScore
-                bestScore = calcScore(sum)
-            }
-        }
-
-        // Evaluate diagonal top-left to bottom-right
-        for (col in 3 until this.board.size) {
-            for (row in 3 until this.board[col].size) {
-                val sum = this.board[col][row] + this.board[col - 1][row - 1] + this.board[col - 2][row - 2] + this.board[col - 3][row - 3]
-                val sumAbs = abs(sum)
-                if (sumAbs == 4)
-                    return (if (sum == sumAbs * this.currentPlayer) this.currentPlayer else -this.currentPlayer) * Minimax.maxBoardEvaluationScore
-                bestScore = calcScore(sum)
-            }
-        }
-
-        return bestScore
-    }
 
     override fun getPossibleMoves(shuffle: Boolean): List<Move> {
         val possibleMoves: MutableList<Move> = mutableListOf()
@@ -207,7 +164,7 @@ class ConnectFour(
         return if (shuffle) possibleMoves.shuffled() else possibleMoves.toList()
     }
 
-    override fun getNumberOfRemainingMoves(): Int = this.board.sumBy { col -> col.count { cell -> cell == 0 } }
+    override fun getNumberOfRemainingMoves(): Int = 42 - this.getNumberOfPlayedMoves()
 
     override fun toString(): String {
         var res = ""
@@ -219,6 +176,8 @@ class ConnectFour(
 
         return res
     }
+
+    fun getNumberOfPlayedMoves() = this.history.size
 
     fun toHTML(): String {
         var res = "<div class='board row mx-auto shadow-lg'>"
@@ -255,7 +214,7 @@ class ConnectFour(
      * @return if four in a row
      */
     fun fourInARow(): Boolean {
-        if (this.numberOfPlayedMoves < 7) return false
+        if (this.getNumberOfPlayedMoves() < 7) return false
 
         // Check vertically
         for (row in this.board.indices) {
@@ -309,7 +268,6 @@ class ConnectFour(
                     board = this.board.copyMatrix(),
                     currentPlayer = this.currentPlayer,
                     difficulty = this.difficulty,
-                    numberOfPlayedMoves = this.numberOfPlayedMoves,
                     multiplayer = this.multiplayer
             )
 

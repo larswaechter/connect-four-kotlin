@@ -5,7 +5,21 @@ package connect.four
 
 fun main() {
 
-    Minimax.Storage.seedByMovesPlayed<Move>(5000, 40)
+    var game = ConnectFour()
+
+    game = game.move(Move(0))
+    game = game.move(Move(0))
+    game = game.move(Move(0))
+    game = game.move(Move(0))
+
+    game = game.undoMove(0)
+    game = game.undoMove(2)
+
+    println(game)
+
+    println(game.getNumberOfPlayedMoves())
+
+    // Minimax.Storage.seedByMovesPlayed<Move>(5000, 40)
 
     /*
 

@@ -132,6 +132,9 @@ class Server {
 
             // Send notification if player exists
             playerToNotify?.send(createHtmlAlert(Alert.warning, "Your opponent has left the game. You won!"))
+
+            // Delete lobby
+            this.onlineGames.remove(id)
         }
     }
 

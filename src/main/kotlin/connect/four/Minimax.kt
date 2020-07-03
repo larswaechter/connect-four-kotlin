@@ -87,7 +87,7 @@ interface Minimax<Board, Move> {
                     countNewRecords++
 
                     val storageRecord = game.minimax(currentDepth = maxTreeDepthTranspositionTables, seeding = true)
-                    newHashMap[storageRecord.key!!] = storageRecord as Record<Move>
+                        newHashMap[storageRecord.key!!] = storageRecord as Record<Move>
 
                 } while (countIterations < amount)
 
@@ -230,8 +230,6 @@ interface Minimax<Board, Move> {
 
     /**
      * Current player
-     * - Player 1 should be human player
-     * - Player -1 should be the AI
      */
     val currentPlayer: Int
 
@@ -270,7 +268,7 @@ interface Minimax<Board, Move> {
     fun getPossibleMoves(shuffle: Boolean = false): List<Move>
 
     /**
-     * Get maximum number of remaining moves until game is finished
+     * Get maximum number of remaining moves until [isGameOver] is true
      *
      * @return max number of remaining moves
      */
@@ -284,7 +282,7 @@ interface Minimax<Board, Move> {
     fun hasWinner(): Boolean
 
     /**
-     * Check if no more moves are possible or a player has won
+     * Check if [getNumberOfRemainingMoves] is 0 or [hasWinner] is true
      *
      * @return is game over
      */
@@ -297,6 +295,14 @@ interface Minimax<Board, Move> {
      * @return new game with applied move
      */
     fun move(move: Move): Minimax<Board, Move>
+
+    /**
+     * Undo a number of moves
+     *
+     * @param [number] number of moves to undo
+     * @return new game with undone moves
+     */
+    fun undoMove(number: Int): Minimax<Board, Move>
 
     /**
      * Pick random move from possible moves list
@@ -358,7 +364,7 @@ interface Minimax<Board, Move> {
             }
         }
 
-        val possibleMoves = game.getPossibleMoves()
+        val possibleMoves = game.getPossibleMoves(true)
 
         // If there's a move which results in a win for the current player we immediately return this move.
         // This way we don't have to evaluate other possible moves.
