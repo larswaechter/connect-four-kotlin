@@ -185,7 +185,7 @@ interface Minimax<Board, Move> {
          * This class is used to represent records inside a storage.
          * - [toString] method is used to represent class in tables.
          *
-         * @property [key] primaryRecordKey for given board. Used to load record from storage
+         * @property [key] [storageRecordPrimaryKey] for given board. Used to load record from storage
          * @property [move] best move for given board
          * @property [score] evaluated score of move
          * @property [player] player who did the move

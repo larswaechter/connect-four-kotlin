@@ -129,7 +129,8 @@ Dieser geht je nach Schwierigkeitsstufe bis zur einer Tiefe von 10.
 ### Wiederverwendung von berechneten Stellungswerten
 
 Wie viele andere Spiele auch, beinhaltet Vier-Gewinnt einige Symmetrien in dessen Spielbrett,
-welche jeweils immer zu dem selben Ergebnis führen.
+welche jeweils immer zu dem selben Ergebnis führen. Die Verwendung solcher Symmetrien können einen großen Einfluss
+auf die Performance des Minimax-Algorithmus haben.
 
 Im Folgenden gehe ich genauer auf die verschieden Arten der Spielbrett-Symmetrien ein und wie diese
 im Code implementiert sind. Insgesamt gibt es drei Symmetrien:
@@ -152,8 +153,8 @@ Hinweis: In der Implementierung im Code beginnen die Spalten bei 0 und gehen bis
 
 Hierbei werden die einzelnen gesetzten Steine der Spieler invertiert.
 
-- Steine -1 <-> 1
 - Steine 1 <-> -1
+- Steine -1 <-> 1
 
 ##### 3. Spiegelung an der mittleren Y-Achse und invertierung des Spielboards
 
@@ -182,16 +183,15 @@ Die berechneten Schlüssel werden innerhalb des Minimax-Algorithmus verwendet, u
 ein Eintrag unter einem der jeweiligen Schlüssel in der Datenbank bzw. im Speicher vorliegt. Ist ein Schlüssel vorhanden,
 können wir den Eintrag aus dem Speicher lesen und weiterverarbeiten.
 
-Im Code werden alle möglichen Schlüssel eines Boards mittels der Methode `getStorageRecordKeys` erzeugt und in einer Liste zurückgegeben.
+Im Code werden alle möglichen Schlüssel eines Boards mittels der Methode `ConnectFour.getStorageRecordKeys` erzeugt und in einer Liste zurückgegeben.
 Zu jedem Schlüssel gibt es zusätzlich noch eine Processing-Methode, welche benötigt wird, um den Speicher-Eintrag zu verarbeiten.
 
-Die Implementierung dieses Systems zeigt die Methode `getStorageRecordKeys` in `ConnectFour.kt`.
-Sollten sich neue Symmetrien finden lassen, kann man diese sehr einfach im Nachhinein in das System einbauen.
+Sollten sich neue Symmetrien finden lassen, kann man diese sehr einfach im Nachhinein hinzufügen.
 
 ##### Processing-Methode
 
 Die Processing Methode wird benötigt, da nicht ohne Weiteres ein aus dem Speicher geladener Eintrag
-wieder verwendet werden darf. Je nach Schlüssel bzw. Symmetrie gibt es verschiedene Kritieren, die erfüllt sein müssen,
+verwendet werden darf. Je nach Schlüssel bzw. Symmetrie gibt es verschiedene Kritieren, die erfüllt sein müssen,
 damit ein Eintrag aus dem Speicher verwendet werden darf.
 
 Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Kritieren zu überprüfen.
@@ -227,7 +227,7 @@ und der nächste Schlüssel innerhalb von Minimax geprüft wird.
 
 Folgende Skizze soll nochmal den Ablauf einer solchen Schlüsselüberprüfung verdeutlichen:
 
-1. Zu Beginn des Minimax-Algorithmus werden alle Schlüssel für das aktuelle Board mittels der Funktion `getStorageRecordKeys` generiert und geladen
+1. Zu Beginn des Minimax-Algorithmus werden alle Schlüssel für das aktuelle Board mittels der Methode `ConnectFour.getStorageRecordKeys` generiert und geladen
 2. Nun wird über die einzelnen Schlüssel iteriert und geprüft ob ein Schlüssel im Speicher vorhanden ist
 3. Ist ein Schlüssel vorhanden, wird dessen verknüpfter Speichereintrag (`Storage.Record`) geladen
 4. Anschließend wird die Processing-Methode dieses Schlüssels mit dem verknüpften Speichereintrag aufgerufen
@@ -247,6 +247,82 @@ Anhand der Anzahl der Gewinne für einen gegebenen Spieler wird ein Score ermitt
 
 ### Verwendung einer Datenbank mit Stellungswerten
 
+Eine weitere Performance-Optimierung ist das Anlegen einer Datenbank, auch Transposition Tables genannt, bestehend aus bereits evaluierten Boards
+und deren bestmöglichen Züge. Der Minimax-Algorithmus muss also nicht jede mögliche Board-Stellung neu evaluieren,
+da manche bereits in der Datenbank vorhanden sind und immer wieder verwendet werden können.
+
+Im Folgenden Abschnitt wird die Umsetzung einer solchen Datenbank basierend auf mehreren .txt Dateien beschrieben.
+
+#### Verzeichnisstruktur der Datenbanken
+
+Die Transposition Tables sind auf 14 einzelne .txt Dateien aufgeteilt.
+
+Der Name einer solchen Datei ergibt sich wie folgt:
+
+`#index#_table_#playedMovesFrom#_#playedMovesTo#.txt`
+
+- index: Index der TP (aufsteigende Zahlen)
+- playedMovesFrom: 
+- playedMovesTo:
+
+In welche Transposition Table ein Eintrag geschrieben wird, hängt davon ab,
+wie viele Züge bisher gespielt wurden.
+
+
+
+
+#### Aufbau einer Datenbank
+
+Eine Transposition Table besteht aus mehreren Eintägen nach folgendem Schema:
+
+`#StorageRecordPrimaryKey# #Move# #Score# #Player#`
+
+- StorageRecordPrimaryKey: 
+- Move: der bestmögliche Zug in der jeweiligen Situation
+- Score: die Bewertung des Zugs
+- Player: der durchführende Spieler
+
+#### Befüllung der Datenbanken (Seeding)
+
+##### Beschreibung
+
+Da die Datenbanken basierend auf der Anzahl an gespielten Zügen voneinander getrennt sind,
+ist es möglich, gezielt einzelne Transposition Tables zu befüllen.
+
+Im Code ist dies mittels der Methode `Minimax.Storage.seedByMovesPlayed` möglich. Diese erwartet zwei Parameter:
+
+- `amount: Int` - Anzahl an Datensätzen, die erstellt werden sollen
+- `movesPlayed: Int` - Anzahl an gespielten Zügen
+
+Der Algorithmus generiert also `amount` viele Datensätze bestehend aus Spielen mit `movesPlayed` gespielten Zügen.
+
+##### Ablauf einer Befüllung
+
+1. Anlegen einer neuen leeren HashMap
+2. Erstellung eines Boards mit `movesPlayed` gespielten Zügen
+3. Überprüfung, ob Board bereits im Speicher vorhanden ist
+4. Berechung des bestmöglichen des Zugs für das Board mittels Minimax-Algorithmus
+5. Das Ergebnis in die neu angelegte HashMap hinzufügen
+
+Diese Prozedur wird genau `amount` Mal wiederholt. Wurden diese Wiederholungen alle abgearbeitet,
+wird die zuvor neu angelegte HashMap persistent in den jeweiligen Speicher geschrieben.
+
+Ist eine Board-Stellung
+bereits im Speicher vorhanden, wird dies im 3. Schritt erkannt und das Board wird übersprungen.
+
+Um ein Board mit einer genauen Anzahl an gespielten Zügen zu generieren,
+wird die Methode `ConnectFour.playRandomMoves` verwendet.
+
+Es ergibt sich als effizient, wenn man bei der Befüllung der Datenbanken
+erst Datensätze mit möglichst vielen gespielten Zügen generiert und diese Schrittweise reduziert.
+Hierdurch kann der Minimax-Algorithmus auf bereits vorhandene Einträge im Speicher zurückgreifen.
+
+
+### Programmierstil
+
+#### Immutabilität
+
+#### Interface
 
 ## Testing
 
