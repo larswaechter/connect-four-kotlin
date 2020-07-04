@@ -46,12 +46,12 @@ class ConnectFour(
         override val board: Array<IntArray> = Array(7) { IntArray(6) },
         override val currentPlayer: Int = 1,
         override val difficulty: Int = 5,
+        override val storageRecordPrimaryKey: Long = calcZobristHash(board),
         private val history: List<Array<IntArray>> = listOf(),
         val multiplayer: Boolean = false) : Minimax<Array<IntArray>, Move> {
 
     // Storage index based on number of played moves -> In steps of three
     override val storageIndex = ceil((this.getNumberOfPlayedMoves().toDouble() / 3)).toInt() - 1
-    override val storageRecordPrimaryKey: Int = this.board.contentDeepToString().hashCode()
 
     companion object {
         /**
@@ -59,7 +59,6 @@ class ConnectFour(
          * This method is mainly used to create different random game positions for the transposition tables.
          *
          * @param [n] number of moves to play
-         * @param [startingPlayer] starting player
          * @return game with n played moves
          */
         fun playRandomMoves(n: Int): ConnectFour {
@@ -69,6 +68,20 @@ class ConnectFour(
                 if (game.fourInARow()) return playRandomMoves(n)
             }
             return game
+        }
+
+        /**
+         * Calculate zobrist hash for a given board
+         *
+         * @param [board] board to hash
+         * @return hash for given board
+         */
+        fun calcZobristHash(board: Array<IntArray>): Long {
+            var hash = 0L
+            for (i in 0..6)
+                for (j in 0..5)
+                    if (board[i][j] != 0) hash = hash.xor(Minimax.Storage.doZobristTableLookup(i, j, board[i][j]))
+            return hash
         }
     }
 
@@ -80,12 +93,16 @@ class ConnectFour(
         val row = this.board[move.column].indexOfLast { n -> n == 0 }
         newBoard[move.column][row] = this.currentPlayer
 
+        // Calculate new zobrist hash
+        val newZobristHash = this.storageRecordPrimaryKey.xor(Minimax.Storage.doZobristTableLookup(move.column, row, this.currentPlayer))
+
         return ConnectFour(
-                newBoard,
-                -currentPlayer,
-                this.difficulty,
-                this.history.plusElement(this.board),
-                this.multiplayer
+                board = newBoard,
+                currentPlayer = -currentPlayer,
+                difficulty = this.difficulty,
+                storageRecordPrimaryKey = newZobristHash,
+                history = this.history.plusElement(this.board),
+                multiplayer = this.multiplayer
         )
     }
 
@@ -95,15 +112,15 @@ class ConnectFour(
         val nextPlayer: Int = if (number % 2 == 0) this.currentPlayer else -this.currentPlayer
 
         return ConnectFour(
-                if (number > 0) this.history[this.history.size - number] else this.board,
-                nextPlayer,
-                this.difficulty,
-                this.history.subList(0, this.history.size - number),
-                this.multiplayer
+                board = if (number > 0) this.history[this.history.size - number] else this.board,
+                currentPlayer = nextPlayer,
+                difficulty = this.difficulty,
+                history = this.history.subList(0, this.history.size - number),
+                multiplayer = this.multiplayer
         )
     }
 
-    override fun getStorageRecordKeys(): List<Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?>> {
+    override fun getStorageRecordKeys(): List<Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?>> {
 
         /**
          * Applying the following actions to the board do not change its evaluation
@@ -115,19 +132,18 @@ class ConnectFour(
          */
 
         // PrimaryRecordKey
-        val key1: Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
+        val key1: Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
                 Pair(this.storageRecordPrimaryKey, { storageRecord ->
-                    if (this.currentPlayer == storageRecord.player && storageRecord.move != null)
+                    if (this.currentPlayer == storageRecord.player)
                         storageRecord
-                    // Minimax.Storage.Record(storageRecord.key, storageRecord.move, storageRecord.score, storageRecord.player)
                     else null
                 })
 
         val boardMirrored = this.board.mirrorYAxis()
 
         // Mirror -> We also have to mirror the move
-        val key2: Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
-                Pair(boardMirrored.contentDeepToString().hashCode(), { storageRecord ->
+        val key2: Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
+                Pair(calcZobristHash(boardMirrored), { storageRecord ->
                     if (this.currentPlayer == storageRecord.player) {
                         val newMove = storageRecord.move!!.mirrorYAxis()
                         Minimax.Storage.Record(storageRecord.key, newMove, storageRecord.score, storageRecord.player)
@@ -135,16 +151,16 @@ class ConnectFour(
                 })
 
         // Inverse -> We have to inverse the score and player
-        val key3: Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
-                Pair(this.board.inverseMatrix().contentDeepToString().hashCode(), { storageRecord ->
+        val key3: Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
+                Pair(calcZobristHash(this.board.inverseMatrix()), { storageRecord ->
                     if (this.currentPlayer != storageRecord.player)
                         Minimax.Storage.Record(storageRecord.key, storageRecord.move!!, -storageRecord.score, this.currentPlayer)
                     else null
                 })
 
         // Mirror and Inverse -> We also have to mirror the move and inverse the score and player
-        val key4: Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
-                Pair(boardMirrored.inverseMatrix().contentDeepToString().hashCode(), { storageRecord ->
+        val key4: Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
+                Pair(calcZobristHash(boardMirrored.inverseMatrix()), { storageRecord ->
                     if (this.currentPlayer != storageRecord.player) {
                         val newMove = storageRecord.move!!.mirrorYAxis()
                         Minimax.Storage.Record(storageRecord.key, newMove, -storageRecord.score, this.currentPlayer)
@@ -178,11 +194,6 @@ class ConnectFour(
 
         return res
     }
-
-    /**
-     * We might also just return history.size but for testing purposes this ways is easier
-     */
-    fun getNumberOfPlayedMoves() = this.board.sumBy { col -> col.count { cell -> cell != 0 } }
 
     fun toHTML(): String {
 
@@ -273,7 +284,6 @@ class ConnectFour(
     fun mcm(numberOfSimulations: Int = 200): Float {
         // Defeats - Draws - Wins for current player
         var stats = Triple(0, 0, 0)
-
         val remainingMoves = this.getNumberOfRemainingMoves()
 
         // Simulate 100 games
@@ -281,7 +291,8 @@ class ConnectFour(
             // Copy only the essential properties
             var game = ConnectFour(
                     board = this.board.copyMatrix(),
-                    currentPlayer = this.currentPlayer
+                    currentPlayer = this.currentPlayer,
+                    storageRecordPrimaryKey = 1 // Prevent to calculate zobristHash
             )
 
             // Play random moves until game is over
@@ -313,6 +324,11 @@ class ConnectFour(
         assert(this.isGameOver())
         return if (this.fourInARow()) return -this.currentPlayer else 0
     }
+
+    /**
+     * We might also just return history.size but for testing purposes this ways is easier
+     */
+    private fun getNumberOfPlayedMoves() = this.board.sumBy { col -> col.count { cell -> cell != 0 } }
 
     /**
      * Check if the given column is full

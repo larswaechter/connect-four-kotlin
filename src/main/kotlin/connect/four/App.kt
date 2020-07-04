@@ -5,6 +5,10 @@ package connect.four
 
 fun main() {
 
+    Tests()
+
+    return
+
 
     /*
 

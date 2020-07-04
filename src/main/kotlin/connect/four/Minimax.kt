@@ -1,6 +1,8 @@
 package connect.four
 
 import java.io.File
+import kotlin.math.pow
+import kotlin.random.Random
 
 /**
  * Interface for implementing Minimax algorithm in two-player zero-sum games
@@ -20,12 +22,13 @@ interface Minimax<Board, Move> {
     class Storage<Move>(private val index: Int) {
         private val filename: String = getFilename(this.index)
         private var mapInitialized: Boolean = false
-        var map: HashMap<Int, Record<Move>> = HashMap()
+        var map: HashMap<Long, Record<Move>> = HashMap()
 
         companion object {
             private const val numberOfTranspositionTables = 14
             private const val maxTreeDepthTranspositionTables = 8
             private const val transpositionTablesPath = "src/main/resources/transposition_tables"
+            private val zobristTable: Array<Array<Array<Long>>> = buildZobristTable()
             private val storages: Array<Storage<*>?> = Array(numberOfTranspositionTables) { null }
 
             /**
@@ -62,7 +65,7 @@ interface Minimax<Board, Move> {
                 println("\nStart seeding storage for #$movesPlayed played moves...")
 
                 val startTime = System.currentTimeMillis()
-                val newHashMap: HashMap<Int, Record<Move>> = HashMap()
+                val newHashMap: HashMap<Long, Record<Move>> = HashMap()
 
                 var countNewRecords = 0
                 var countIterations = 0
@@ -111,6 +114,69 @@ interface Minimax<Board, Move> {
                 val to = from + 2
                 return "${id}_table_${from}_${to}.txt"
             }
+
+            /**
+             * Generate random zobrist keys and write them to storage file.
+             * Warning: If you do this, already existing transposition tables become invalid
+             */
+            fun generateZobristKeys() {
+                val file = File("$transpositionTablesPath/zobrist_keys.txt")
+                var res = ""
+
+                for (i in 0..6)
+                    for (j in 0..5)
+                        for (k in 0..1)
+                            res += "${Random.nextLong(2F.pow(64).toLong())}\n"
+
+                file.writeText(res)
+            }
+
+            /**
+             * Get zobrist keys for given positions
+             *
+             * @param [col]
+             * @param [row]
+             * @param [player]
+             * @return zobrist key for given positions
+             */
+            fun doZobristTableLookup(col: Int, row: Int, player: Int): Long = zobristTable[col][row][if (player == 1) 0 else 1]
+
+            /**
+             * Load zobrist table based on zobrist keys
+             *
+             * @return 3D array of keys
+             */
+            private fun buildZobristTable(): Array<Array<Array<Long>>> {
+                val keys = loadZobristKeys()
+                val table = Array(7) { Array(6) { Array(2) { 0L } } }
+
+                var count = 0
+                for (i in 0..6)
+                    for (j in 0..5)
+                        for (k in 0..1)
+                            table[i][j][k] = keys[count++]
+
+                return table
+            }
+
+            /**
+             * Load zobrist hash keys from .txt file
+             *
+             * @return array of keys
+             */
+            private fun loadZobristKeys(): Array<Long> {
+                val file = File("$transpositionTablesPath/zobrist_keys.txt")
+                val keys = Array<Long>(84) { 0 }
+
+                var count = 0
+                file.forEachLine {
+                    keys[count++] = it.toLong()
+                }
+
+                assert(keys.size == 84)
+
+                return keys
+            }
         }
 
         /**
@@ -118,7 +184,7 @@ interface Minimax<Board, Move> {
          *
          * @param [map] new HashMap to append
          */
-        fun appendMapToFile(map: HashMap<Int, Record<Move>>) {
+        fun appendMapToFile(map: HashMap<Long, Record<Move>>) {
             val file = this.getFile()
             var res = ""
 
@@ -164,9 +230,9 @@ interface Minimax<Board, Move> {
          *
          * @return HashMap for played moves
          */
-        private fun readMap(): HashMap<Int, Record<Move>> {
+        private fun readMap(): HashMap<Long, Record<Move>> {
             val file = this.getFile()
-            val map: HashMap<Int, Record<Move>> = HashMap()
+            val map: HashMap<Long, Record<Move>> = HashMap()
 
             file.forEachLine {
                 val storageRecord = Record.ofStorageRecordString<Move>(it)
@@ -191,7 +257,7 @@ interface Minimax<Board, Move> {
          * @property [player] player who did the move
          */
         class Record<Move>(
-                val key: Int?,
+                val key: Long?,
                 val move: Move?,
                 val score: Float,
                 val player: Int) {
@@ -205,7 +271,7 @@ interface Minimax<Board, Move> {
                  */
                 fun <M> ofStorageRecordString(storageRecordString: String): Record<M> {
                     val elements = storageRecordString.split(" ")
-                    return Record(elements[0].toInt(), Move.ofStorageEntry(elements[1]), elements[2].toFloat(), elements[3].toInt()) as Record<M>
+                    return Record(elements[0].toLong(), Move.ofStorageEntry(elements[1]), elements[2].toFloat(), elements[3].toInt()) as Record<M>
                 }
             }
 
@@ -240,7 +306,7 @@ interface Minimax<Board, Move> {
      * Primary key of current board for storage record.
      * Board evaluations are stored under this key.
      */
-    val storageRecordPrimaryKey: Int
+    val storageRecordPrimaryKey: Long
 
     /**
      * Evaluate game state for current player:
@@ -311,7 +377,7 @@ interface Minimax<Board, Move> {
      *
      * @return storage keys the board might be stored under
      */
-    fun getStorageRecordKeys(): List<Pair<Int, (record: Storage.Record<Move>) -> Storage.Record<Move>?>>
+    fun getStorageRecordKeys(): List<Pair<Long, (record: Storage.Record<Move>) -> Storage.Record<Move>?>>
 
     /**
      * Minimax algorithm that finds best move
@@ -359,7 +425,7 @@ interface Minimax<Board, Move> {
         val possibleMoves = game.getPossibleMoves(true)
 
         // If there's a move which results in a win for the current player we immediately return this move.
-        // This way we don't have to evaluate other possible moves.
+        // This way we don't have to evaluate other possible moves -> Performance :)
         possibleMoves.forEach { move ->
             val tmpGame = game.move(move)
             if (tmpGame.hasWinner())
