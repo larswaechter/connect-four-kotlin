@@ -119,7 +119,7 @@ Dieser Ordner beinhaltet mehrere sogenannte transposition tables.
 
 Folgender Abschnitt behandelt die im Projekt umgesetzte Spiel-Engine. Dies beinhaltet
 unter anderem die Wahl des AI Algorithmus zur Berechnung des bestmöglichen Zuges,
-dessen Performance-Optimierung und die Bewertung einer Spielsituation mittels der Monte-Carlo-Methode.
+dessen Performance-Optimierung als auch die Bewertung einer Spielsituation mittels der Monte-Carlo-Methode.
 
 ### Wahl des Algorithmus
 
@@ -130,10 +130,10 @@ Dieser geht je nach Schwierigkeitsstufe bis zur einer Tiefe von 10.
 
 Wie viele andere Spiele auch, beinhaltet Vier-Gewinnt einige Symmetrien in dessen Spielbrett,
 welche jeweils immer zu dem selben Ergebnis führen. Die Verwendung solcher Symmetrien können einen großen Einfluss
-auf die Performance des Minimax-Algorithmus haben.
+auf die Laufzeit des Minimax-Algorithmus haben.
 
-Im Folgenden gehe ich genauer auf die verschieden Arten der Spielbrett-Symmetrien ein und wie diese
-im Code implementiert sind. Insgesamt gibt es drei Symmetrien:
+Im folgenden Abschnitt wird genauer auf die verschieden Arten der Spielbrett-Symmetrien eingegangen und wie diese
+im Code implementiert sind. Insgesamt gibt es drei Symmetrien.
 
 #### Arten von Symmetrien
 
@@ -147,7 +147,49 @@ Hierbei werden die Spielsteine wie folgt getauscht:
 - Spalte 3 <-> 5
 - Spalte 4 <-> 4 (unverändert)
 
-Hinweis: In der Implementierung im Code beginnen die Spalten bei 0 und gehen bis 6.
+**Hinweis:** In der Implementierung im Code beginnen die Spalten bei 0 und gehen bis 6.
+
+Beispiel:
+
+```
+Board #1 (best move = 2)
+
+0  0  0  0  0  0  0
+0  0  0  0  0  0  0
+0  0  0  0  0  0  0
+0  1  0  0  0  0  0
+0  1  0 -1 -1  0  0
+0  1 -1  1 -1  0  0
+
+Board #2 (Board #1 gespiegelt) (best move = 6)
+
+0  0  0  0  0  0  0
+0  0  0  0  0  0  0
+0  0  0  0  0  0  0
+0  0  0  0  0  1  0
+0  0 -1 -1  0  1  0
+0  0 -1  1 -1  1  0
+```
+
+Ausgehend von einer Board-Stellung wie in `Board #1`, wäre für Spieler 1 der bestmögliche Zug,
+einen Stein in Spalte 2 zu werfen. Er hätte damit gewonnen.
+
+Ausgehend von einer Board-Stellung wie in `Board #2`, wäre für Spieler 1 der bestmögliche Zug,
+einen Stein in Spalte 6 zu werfen. Er hätte damit ebenfalls gewonnen.
+
+Hierbei ist zu erkennen, dass beide Board-Stellungen zu dem selben Ergebnis führen: Spieler 1 gewinnt.
+
+Hat man nun beispielsweise den bestmöglichen Zug für `Board #1` bereits berechnet
+und im Speicher vorliegen, kann man im Falle von `Board #2` das Board spiegeln,
+wodurch man `Board #1` erhält, und den bestmöglichen Zug von `Board #1` aus dem Speicher lesen und übernehmen.
+Wichtig hierbei ist, dass dieser Zug dann ebenfalls gespiegelt wird. Aus dem Zug `2` wird also `6`.
+
+Wichtig hierbei ist, dass dies nur gilt, wenn man die Board-Stellung in beiden Situationen
+aus der Sicht des selben Spielers (1) betrachtet. Für Spieler -1 wären die eben genannten
+Züge nämlich nicht die bestmöglichen.
+
+**Hinweis:** Maßnahmen zur Anpassung eines aus dem Speicher geladenen Zugs und wann diese verwendet werden dürfen
+werden, im Abschnitt "Processing-Methode" genauer behandelt.
 
 ##### 2. Invertierung des Spielboards
 
@@ -156,37 +198,69 @@ Hierbei werden die einzelnen gesetzten Steine der Spieler invertiert.
 - Steine 1 <-> -1
 - Steine -1 <-> 1
 
-##### 3. Spiegelung an der mittleren Y-Achse und invertierung des Spielboards
+Beispiel:
 
-Diese Symmetrie ist eine Kombination aus den ersten beiden.
+```
+Board #1 (best move = 2)
+
+0  0  0  0  0  0  0
+0  0  0  0  0  0  0
+0  0  0  0  0  0  0
+0  1  0  0  0  0  0
+0  1  0 -1 -1  0  0
+0  1 -1  1 -1  0  0
+
+Board #2 (Board #1 invertiert) (best move = 2, allerdings für Gegenspieler)
+
+0  0  0  0  0  0  0
+0  0  0  0  0  0  0
+0  0  0  0  0  0  0
+0 -1  0  0  0  0  0
+0 -1  0  1  1  0  0
+0 -1  1 -1  1  0  0
+```
+
+Ausgehend von einer Board-Stellung wie in `Board #1`, wäre für Spieler 1 der bestmögliche Zug,
+einen Stein in Spalte 2 zu werfen. Er hätte damit gewonnen.
+
+Ausgehend von einer Board-Stellung wie in `Board #2`, wäre für Spieler -1 der bestmögliche Zug,
+ebenfalls einen Stein in Spalte 2 zu werfen. Er hätte damit ebenfalls gewonnen.
+
+##### 3. Spiegelung an der mittleren Y-Achse und Invertierung des Spielboards
+
+Diese Symmetrie ist eine Kombination aus den ersten beiden. Zuerst wird das Board gespiegelt
+und anschließend invertiert.
 
 #### Implementierung der Symmetrien
 
 ##### Beschreibung
 
-Die verschiedenen Symmetrien wurden mittels einer Art von Schlüssel-System implementiert.
-Pro Board-Stellung gibt es vier verschiedene Schlüssel, welche aus dem `contentDeepHashCode` des Boards nach
+Die verschiedenen Symmetrien wurden mittels einer Art Schlüssel-System implementiert.
+Für jede mögliche Board-Stellung gibt es vier dazugehörige Schlüssel, welche aus dem Zobrist-Schlüssel des Boards nach
 Anwendung der jeweiligen Symmetrie erzeugt werden.
 
-Der erste Schlüssel ist der `storageRecordPrimaryKey`. Dieser repräsentiert den `contentDeepHashCode`
+##### Schlüssel Arten
+
+Der erste Schlüssel ist der `storageRecordPrimaryKey`. Dieser repräsentiert den reinen Zobrist-Schlüssel
 der aktuellen Board-Stellung ohne jegliche angewandte Symmetrie. Unter diesem Schlüssel werden
 berechnete Board-Stellungen in den HashMaps bzw. in den Transposition-Tables gespeichert.
-(Mehr dazu im Abschnitt "Verwendung einer Datenbank mit Stellungswerten")
 
-Die restlichen drei Schlüssel werden anhand der jeweiligen Symmetrien berechnet
+**Hinweis**: Die Berechnung des Zobrist-Schlüssel und die Speicherung von Board-Stellungen werden
+im Abschnitt "Verwendung einer Datenbank mit Stellungswerten" genauer behandelt.
 
-- Zweiter Schlüssel: 1. Symmetrie (Spiegelung) und `contentDeepHashCode`
-- Dritter Schlüssel: 2. Symmetrie (Invertierung) und `contentDeepHashCode`
-- Vierter Schlüssel: 3. Symmetrie (Spiegelung & Invertierung) und `contentDeepHashCode`
+De restlichen drei Schlüssel werden mittels des Zobrist-Schlüssel nach Anwendung einer
+Symmetrie auf das Board berechnet:
+
+- Zweiter Schlüssel: 1. Symmetrie (Spiegelung) und `calcZobristHash`
+- Dritter Schlüssel: 2. Symmetrie (Invertierung) und `calcZobristHash`
+- Vierter Schlüssel: 3. Symmetrie (Spiegelung & Invertierung) und `calcZobristHash`
 
 Die berechneten Schlüssel werden innerhalb des Minimax-Algorithmus verwendet, um zu überprüfen, ob bereits
-ein Eintrag unter einem der jeweiligen Schlüssel in der Datenbank bzw. im Speicher vorliegt. Ist ein Schlüssel vorhanden,
-können wir den Eintrag aus dem Speicher lesen und weiterverarbeiten.
+ein Eintrag unter einem der jeweiligen Schlüssel im Speicher vorliegt. Ist ein Schlüssel vorhanden,
+können wir den dazugehörigen Eintrag aus dem Speicher lesen und weiterverarbeiten.
 
-Im Code werden alle möglichen Schlüssel eines Boards mittels der Methode `ConnectFour.getStorageRecordKeys` erzeugt und in einer Liste zurückgegeben.
+Im Code werden alle möglichen Schlüssel eines Boards mit Hilfe der Methode `ConnectFour.getStorageRecordKeys` erzeugt und in einer Liste zurückgegeben.
 Zu jedem Schlüssel gibt es zusätzlich noch eine Processing-Methode, welche benötigt wird, um den Speicher-Eintrag zu verarbeiten.
-
-Sollten sich neue Symmetrien finden lassen, kann man diese sehr einfach im Nachhinein hinzufügen.
 
 ##### Processing-Methode
 
@@ -217,10 +291,11 @@ Ein Schlüssel und dessen Processing-Methode werden im Code als `Pair<>` repräs
 Der `first` Value entspricht dem Schlüssel und der `second` Value beinhaltet die Processing-Methode.
 
 Um einen Eintrag im Speicher auf die Kritieren eines Schlüssels zu überprüfen,
-wird dieser als Argument beim Aufruf der Processing Methode mitgegeben.
+wird dieser als Argument beim Aufruf der Processing Methode mit übergeben.
 
 Sind alle Kritieren für einen Schlüssel erfüllt, gibt die Processing Methode eine neue Instanz der Klasse `Minimax.Storage.Record`
-mit angepassten Werten zurück und Minimax returned diese Instanz. Sind die Kritieren nicht erfüllt, wird `null` zurückgegeben worauf der ursprünglich im Speicher gefundene Eintrag verworfen
+mit angepassten Werten zurück und Minimax führt ein `return` dieser Instanz durch. Sind die Kritieren nicht erfüllt, wird `null`
+von der Methode zurückgegeben, worauf der ursprünglich im Speicher gefundene Eintrag verworfen
 und der nächste Schlüssel innerhalb von Minimax geprüft wird.
 
 ##### Ablauf einer Schlüsselüberprüfung
@@ -231,7 +306,7 @@ Folgende Skizze soll nochmal den Ablauf einer solchen Schlüsselüberprüfung ve
 2. Nun wird über die einzelnen Schlüssel iteriert und geprüft ob ein Schlüssel im Speicher vorhanden ist
 3. Ist ein Schlüssel vorhanden, wird dessen verknüpfter Speichereintrag (`Storage.Record`) geladen
 4. Anschließend wird die Processing-Methode dieses Schlüssels mit dem verknüpften Speichereintrag aufgerufen
-5. Gibt die Processing-Methode `null` zurück, wird der nächste Schlüssel in der Schleife überprüft, ansonsten wird der neu erhaltene `Storage.Record` zurückgegeben
+5. Gibt die Processing-Methode `null` zurück, wird der nächste Schlüssel in der Schleife überprüft, ansonsten wird der neu erhaltene `Storage.Record` von Minimax zurückgegeben
 
 ### Stellungsbewertung bei imperfektem Spiel
 
@@ -239,37 +314,35 @@ Damit der Minimax-Algorithmus ein Board aus der Sicht eines beliebigen Spielers 
 Im Projekt wurde eine solche Evaluierung mittels der **Monte-Carlo-Methode** umgesetzt.
 
 Hierbei wird ausgehend von einer gegebenen Stellung abwechselnd für jeden Spieler ein zufälliger Zug ausgeführt
-bis das Spiel beendet ist (keine Züge mehr möglich oder ein Gewinner steht fest). Dieses Vorgehen
+bis das schließlich Spiel beendet ist (keine Züge mehr möglich oder Sieg eines Spielers). Dieses Vorgehen
 wird eine beliebige Anzahl Mal wiederholt.
 
 Anhand der Anzahl der Gewinne für einen gegebenen Spieler wird ein Score ermittelt, welcher als Evaluations-Wert dient.
- 
+
+Je höher dieser Wert für den Maximizer bzw. umso niedriger er für den Minimizer ist, desto
+besser ist der Score und dementsprechend auch der Zug, der zu der gegebenen Ausgangsstellung führte.
 
 ### Verwendung einer Datenbank mit Stellungswerten
 
 Eine weitere Performance-Optimierung ist das Anlegen einer Datenbank, auch Transposition Tables genannt, bestehend aus bereits evaluierten Boards
-und deren bestmöglichen Züge. Der Minimax-Algorithmus muss also nicht jede mögliche Board-Stellung neu evaluieren,
-da manche bereits in der Datenbank vorhanden sind und immer wieder verwendet werden können.
+und deren bestmöglichen Züge. Der Minimax-Algorithmus muss hierdurch nicht jede mögliche Board-Stellung neu evaluieren,
+da manche bereits in der Datenbank vorhanden sind und dort ausgelesen werden können.
 
-Im Folgenden Abschnitt wird die Umsetzung einer solchen Datenbank basierend auf mehreren .txt Dateien beschrieben.
-
+Anknüpfend wird die Realisierung einer solchen Datenbank beschrieben.
 #### Verzeichnisstruktur der Datenbanken
 
-Die Transposition Tables sind auf 14 einzelne .txt Dateien aufgeteilt.
+Die komplette Datenbank besteht aus 14 einzelnen Transposition Tables, welche als Text-Dateien umgesetzt sind.
 
-Der Name einer solchen Datei ergibt sich wie folgt:
+Der Name einer solchen Transposition Table ergibt sich wie folgt:
 
 `#index#_table_#playedMovesFrom#_#playedMovesTo#.txt`
 
-- index: Index der TP (aufsteigende Zahlen)
+- index: Index der Transposition Table (aufsteigende Zahlen)
 - playedMovesFrom: 
 - playedMovesTo:
 
-In welche Transposition Table ein Eintrag geschrieben wird, hängt davon ab,
-wie viele Züge bisher gespielt wurden.
-
-
-
+In welche Transposition Table ein Eintrag bzw. Spiel-Board geschrieben wird, hängt davon ab,
+wie viele Züge bisher in dem Spiel gespielt wurden.
 
 #### Aufbau einer Datenbank
 

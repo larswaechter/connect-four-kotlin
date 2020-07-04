@@ -279,7 +279,7 @@ class ConnectFour(
      * Simulate a number of random games and evaluate based on the number of wins
      *
      * @param [numberOfSimulations] how many games to play
-     * @return number of wins
+     * @return evaluation score
      */
     fun mcm(numberOfSimulations: Int = 200): Float {
         // Defeats - Draws - Wins for current player
