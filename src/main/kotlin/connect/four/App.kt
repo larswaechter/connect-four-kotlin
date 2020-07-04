@@ -5,6 +5,70 @@ package connect.four
 
 fun main() {
 
+
+    /*
+
+    val board00 = Array(7) { IntArray(6) }
+    board00[0][1] = 1
+
+    val board11 = Array(7) { IntArray(6) }
+    board11[0][1] = 1
+
+    println(board00.contentHashCode())
+    println(board11.contentHashCode())
+
+    return
+
+     */
+
+
+    /*
+
+    val board1 = Array(7) { IntArray(6) }
+    board1[4][5] = -1
+    board1[6][5] = -1
+    board1[6][4] = -1
+    println(board1.contentDeepHashCode())
+    println(board1.contentDeepToString().hashCode())
+    println(ConnectFour(board1))
+
+    val board2 = Array(7) { IntArray(6) }
+    board2[6][5] = -1
+    board2[6][4] = -1
+    board2[6][3] = -1
+    println(board2.contentDeepHashCode())
+    println(board2.contentDeepToString().hashCode())
+    println(ConnectFour(board2))
+
+    return
+
+     */
+
+
+    Tests()
+
+    return
+
+    var game = ConnectFour()
+    println(game.storageRecordPrimaryKey)
+
+    game = game.move(Move(0))
+    game = game.undoMove(1)
+
+    println(game.storageRecordPrimaryKey)
+
+    return
+
+    Tests()
+
+    /*
+
+    return
+
+    Server()
+
+    return
+
     var game = ConnectFour()
 
     game = game.move(Move(0))
@@ -20,6 +84,8 @@ fun main() {
     println(game.getNumberOfPlayedMoves())
 
     // Minimax.Storage.seedByMovesPlayed<Move>(5000, 40)
+
+     */
 
     /*
 

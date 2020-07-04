@@ -23,8 +23,11 @@
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#setup-modal">
                     Spiel starten
                 </button>
-                <button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#join-modal">
+                <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#join-modal">
                     Spiel beitreten
+                </button>
+                <button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#join-modal">
+                    Tests ausführen
                 </button>
             </div>
         </div>
@@ -44,21 +47,21 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="players">Wähle Anzahl der Spieler</label>
+                    <label for="players">Anzahl der Spieler</label>
                     <select class="form-control" id="players">
                         <option value="1">1</option>
                         <option value="2">2</option>
                     </select>
                 </div>
                 <div class="form-group d-none" id="players-mode-form">
-                    <label for="players">Wähle Spielmodus</label>
+                    <label for="players">Spielmodus</label>
                     <select class="form-control" id="players-mode">
                         <option value="1">Lokal</option>
                         <option value="2">Online</option>
                     </select>
                 </div>
                 <div class="form-group" id="difficulty-form">
-                    <label for="difficulty">Wähle Schwierigkeitsstufe</label>
+                    <label for="difficulty">Schwierigkeitsstufe</label>
                     <select class="form-control" id="difficulty">
                         <option value="1">Easy</option>
                         <option value="2">Medium</option>

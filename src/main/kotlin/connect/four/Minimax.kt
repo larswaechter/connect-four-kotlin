@@ -87,7 +87,7 @@ interface Minimax<Board, Move> {
                     countNewRecords++
 
                     val storageRecord = game.minimax(currentDepth = maxTreeDepthTranspositionTables, seeding = true)
-                        newHashMap[storageRecord.key!!] = storageRecord as Record<Move>
+                    newHashMap[storageRecord.key!!] = storageRecord as Record<Move>
 
                 } while (countIterations < amount)
 
@@ -213,14 +213,6 @@ interface Minimax<Board, Move> {
                 return "$key $move $score $player"
             }
         }
-    }
-
-    companion object {
-        /**
-         * Best possible score for a board evaluation.
-         * In this case one player should have won and the game ended
-         */
-        const val maxBoardEvaluationScore: Float = 500F
     }
 
     /**
@@ -357,7 +349,7 @@ interface Minimax<Board, Move> {
                     val storageRecord = storage.map[storageRecordKey.first]!! // Load from storage
                     existsInStorage = true
 
-                    // Create new move based on key
+                    // Create new storageRecord based on key
                     val newStorageRecord = storageRecordKey.second(storageRecord)
                     if (newStorageRecord != null) return newStorageRecord
                 }
@@ -371,7 +363,12 @@ interface Minimax<Board, Move> {
         possibleMoves.forEach { move ->
             val tmpGame = game.move(move)
             if (tmpGame.hasWinner())
-                return Storage.Record(tmpGame.storageRecordPrimaryKey, move, game.currentPlayer * maxBoardEvaluationScore, game.currentPlayer)
+                return Storage.Record(
+                        tmpGame.storageRecordPrimaryKey,
+                        move,
+                        game.currentPlayer * Float.MAX_VALUE,
+                        game.currentPlayer
+                )
         }
 
         // Call recursively from here on for each move to find best one

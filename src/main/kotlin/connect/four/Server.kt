@@ -23,13 +23,15 @@ class Server {
 
         Minimax.Storage.registerStorages<Move>()
 
+        app.get("/tests") { ctx -> Tests() }
+
         app.get("/start/:id") { ctx ->
             val id = ctx.pathParam("id")
             val paramPlayers = ctx.queryParam("players", "0")!!
             val paramDifficulty = ctx.queryParam("difficulty", "0")!!
 
             // Validate parameters
-            if(this.isValidSessionID(id) && paramPlayers.matches(Regex("^[1-2]$")) && paramDifficulty.matches(Regex("^[1-2]$"))) {
+            if (this.isValidSessionID(id) && paramPlayers.matches(Regex("^[1-2]$")) && paramDifficulty.matches(Regex("^[1-2]$"))) {
                 // Create new game and store in HashMap
                 val newGame = ConnectFour(difficulty = paramDifficulty.toInt(), multiplayer = paramPlayers.toInt() == 2)
                 this.localGames[id] = newGame

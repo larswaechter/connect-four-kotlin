@@ -45,13 +45,13 @@ fun Array<IntArray>.inverseMatrix(): Array<IntArray> = Array(this.size) { get(it
 class ConnectFour(
         override val board: Array<IntArray> = Array(7) { IntArray(6) },
         override val currentPlayer: Int = 1,
-        override val difficulty: Int = 10,
+        override val difficulty: Int = 5,
         private val history: List<Array<IntArray>> = listOf(),
         val multiplayer: Boolean = false) : Minimax<Array<IntArray>, Move> {
 
     // Storage index based on number of played moves -> In steps of three
     override val storageIndex = ceil((this.getNumberOfPlayedMoves().toDouble() / 3)).toInt() - 1
-    override val storageRecordPrimaryKey: Int = this.board.contentDeepHashCode()
+    override val storageRecordPrimaryKey: Int = this.board.contentDeepToString().hashCode()
 
     companion object {
         /**
@@ -95,7 +95,7 @@ class ConnectFour(
         val nextPlayer: Int = if (number % 2 == 0) this.currentPlayer else -this.currentPlayer
 
         return ConnectFour(
-                if(number > 0) this.history[this.history.size - number] else this.board,
+                if (number > 0) this.history[this.history.size - number] else this.board,
                 nextPlayer,
                 this.difficulty,
                 this.history.subList(0, this.history.size - number),
@@ -117,7 +117,9 @@ class ConnectFour(
         // PrimaryRecordKey
         val key1: Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
                 Pair(this.storageRecordPrimaryKey, { storageRecord ->
-                    if (this.currentPlayer == storageRecord.player) storageRecord
+                    if (this.currentPlayer == storageRecord.player && storageRecord.move != null)
+                        storageRecord
+                    // Minimax.Storage.Record(storageRecord.key, storageRecord.move, storageRecord.score, storageRecord.player)
                     else null
                 })
 
@@ -125,7 +127,7 @@ class ConnectFour(
 
         // Mirror -> We also have to mirror the move
         val key2: Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
-                Pair(boardMirrored.contentDeepHashCode(), { storageRecord ->
+                Pair(boardMirrored.contentDeepToString().hashCode(), { storageRecord ->
                     if (this.currentPlayer == storageRecord.player) {
                         val newMove = storageRecord.move!!.mirrorYAxis()
                         Minimax.Storage.Record(storageRecord.key, newMove, storageRecord.score, storageRecord.player)
@@ -134,18 +136,18 @@ class ConnectFour(
 
         // Inverse -> We have to inverse the score and player
         val key3: Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
-                Pair(this.board.inverseMatrix().contentDeepHashCode(), { storageRecord ->
+                Pair(this.board.inverseMatrix().contentDeepToString().hashCode(), { storageRecord ->
                     if (this.currentPlayer != storageRecord.player)
-                        Minimax.Storage.Record(storageRecord.key, storageRecord.move!!, -storageRecord.score, -storageRecord.player)
+                        Minimax.Storage.Record(storageRecord.key, storageRecord.move!!, -storageRecord.score, this.currentPlayer)
                     else null
                 })
 
         // Mirror and Inverse -> We also have to mirror the move and inverse the score and player
         val key4: Pair<Int, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
-                Pair(boardMirrored.inverseMatrix().contentDeepHashCode(), { storageRecord ->
+                Pair(boardMirrored.inverseMatrix().contentDeepToString().hashCode(), { storageRecord ->
                     if (this.currentPlayer != storageRecord.player) {
                         val newMove = storageRecord.move!!.mirrorYAxis()
-                        Minimax.Storage.Record(storageRecord.key, newMove, -storageRecord.score, -storageRecord.player)
+                        Minimax.Storage.Record(storageRecord.key, newMove, -storageRecord.score, this.currentPlayer)
                     } else null
                 })
 
@@ -177,11 +179,18 @@ class ConnectFour(
         return res
     }
 
-    fun getNumberOfPlayedMoves() = this.history.size
+    /**
+     * We might also just return history.size but for testing purposes this ways is easier
+     */
+    fun getNumberOfPlayedMoves() = this.board.sumBy { col -> col.count { cell -> cell != 0 } }
 
     fun toHTML(): String {
 
-        // TODO: If fourInARow() -> output getWinner()
+        /**
+         * TODO:
+         *  - if fourInARow() -> output getWinner()
+         *  - output current player (color)
+         */
 
         var res = "<div class='board row mx-auto shadow-lg'>"
 
@@ -217,7 +226,7 @@ class ConnectFour(
      * @return if four in a row
      */
     fun fourInARow(): Boolean {
-        if (this.getNumberOfPlayedMoves() < 7) return false
+        // if (this.getNumberOfPlayedMoves() < 7) return false
 
         // Check vertically
         for (row in this.board.indices) {
@@ -265,30 +274,34 @@ class ConnectFour(
         // Defeats - Draws - Wins for current player
         var stats = Triple(0, 0, 0)
 
+        val remainingMoves = this.getNumberOfRemainingMoves()
+
         // Simulate 100 games
         for (i in 1..numberOfSimulations) {
+            // Copy only the essential properties
             var game = ConnectFour(
                     board = this.board.copyMatrix(),
-                    currentPlayer = this.currentPlayer,
-                    difficulty = this.difficulty,
-                    multiplayer = this.multiplayer
+                    currentPlayer = this.currentPlayer
             )
 
             // Play random moves until game is over
-            while (!game.isGameOver()) game = game.move(game.getRandomMove())
+            // Factor: the earlier the game has ended, the better is the move
+            var factor = remainingMoves
+            while (!game.isGameOver()) {
+                game = game.move(game.getRandomMove())
+                factor--
+            }
 
             // Update stats based on winner
             when (game.getWinner()) {
-                -this.currentPlayer -> stats = Triple(stats.first + 1, stats.second, stats.third)
+                -this.currentPlayer -> stats = Triple(stats.first + 1 + 5 * factor, stats.second, stats.third)
                 0 -> stats = Triple(stats.first, stats.second + 1, stats.third)
-                this.currentPlayer -> stats = Triple(stats.first, stats.second, stats.third + 1)
+                this.currentPlayer -> stats = Triple(stats.first, stats.second, stats.third + 1 + 5 * factor)
             }
         }
 
-        // println(stats.third)
-
-        // Return number of wins for current player
-        return (this.currentPlayer * stats.third).toFloat()
+        // Calculate score
+        return (this.currentPlayer * (stats.third - stats.first)).toFloat()
     }
 
     /**
@@ -296,7 +309,7 @@ class ConnectFour(
      *
      * @return player 1 / -1 or 0 if draw
      */
-    private fun getWinner(): Int {
+    fun getWinner(): Int {
         assert(this.isGameOver())
         return if (this.fourInARow()) return -this.currentPlayer else 0
     }
