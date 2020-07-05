@@ -1,6 +1,7 @@
 package connect.four
 
 import kotlin.math.*
+import kotlinx.coroutines.*
 
 /**
  * Helper method to deeply copy matrix
@@ -80,7 +81,7 @@ class ConnectFour(
             var hash = 0L
             for (i in 0..6)
                 for (j in 0..5)
-                    if (board[i][j] != 0) hash = hash.xor(Minimax.Storage.doZobristTableLookup(i, j, board[i][j]))
+                    if (board[i][j] != 0) hash = hash.xor(Minimax.Storage.getZobristHash(i, j, board[i][j]))
             return hash
         }
     }
@@ -94,7 +95,7 @@ class ConnectFour(
         newBoard[move.column][row] = this.currentPlayer
 
         // Calculate new zobrist hash
-        val newZobristHash = this.storageRecordPrimaryKey.xor(Minimax.Storage.doZobristTableLookup(move.column, row, this.currentPlayer))
+        val newZobristHash = this.storageRecordPrimaryKey.xor(Minimax.Storage.getZobristHash(move.column, row, this.currentPlayer))
 
         return ConnectFour(
                 board = newBoard,
@@ -120,7 +121,7 @@ class ConnectFour(
         )
     }
 
-    override fun getStorageRecordKeys(): List<Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?>> {
+    override fun getStorageRecordKeys(): List<() -> Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?>> {
 
         /**
          * Applying the following actions to the board do not change its evaluation
@@ -131,36 +132,30 @@ class ConnectFour(
          * - Mirror board and inverse
          */
 
-        // PrimaryRecordKey
-        val key1: Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
+        val key1 = fun(): Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
                 Pair(this.storageRecordPrimaryKey, { storageRecord ->
                     if (this.currentPlayer == storageRecord.player)
                         storageRecord
                     else null
                 })
 
-        val boardMirrored = this.board.mirrorYAxis()
-
-        // Mirror -> We also have to mirror the move
-        val key2: Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
-                Pair(calcZobristHash(boardMirrored), { storageRecord ->
+        val key2 = fun(): Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
+                Pair(calcZobristHash(this.board.mirrorYAxis()), { storageRecord ->
                     if (this.currentPlayer == storageRecord.player) {
                         val newMove = storageRecord.move!!.mirrorYAxis()
                         Minimax.Storage.Record(storageRecord.key, newMove, storageRecord.score, storageRecord.player)
                     } else null
                 })
 
-        // Inverse -> We have to inverse the score and player
-        val key3: Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
+        val key3 = fun(): Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
                 Pair(calcZobristHash(this.board.inverseMatrix()), { storageRecord ->
                     if (this.currentPlayer != storageRecord.player)
                         Minimax.Storage.Record(storageRecord.key, storageRecord.move!!, -storageRecord.score, this.currentPlayer)
                     else null
                 })
 
-        // Mirror and Inverse -> We also have to mirror the move and inverse the score and player
-        val key4: Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
-                Pair(calcZobristHash(boardMirrored.inverseMatrix()), { storageRecord ->
+        val key4 = fun(): Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
+                Pair(calcZobristHash(this.board.mirrorYAxis().inverseMatrix()), { storageRecord ->
                     if (this.currentPlayer != storageRecord.player) {
                         val newMove = storageRecord.move!!.mirrorYAxis()
                         Minimax.Storage.Record(storageRecord.key, newMove, -storageRecord.score, this.currentPlayer)
@@ -228,7 +223,7 @@ class ConnectFour(
      *
      * @return game with applied best move
      */
-    fun bestMove(): ConnectFour = this.move(if (this.difficulty == 0) this.getRandomMove() else this.minimax().move!!)
+    fun bestMove(): ConnectFour = this.move(if (this.difficulty == 0) this.getRandomMove() else minimax().move!!)
 
     /**
      * Check if four chips of the same player are in one row.
@@ -275,23 +270,36 @@ class ConnectFour(
     }
 
     /**
+     * Get winner of the game
+     *
+     * @return player 1 / -1 or 0 if draw
+     */
+    fun getWinner(): Int {
+        assert(this.isGameOver())
+        return if (this.fourInARow()) return -this.currentPlayer else 0
+    }
+
+    /**
      * Monte Carlo method for board evaluation.
      * Simulate a number of random games and evaluate based on the number of wins
      *
      * @param [numberOfSimulations] how many games to play
      * @return evaluation score
      */
-    fun mcm(numberOfSimulations: Int = 200): Float {
+    private fun mcm(numberOfSimulations: Int = 200): Float {
         // Defeats - Draws - Wins for current player
         var stats = Triple(0, 0, 0)
         val remainingMoves = this.getNumberOfRemainingMoves()
 
-        // Simulate 100 games
+        // Simulate games
+        // runBlocking {
+        //    repeat(numberOfSimulations) {
+        //      launch {
         for (i in 1..numberOfSimulations) {
-            // Copy only the essential properties
+            // Apply only the essential properties
             var game = ConnectFour(
-                    board = this.board.copyMatrix(),
-                    currentPlayer = this.currentPlayer,
+                    board = board.copyMatrix(),
+                    currentPlayer = currentPlayer,
                     storageRecordPrimaryKey = 1 // Prevent to calculate zobristHash
             )
 
@@ -305,24 +313,15 @@ class ConnectFour(
 
             // Update stats based on winner
             when (game.getWinner()) {
-                -this.currentPlayer -> stats = Triple(stats.first + 1 + 5 * factor, stats.second, stats.third)
+                -currentPlayer -> stats = Triple(stats.first + 1 + 5 * factor, stats.second, stats.third)
                 0 -> stats = Triple(stats.first, stats.second + 1, stats.third)
-                this.currentPlayer -> stats = Triple(stats.first, stats.second, stats.third + 1 + 5 * factor)
+                currentPlayer -> stats = Triple(stats.first, stats.second, stats.third + 1 + 5 * factor)
             }
         }
+        //   }
+        // }
 
-        // Calculate score
         return (this.currentPlayer * (stats.third - stats.first)).toFloat()
-    }
-
-    /**
-     * Get winner of the game
-     *
-     * @return player 1 / -1 or 0 if draw
-     */
-    fun getWinner(): Int {
-        assert(this.isGameOver())
-        return if (this.fourInARow()) return -this.currentPlayer else 0
     }
 
     /**

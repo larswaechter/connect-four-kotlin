@@ -36,6 +36,10 @@ dependencies {
 
     // Add slf4j Logger dependency
     implementation "org.slf4j:slf4j-simple:1.7.28"
+
+    // Kotlin coroutines
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.7'
+
 }
 
 application {

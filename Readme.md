@@ -14,6 +14,9 @@ Eine Vier-Gewinnt Implementierung in Kotlin mittels des Javalin Frameworks.
 
 ## Anleitung
 
+Die Spielregeln entsprechen dem des klassischen Vier-Gewinns: Ziel ist es vier
+Steine seiner eigenen Farbe in einer Reihe (horizontal, vertikal, diagonal) zu platzieren.
+
 ## Dateiübersicht und Lines-Of-Code
 
 Die folgende Grafik spiegelt die Ordnerstruktur des Projektes wider.
@@ -188,8 +191,8 @@ Wichtig hierbei ist, dass dies nur gilt, wenn man die Board-Stellung in beiden S
 aus der Sicht des selben Spielers (1) betrachtet. Für Spieler -1 wären die eben genannten
 Züge nämlich nicht die bestmöglichen.
 
-**Hinweis:** Maßnahmen zur Anpassung eines aus dem Speicher geladenen Zugs und wann diese verwendet werden dürfen
-werden, im Abschnitt "Processing-Methode" genauer behandelt.
+**Hinweis:** Maßnahmen zur Anpassung eines aus dem Speicher geladenen Zugs und wann diese verwendet werden dürfen,
+werden im Abschnitt "Processing-Methode" genauer behandelt.
 
 ##### 2. Invertierung des Spielboards
 

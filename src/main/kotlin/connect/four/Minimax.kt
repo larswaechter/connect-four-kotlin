@@ -1,5 +1,8 @@
 package connect.four
 
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.File
 import kotlin.math.pow
 import kotlin.random.Random
@@ -26,7 +29,7 @@ interface Minimax<Board, Move> {
 
         companion object {
             private const val numberOfTranspositionTables = 14
-            private const val maxTreeDepthTranspositionTables = 8
+            private const val maxTreeDepthTranspositionTables = 10
             private const val transpositionTablesPath = "src/main/resources/transposition_tables"
             private val zobristTable: Array<Array<Array<Long>>> = buildZobristTable()
             private val storages: Array<Storage<*>?> = Array(numberOfTranspositionTables) { null }
@@ -83,13 +86,15 @@ interface Minimax<Board, Move> {
                     countIterations++
 
                     // Check if board is already stored -> Skip it
-                    for (storageRecordKey in game.getStorageRecordKeys())
-                        if (storage.map.contains(storageRecordKey.first) || newHashMap.containsKey(storageRecordKey.first))
+                    for (storageRecordKey in game.getStorageRecordKeys()) {
+                        val key = storageRecordKey()
+                        if (storage.map.contains(key.first) || newHashMap.containsKey(key.first))
                             continue@outer
+                    }
 
                     countNewRecords++
 
-                    val storageRecord = game.minimax(currentDepth = maxTreeDepthTranspositionTables, seeding = true)
+                    val storageRecord = runBlocking { game.minimax(currentDepth = maxTreeDepthTranspositionTables, seeding = true) }
                     newHashMap[storageRecord.key!!] = storageRecord as Record<Move>
 
                 } while (countIterations < amount)
@@ -119,8 +124,8 @@ interface Minimax<Board, Move> {
              * Generate random zobrist keys and write them to storage file.
              * Warning: If you do this, already existing transposition tables become invalid
              */
-            fun generateZobristKeys() {
-                val file = File("$transpositionTablesPath/zobrist_keys.txt")
+            fun generateZobristHashes() {
+                val file = File("$transpositionTablesPath/zobrist_hashes.txt")
                 var res = ""
 
                 for (i in 0..6)
@@ -132,22 +137,22 @@ interface Minimax<Board, Move> {
             }
 
             /**
-             * Get zobrist keys for given positions
+             * Get zobrist hash for given player and position
              *
              * @param [col]
              * @param [row]
              * @param [player]
              * @return zobrist key for given positions
              */
-            fun doZobristTableLookup(col: Int, row: Int, player: Int): Long = zobristTable[col][row][if (player == 1) 0 else 1]
+            fun getZobristHash(col: Int, row: Int, player: Int): Long = zobristTable[col][row][if (player == 1) 0 else 1]
 
             /**
              * Load zobrist table based on zobrist keys
              *
-             * @return 3D array of keys
+             * @return 3D array of keys for every board position and player
              */
             private fun buildZobristTable(): Array<Array<Array<Long>>> {
-                val keys = loadZobristKeys()
+                val keys = readZobristHashes()
                 val table = Array(7) { Array(6) { Array(2) { 0L } } }
 
                 var count = 0
@@ -160,12 +165,12 @@ interface Minimax<Board, Move> {
             }
 
             /**
-             * Load zobrist hash keys from .txt file
+             * Read zobrist hashes from .txt file
              *
-             * @return array of keys
+             * @return array of hashes
              */
-            private fun loadZobristKeys(): Array<Long> {
-                val file = File("$transpositionTablesPath/zobrist_keys.txt")
+            private fun readZobristHashes(): Array<Long> {
+                val file = File("$transpositionTablesPath/zobrist_hashes.txt")
                 val keys = Array<Long>(84) { 0 }
 
                 var count = 0
@@ -377,7 +382,7 @@ interface Minimax<Board, Move> {
      *
      * @return storage keys the board might be stored under
      */
-    fun getStorageRecordKeys(): List<Pair<Long, (record: Storage.Record<Move>) -> Storage.Record<Move>?>>
+    fun getStorageRecordKeys(): List<() -> Pair<Long, (record: Storage.Record<Move>) -> Storage.Record<Move>?>>
 
     /**
      * Minimax algorithm that finds best move
@@ -396,7 +401,6 @@ interface Minimax<Board, Move> {
             maximize: Boolean = game.currentPlayer == 1,
             seeding: Boolean = false
     ): Storage.Record<Move> {
-
         // Recursion anchor -> Evaluate board
         if (currentDepth == 0 || game.isGameOver())
             return Storage.Record(null, null, game.evaluate(currentDepth), game.currentPlayer)
@@ -411,12 +415,14 @@ interface Minimax<Board, Move> {
             // We check every possible key under which the field could be stored
             // or might be associated with already existing records
             game.getStorageRecordKeys().forEach { storageRecordKey ->
-                if (storage.map.containsKey(storageRecordKey.first)) {
-                    val storageRecord = storage.map[storageRecordKey.first]!! // Load from storage
+                val key = storageRecordKey()
+
+                if (storage.map.containsKey(key.first)) {
+                    val storageRecord = storage.map[key.first]!! // Load from storage
                     existsInStorage = true
 
                     // Create new storageRecord based on key
-                    val newStorageRecord = storageRecordKey.second(storageRecord)
+                    val newStorageRecord = key.second(storageRecord)
                     if (newStorageRecord != null) return newStorageRecord
                 }
             }
@@ -439,9 +445,10 @@ interface Minimax<Board, Move> {
 
         // Call recursively from here on for each move to find best one
         var minOrMax: Pair<Move?, Float> = Pair(null, if (maximize) Float.NEGATIVE_INFINITY else Float.POSITIVE_INFINITY)
+
         for (move in possibleMoves) {
             val newGame = game.move(move)
-            val moveScore = this.minimax(newGame, startingDepth, currentDepth - 1, !maximize).score
+            val moveScore = minimax(newGame, startingDepth, currentDepth - 1, !maximize).score
 
             // Check for maximum or minimum
             if ((maximize && moveScore > minOrMax.second) || (!maximize && moveScore < minOrMax.second))
@@ -456,4 +463,5 @@ interface Minimax<Board, Move> {
 
         return finalMove
     }
+
 }

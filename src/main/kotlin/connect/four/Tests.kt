@@ -2,10 +2,10 @@ package connect.four
 
 class Tests {
     init {
-        // this.runTest1()
+        this.runTest1()
         this.runTest2()
         this.runTest3()
-        // this.runTest4()
+        this.runTest4()
         this.runTest5()
     }
 
@@ -42,8 +42,6 @@ class Tests {
 
         var game = ConnectFour(board)
 
-        println(game)
-
         // player 1 plays move
         game = game.bestMove()
 
@@ -52,8 +50,6 @@ class Tests {
 
         // player 1 should play win-move
         game = game.bestMove()
-
-        println(game)
 
         assert(game.getWinner() == 1)
     }
@@ -76,6 +72,8 @@ class Tests {
         board[2][5] = -1
 
         var game = ConnectFour(board = board, currentPlayer = -1)
+
+        // player -1 plays move
         game = game.bestMove()
 
         assert(!game.hasWinner())
@@ -84,5 +82,26 @@ class Tests {
     // Die Spiel-Engine vereitelt ein Drohung, die den Gegner im übernächsten Zug ansonsten einen Gewinn umsetzen lässt (Sichttiefe 4)
     private fun runTest5() {
         println("Running test #5...")
+
+        val board: Array<IntArray> = Array(7) { IntArray(6) }
+        board[2][5] = 1
+        board[3][5] = 1
+        board[6][5] = -1
+
+        var game = ConnectFour(board, currentPlayer = -1)
+
+        // player -1 plays move
+        game = game.bestMove()
+
+        // player 1 plays move
+        game = game.bestMove()
+
+        // player -1 plays move
+        game = game.bestMove()
+
+        // player 1 plays move
+        game = game.bestMove()
+
+        assert(!game.hasWinner())
     }
 }
