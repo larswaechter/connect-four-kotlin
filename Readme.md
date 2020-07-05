@@ -14,13 +14,13 @@ Eine Vier-Gewinnt Implementierung in Kotlin mittels des Javalin Frameworks.
 
 ## Anleitung
 
-Die Spielregeln entsprechen dem des klassischen Vier-Gewinns: Ziel ist es vier
-Steine seiner eigenen Farbe in einer Reihe (horizontal, vertikal, diagonal) zu platzieren.
+Die Spielregeln entsprechen dem des klassischen Vier-Gewinnt: Ziel ist es vier
+Steine seiner eigenen Farbe in einer Reihe (horizontal, vertikal oder diagonal) zu platzieren.
 
 ## Dateiübersicht und Lines-Of-Code
 
 Die folgende Grafik spiegelt die Ordnerstruktur des Projektes wider.
-Im Anschluss gehe ich tiefer auf die einzelnen Dateien und deren Rollen ein.
+Im Anschluss darauf wird genauer auf die einzelnen Dateien und deren Rollen eingegangen.
 
 ```
 connect-four-kotlin (root)
@@ -114,7 +114,7 @@ ajwialwdjlawj dlawi
 
 ### Dateien in `src/main/resources/transposition_tables`
 
-Dieser Ordner beinhaltet mehrere sogenannte transposition tables.
+Dieser Ordner beinhaltet die einzelnen Transposition Tables, welche als Datenbank dienen.
 
 ---
 
@@ -127,7 +127,7 @@ dessen Performance-Optimierung als auch die Bewertung einer Spielsituation mitte
 ### Wahl des Algorithmus
 
 Zur berechnen des bestmöglichen nächsten Zuges wird der [Minimax-Algorithmus](https://de.wikipedia.org/wiki/Minimax-Algorithmus) verwendet.
-Dieser geht je nach Schwierigkeitsstufe bis zur einer Tiefe von 10.
+Dieser geht je nach Schwierigkeitsstufe bis zur einer Tiefe von 8.
 
 ### Wiederverwendung von berechneten Stellungswerten
 
@@ -180,15 +180,15 @@ einen Stein in Spalte 2 zu werfen. Er hätte damit gewonnen.
 Ausgehend von einer Board-Stellung wie in `Board #2`, wäre für Spieler 1 der bestmögliche Zug,
 einen Stein in Spalte 6 zu werfen. Er hätte damit ebenfalls gewonnen.
 
-Hierbei ist zu erkennen, dass beide Board-Stellungen zu dem selben Ergebnis führen: Spieler 1 gewinnt.
+Hierbei ist zu erkennen, dass beide Board-Stellungen zu demselben Ergebnis führen: Spieler 1 gewinnt.
 
 Hat man nun beispielsweise den bestmöglichen Zug für `Board #1` bereits berechnet
 und im Speicher vorliegen, kann man im Falle von `Board #2` das Board spiegeln,
 wodurch man `Board #1` erhält, und den bestmöglichen Zug von `Board #1` aus dem Speicher lesen und übernehmen.
-Wichtig hierbei ist, dass dieser Zug dann ebenfalls gespiegelt wird. Aus dem Zug `2` wird also `6`.
+Es gilt zu beachten, dass dieser Zug dann ebenfalls gespiegelt werden muss. Aus dem Zug `2` wird also `6`.
 
 Wichtig hierbei ist, dass dies nur gilt, wenn man die Board-Stellung in beiden Situationen
-aus der Sicht des selben Spielers (1) betrachtet. Für Spieler -1 wären die eben genannten
+aus der Sicht desselben Spielers (1) betrachtet. Für Spieler -1 wären die eben genannten
 Züge nämlich nicht die bestmöglichen.
 
 **Hinweis:** Maßnahmen zur Anpassung eines aus dem Speicher geladenen Zugs und wann diese verwendet werden dürfen,
@@ -229,10 +229,40 @@ einen Stein in Spalte 2 zu werfen. Er hätte damit gewonnen.
 Ausgehend von einer Board-Stellung wie in `Board #2`, wäre für Spieler -1 der bestmögliche Zug,
 ebenfalls einen Stein in Spalte 2 zu werfen. Er hätte damit ebenfalls gewonnen.
 
+Hat man nun beispielsweise den bestmöglichen Zug für `Board #1` bereits berechnet
+und im Speicher vorliegen, kann man im Falle von `Board #2` das Board invertieren,
+wodurch man `Board #1` erhält, und den bestmöglichen Zug von `Board #1` aus dem Speicher lesen und übernehmen.
+
+Wichtig hierbei ist, dass dies nur gilt, wenn man die Board-Stellung in `Board #2`
+aus der Sicht des anderen Spielers als in `Board #1` betrachtet.
+Im Falle von `Board #2` also als Spieler -1, da in `Board #1` das Board als Spieler 1 betrachtet wurde.
+
 ##### 3. Spiegelung an der mittleren Y-Achse und Invertierung des Spielboards
 
 Diese Symmetrie ist eine Kombination aus den ersten beiden. Zuerst wird das Board gespiegelt
 und anschließend invertiert.
+
+Beispiel:
+
+```
+Board #1 (best move = 2)
+
+0  0  0  0  0  0  0
+0  0  0  0  0  0  0
+0  0  0  0  0  0  0
+0  1  0  0  0  0  0
+0  1  0 -1 -1  0  0
+0  1 -1  1 -1  0  0
+
+Board #2 (Board #1 gespiegelt und invertiert) (best move = 6, allerdings für Gegenspieler)
+
+0  0  0  0  0  0  0
+0  0  0  0  0  0  0
+0  0  0  0  0  0  0
+0  0  0  0  0 -1  0
+0  0  1  1  0 -1  0
+0  0  1 -1  1 -1  0
+```
 
 #### Implementierung der Symmetrien
 
@@ -283,11 +313,11 @@ Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Krit
 - Dritter Schlüssel:
   - Wurde ein Eintrag unter diesem Schlüssel gefunden, darf der Eintrag nur verwendet werden,
   wenn der aktuelle Spieler NICHT dem des Spielers im Eintrag entspricht, da die Steine invertiert wurden
-  - Zusätlich muss der Score des Eintrags invertiert werden
+  - Zusätzlich muss der Score des Eintrags invertiert werden
 - Vierter Schlüssel:
   - Wurde ein Eintrag unter diesem Schlüssel gefunden, darf der Eintrag nur verwendet werden,
   wenn der aktuelle Spieler NICHT dem des Spielers im Eintrag entspricht, da die Steine invertiert wurden
-  - Zusätlich muss der Score des Eintrags invertiert werden
+  - Zusätzlich muss der Score des Eintrags invertiert werden
   - Da bei diesem Schlüssel die Symmetrie der Spiegelung verwendet wurde, muss ebenfalls der im Eintrag gespeicherte Move gespiegelt werden
 
 Ein Schlüssel und dessen Processing-Methode werden im Code als `Pair<>` repräsentiert.
