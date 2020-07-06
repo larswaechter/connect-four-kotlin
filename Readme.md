@@ -269,19 +269,19 @@ Board #2 (Board #1 gespiegelt und invertiert) (best move = 6, allerdings für Ge
 ##### Beschreibung
 
 Die verschiedenen Symmetrien wurden mittels einer Art Schlüssel-System implementiert.
-Für jede mögliche Board-Stellung gibt es vier dazugehörige Schlüssel, welche aus dem Zobrist-Schlüssel des Boards nach
+Für jede mögliche Board-Stellung gibt es vier dazugehörige Schlüssel, welche aus dem Zobrist-Hash des Boards nach
 Anwendung der jeweiligen Symmetrie erzeugt werden.
 
 ##### Schlüssel Arten
 
-Der erste Schlüssel ist der `storageRecordPrimaryKey`. Dieser repräsentiert den reinen Zobrist-Schlüssel
+Der erste Schlüssel ist der `storageRecordPrimaryKey`. Dieser repräsentiert den reinen Zobrist-Hash
 der aktuellen Board-Stellung ohne jegliche angewandte Symmetrie. Unter diesem Schlüssel werden
 berechnete Board-Stellungen in den HashMaps bzw. in den Transposition-Tables gespeichert.
 
-**Hinweis**: Die Berechnung des Zobrist-Schlüssel und die Speicherung von Board-Stellungen werden
+**Hinweis**: Die Berechnung des Zobrist-Hashs und die Speicherung von Board-Stellungen werden
 im Abschnitt "Verwendung einer Datenbank mit Stellungswerten" genauer behandelt.
 
-De restlichen drei Schlüssel werden mittels des Zobrist-Schlüssel nach Anwendung einer
+De restlichen drei Schlüssel werden mittels des Zobrist-Hashs nach Anwendung einer
 Symmetrie auf das Board berechnet:
 
 - Zweiter Schlüssel: 1. Symmetrie (Spiegelung) und `calcZobristHash`

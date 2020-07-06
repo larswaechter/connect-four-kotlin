@@ -31,7 +31,7 @@ interface Minimax<Board, Move> {
             private const val numberOfTranspositionTables = 14
             private const val maxTreeDepthTranspositionTables = 10
             private const val transpositionTablesPath = "src/main/resources/transposition_tables"
-            private val zobristTable: Array<Array<Array<Long>>> = buildZobristTable()
+            private val zobristTable: Array<Array<Long>> = buildZobristTable()
             private val storages: Array<Storage<*>?> = Array(numberOfTranspositionTables) { null }
 
             /**
@@ -128,10 +128,9 @@ interface Minimax<Board, Move> {
                 val file = File("$transpositionTablesPath/zobrist_hashes.txt")
                 var res = ""
 
-                for (i in 0..6)
-                    for (j in 0..5)
-                        for (k in 0..1)
-                            res += "${Random.nextLong(2F.pow(64).toLong())}\n"
+                for (i in 0..47)
+                    for (k in 0..1)
+                        res += "${Random.nextLong(2F.pow(64).toLong())}\n"
 
                 file.writeText(res)
             }
@@ -144,22 +143,21 @@ interface Minimax<Board, Move> {
              * @param [player]
              * @return zobrist key for given positions
              */
-            fun getZobristHash(col: Int, row: Int, player: Int): Long = zobristTable[col][row][if (player == 1) 0 else 1]
+            fun getZobristHash(field: Int, player: Int): Long = zobristTable[field][if (player == 1) 0 else 1]
 
             /**
              * Load zobrist table based on zobrist keys
              *
              * @return 3D array of keys for every board position and player
              */
-            private fun buildZobristTable(): Array<Array<Array<Long>>> {
+            private fun buildZobristTable(): Array<Array<Long>> {
                 val keys = readZobristHashes()
-                val table = Array(7) { Array(6) { Array(2) { 0L } } }
+                val table = Array(48) { Array(2) { 0L } }
 
                 var count = 0
-                for (i in 0..6)
-                    for (j in 0..5)
-                        for (k in 0..1)
-                            table[i][j][k] = keys[count++]
+                for (i in 0..47)
+                    for (k in 0..1)
+                        table[i][k] = keys[count++]
 
                 return table
             }
@@ -170,15 +168,19 @@ interface Minimax<Board, Move> {
              * @return array of hashes
              */
             private fun readZobristHashes(): Array<Long> {
-                val file = File("$transpositionTablesPath/zobrist_hashes.txt")
-                val keys = Array<Long>(84) { 0 }
+                val file = File("src/main/resources/transposition_tables/zobrist_hashes.txt")
+                val keys = Array<Long>(96) { 0 }
+
+                if (file.readLines().isEmpty()) {
+                    println("No Zobrist hashes found. Creating...")
+                    C4.generateZobristHashes()
+                    return readZobristHashes()
+                }
 
                 var count = 0
                 file.forEachLine {
                     keys[count++] = it.toLong()
                 }
-
-                assert(keys.size == 84)
 
                 return keys
             }
@@ -365,7 +367,7 @@ interface Minimax<Board, Move> {
      * @param [number] number of moves to undo
      * @return new game with undone moves
      */
-    fun undoMove(number: Int): Minimax<Board, Move>
+    fun undoMove(number: Int): Minimax<Board, Move> = this
 
     /**
      * Pick random move from possible moves list

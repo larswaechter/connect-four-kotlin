@@ -7,7 +7,45 @@ fun main() {
 
     Tests()
 
-    return
+    /*
+
+    val game1 = C4(
+            longArrayOf(
+                    0b0_0000000_0000000___0000000_0000000_0000000_0000000_0000000_0000000_0000001, // X
+                    0b0_0000000_0000000___0000000_0000000_0000000_0000000_0000000_0000001_0000000 // O
+            )
+    )
+
+    println(game1.storageRecordPrimaryKey)
+
+    var game = C4()
+    game = game.move(0)
+    game = game.move(1)
+
+    println(game.storageRecordPrimaryKey)
+
+     */
+
+
+    /*
+
+    var game = C4()
+    game = game.move(6)
+    game = game.move(6)
+    game = game.move(6)
+    game = game.move(6)
+    game = game.move(6)
+    game = game.move(6)
+
+    println(game)
+
+    println(C4.calcZobristHash(game.board))
+
+
+    var game2 = C4(board = longArrayOf(game.mirror(game.board[0]), game.mirror(game.board[1])))
+    println(game2)
+
+     */
 
 
     /*
@@ -48,22 +86,6 @@ fun main() {
 
      */
 
-
-    Tests()
-
-    return
-
-    var game = ConnectFour()
-    println(game.storageRecordPrimaryKey)
-
-    game = game.move(Move(0))
-    game = game.undoMove(1)
-
-    println(game.storageRecordPrimaryKey)
-
-    return
-
-    Tests()
 
     /*
 
