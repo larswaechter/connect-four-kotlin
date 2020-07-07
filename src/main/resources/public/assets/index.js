@@ -1,4 +1,4 @@
-const $content = document.querySelector("#board-wrapper")
+const $content = document.querySelector("#game-wrapper")
 
 const $startBtn = document.querySelector("#start-game")
 const $joinBtn = document.querySelector("#join-game")
@@ -18,25 +18,20 @@ class Game {
     constructor(id) {
         this.id = id || this.createRandomString()
         this.isMovePending = false
+        this.isGameOver = false
     }
 
     createRandomString = () => {
         let randomNumber = ""
-
-        // Char code [a-z]
-        const from = 97
-        const to = 122
-
-        do {
-            randomNumber += String.fromCharCode(Math.floor(Math.random() * (to - from + 1)) + from);
-        } while (randomNumber.length < 16)
+        do randomNumber += String.fromCharCode(Math.floor(Math.random() * (122 - 97 + 1)) + 97);
+        while (randomNumber.length < 16)
 
         return randomNumber
     }
 }
 
 class LocalGame extends Game {
-    constructor(players, difficulty) {
+    constructor(players, difficulty, multiplayer) {
         super();
         this.players = players
         this.difficulty = difficulty
@@ -49,12 +44,25 @@ class LocalGame extends Game {
     }
 
     move = async (column) => {
-        if (!this.isMovePending) {
+        if (!this.isMovePending && !this.isGameOver) {
             this.isMovePending = true
             const res = await fetch(this.id + "/move/" + column)
-            const content = await res.text()
-            $content.innerHTML = content
+            $content.innerHTML = await res.text()
             this.isMovePending = false
+
+            if (document.querySelector(".metadata").classList.contains("finished")) this.isGameOver = true
+            if (this.players == 1 && !this.isGameOver) await this.aiMove()
+        }
+    }
+
+    aiMove = async () => {
+        if (!this.isMovePending && !this.isGameOver) {
+            this.isMovePending = true
+            const res = await fetch(this.id + "/ai-move")
+            $content.innerHTML = await res.text()
+            this.isMovePending = false
+
+            if (document.querySelector(".metadata").classList.contains("finished")) this.isGameOver = true
         }
     }
 
@@ -98,6 +106,9 @@ class OnlineGame extends Game {
             this.ws.send(column)
             this.isMovePending = false
         }
+    }
+
+    aiMove = () => {
     }
 }
 

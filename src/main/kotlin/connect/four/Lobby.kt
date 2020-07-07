@@ -15,6 +15,6 @@ class Lobby(
         var playerOneSocket: WsConnectContext?,
         var playerTwoSocket: WsConnectContext?,
         var currentPlayerSessionID: String,
-        var game: ConnectFour = ConnectFour(multiplayer = true)
+        var game: ConnectFour = ConnectFour()
 ) {
 }

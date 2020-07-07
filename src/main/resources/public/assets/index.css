@@ -26,3 +26,7 @@
 .board .stone.yellow {
     background-color: yellow;
 }
+
+.metadata h3 {
+    margin-bottom: 0;
+}

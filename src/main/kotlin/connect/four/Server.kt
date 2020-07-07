@@ -27,13 +27,12 @@ class Server {
 
         app.get("/start/:id") { ctx ->
             val id = ctx.pathParam("id")
-            val paramPlayers = ctx.queryParam("players", "0")!!
             val paramDifficulty = ctx.queryParam("difficulty", "0")!!
 
             // Validate parameters
-            if (this.isValidSessionID(id) && paramPlayers.matches(Regex("^[1-2]$")) && paramDifficulty.matches(Regex("^[0-5]$"))) {
+            if (this.isValidSessionID(id) && paramDifficulty.matches(Regex("^[0-5]$"))) {
                 // Create new game and store in HashMap
-                val newGame = ConnectFour(difficulty = 5, multiplayer = paramPlayers.toInt() == 2)
+                val newGame = ConnectFour(difficulty = 5)
                 this.localGames[id] = newGame
                 ctx.html(newGame.toHtml())
             } else ctx.html(createHtmlAlert(Alert.danger, "Invalid request!"))
@@ -45,27 +44,33 @@ class Server {
 
             // Validate parameters
             if (this.localGames.containsKey(paramID) && paramColumn.matches(Regex("^[0-6]\$"))) {
-                // Play move
                 var game = this.localGames[paramID]!!
                 val column = paramColumn.toInt()
                 game = game.move(Move(column))
 
-                // AI plays the move if there's no multiplayer
-                if (!game.multiplayer) game = game.bestMove()
+                // Update in HashMap
+                this.localGames[paramID] = game
+
+                if (game.isGameOver()) this.localGames.remove(paramID)
+                ctx.html(game.toHtml())
+
+            } else ctx.html(createHtmlAlert(Alert.danger, "Invalid request!"))
+        }
+
+        app.get("/:id/ai-move") { ctx ->
+            val paramID = ctx.pathParam("id")
+
+            // Validate parameters
+            if (this.localGames.containsKey(paramID)) {
+                var game = this.localGames[paramID]!!
+                game = game.bestMove()
 
                 // Update in HashMap
                 this.localGames[paramID] = game
 
-                // Check game status
-                if (game.hasWinner()) {
-                    this.localGames.remove(paramID)
-                    ctx.html(game.toHtml())
-                } else if (game.getNumberOfRemainingMoves() == 0) {
-                    this.localGames.remove(paramID)
-                    ctx.html(game.toHtml())
-                } else {
-                    ctx.html(game.toHtml())
-                }
+                if (game.isGameOver()) this.localGames.remove(paramID)
+                ctx.html(game.toHtml())
+
             } else ctx.html(createHtmlAlert(Alert.danger, "Invalid request!"))
         }
 
@@ -74,12 +79,13 @@ class Server {
 
             // Validate parameters
             if (this.localGames.containsKey(paramID)) {
-                // Undo move
                 var game = this.localGames[paramID]!!
-                game = game.undoMove(1)
 
-                // Update in HashMap
-                this.localGames[paramID] = game
+                // Check if there was at least one move played
+                if (game.getNumberOfPlayedMoves() > 0) {
+                    game = game.undoMove(1)
+                    this.localGames[paramID] = game
+                }
 
                 ctx.html(game.toHtml())
 

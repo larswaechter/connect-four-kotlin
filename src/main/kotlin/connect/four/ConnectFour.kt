@@ -11,7 +11,6 @@ import kotlin.math.*
  * @param [storageRecordPrimaryKey] key under which the board will be saved to storage
  * @param [heights] current height of board columns
  * @param [history] history of boards
- * @param [multiplayer] playing vs ai or another human player
  */
 class ConnectFour(
         override val board: LongArray = longArrayOf(
@@ -22,8 +21,7 @@ class ConnectFour(
         override val difficulty: Int = 5,
         override val storageRecordPrimaryKey: Long = calcZobristHash(board),
         private val heights: IntArray = calcBoardHeights(board),
-        private val history: List<LongArray> = listOf(),
-        val multiplayer: Boolean = false) : Minimax<LongArray, Move> {
+        private val history: List<LongArray> = listOf()) : Minimax<LongArray, Move> {
 
     // Storage index based on number of played moves -> In steps of three
     override val storageIndex = ceil((this.getNumberOfPlayedMoves().toDouble() / 3)).toInt() - 1
@@ -151,8 +149,7 @@ class ConnectFour(
                 difficulty = this.difficulty,
                 storageRecordPrimaryKey = newZobristHash,
                 heights = newHeights,
-                history = this.history.plusElement(this.board),
-                multiplayer = this.multiplayer
+                history = this.history.plusElement(this.board)
         )
     }
 
@@ -165,8 +162,7 @@ class ConnectFour(
                 board = if (number > 0) this.history[this.history.size - number] else this.board,
                 currentPlayer = nextPlayer,
                 difficulty = this.difficulty,
-                history = this.history.subList(0, this.history.size - number),
-                multiplayer = this.multiplayer
+                history = this.history.subList(0, this.history.size - number)
         )
     }
 
@@ -286,7 +282,18 @@ class ConnectFour(
         return res
     }
 
-    fun toHtml(): String = this.metadataToHtml() + this.boardToHtml()
+    /**
+     * Get number of played moves of both players
+     *
+     * @return number of played moves
+     */
+    fun getNumberOfPlayedMoves(): Int {
+        var count = 0
+        for (i in 0..47)
+            if ((1L shl i and this.board[0] != 0L) || (1L shl i and this.board[1] != 0L))
+                count++
+        return count
+    }
 
     /**
      * Perform best possible move for current player
@@ -306,6 +313,7 @@ class ConnectFour(
         return if (this.hasWinner()) return -this.currentPlayer else 0
     }
 
+    fun toHtml(): String = this.metadataToHtml() + this.boardToHtml()
 
     /**
      * Check if four chips of the same player are in one row.
@@ -391,36 +399,21 @@ class ConnectFour(
         else -> this.board[1]
     }
 
-    /**
-     * Get number of played moves of both players
-     *
-     * @return number of played moves
-     */
-    private fun getNumberOfPlayedMoves(): Int {
-        var count = 0
-        for (i in 0..47)
-            if ((1L shl i and this.board[0] != 0L) || (1L shl i and this.board[1] != 0L))
-                count++
-        return count
-    }
-
     private fun metadataToHtml(): String {
-        var res = "<div class='metadata row d-flex align-items-center'>"
-
         fun running(): String {
             val currentPlayer = when (this.currentPlayer) {
                 1 -> "Rot"
                 else -> "Gelb"
             }
 
-            var content = "<div class='col-auto'><h3 class='mb-0'>Aktueller Spieler: $currentPlayer</h3></div>"
+            var content = "<div class='col-auto'><h3>Aktueller Spieler: $currentPlayer</h3></div>"
 
             content += "<div class='col text-center'><div class='spinner-border' role='status'>" +
                     "  <span class='sr-only'>Loading...</span>\n" +
                     "</div></div>"
 
             content += "<div class='col text-right'>" +
-                    "<button class='btn btn-primary mr-2' onclick='game.undoMove()'>KI move</button>" +
+                    "<button class='btn btn-primary mr-2' onclick='game.aiMove()'>AI</button>" +
                     "<button class='btn btn-secondary' onclick='game.undoMove()'>Undo</button></div>"
 
             return content
@@ -432,9 +425,13 @@ class ConnectFour(
             else -> "Unentschieden!"
         } + "</h3></div>"
 
+        var res: String
+
         if (this.isGameOver()) {
+            res = "<div class='metadata finished row d-flex align-items-center'>"
             res += finish()
         } else {
+            res = "<div class='metadata row d-flex align-items-center'>"
             res += running()
         }
 
