@@ -1,8 +1,5 @@
 package connect.four
 
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import kotlin.math.pow
 import kotlin.random.Random
@@ -65,6 +62,8 @@ interface Minimax<Board, Move> {
              * @param [movesPlayed] number of played moves
              * */
             fun <Move> seedByMovesPlayed(amount: Int, movesPlayed: Int) {
+                assert(movesPlayed <= 40)
+
                 println("\nStart seeding storage for #$movesPlayed played moves...")
 
                 val startTime = System.currentTimeMillis()
@@ -94,7 +93,7 @@ interface Minimax<Board, Move> {
 
                     countNewRecords++
 
-                    val storageRecord = runBlocking { game.minimax(currentDepth = maxTreeDepthTranspositionTables, seeding = true) }
+                    val storageRecord = game.minimax(currentDepth = maxTreeDepthTranspositionTables, seeding = true)
                     newHashMap[storageRecord.key!!] = storageRecord as Record<Move>
 
                 } while (countIterations < amount)
@@ -121,6 +120,15 @@ interface Minimax<Board, Move> {
             }
 
             /**
+             * Get zobrist hash for given player and position
+             *
+             * @param [cell] from 0 to 47
+             * @param [player] player 1 or -1
+             * @return zobrist hash for given positions
+             */
+            fun getZobristHash(cell: Int, player: Int): Long = zobristTable[cell][if (player == 1) 0 else 1]
+
+            /**
              * Generate random zobrist keys and write them to storage file.
              * Warning: If you do this, already existing transposition tables become invalid
              */
@@ -135,15 +143,6 @@ interface Minimax<Board, Move> {
                 file.writeText(res)
             }
 
-            /**
-             * Get zobrist hash for given player and position
-             *
-             * @param [col]
-             * @param [row]
-             * @param [player]
-             * @return zobrist key for given positions
-             */
-            fun getZobristHash(field: Int, player: Int): Long = zobristTable[field][if (player == 1) 0 else 1]
 
             /**
              * Load zobrist table based on zobrist keys
@@ -163,17 +162,18 @@ interface Minimax<Board, Move> {
             }
 
             /**
-             * Read zobrist hashes from .txt file
+             * Read zobrist hashes from .txt file.
+             * Create new ones if they don't exist yet.
              *
              * @return array of hashes
              */
             private fun readZobristHashes(): Array<Long> {
-                val file = File("src/main/resources/transposition_tables/zobrist_hashes.txt")
+                val file = File("$transpositionTablesPath/zobrist_hashes.txt")
                 val keys = Array<Long>(96) { 0 }
 
                 if (file.readLines().isEmpty()) {
                     println("No Zobrist hashes found. Creating...")
-                    C4.generateZobristHashes()
+                    generateZobristHashes()
                     return readZobristHashes()
                 }
 
@@ -181,6 +181,8 @@ interface Minimax<Board, Move> {
                 file.forEachLine {
                     keys[count++] = it.toLong()
                 }
+
+                assert(count == 96)
 
                 return keys
             }
@@ -367,7 +369,7 @@ interface Minimax<Board, Move> {
      * @param [number] number of moves to undo
      * @return new game with undone moves
      */
-    fun undoMove(number: Int): Minimax<Board, Move> = this
+    fun undoMove(number: Int): Minimax<Board, Move>
 
     /**
      * Pick random move from possible moves list
@@ -438,7 +440,7 @@ interface Minimax<Board, Move> {
             val tmpGame = game.move(move)
             if (tmpGame.hasWinner())
                 return Storage.Record(
-                        tmpGame.storageRecordPrimaryKey,
+                        game.storageRecordPrimaryKey,
                         move,
                         game.currentPlayer * Float.MAX_VALUE,
                         game.currentPlayer

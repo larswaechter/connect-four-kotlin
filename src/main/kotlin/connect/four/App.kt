@@ -5,7 +5,72 @@ package connect.four
 
 fun main() {
 
+
+    val game1 = ConnectFour.playRandomMoves(15)
+
+    val game2 = ConnectFour(
+            longArrayOf(
+                    ConnectFour.mirrorPlayerBoard(game1.board[0]),
+                    ConnectFour.mirrorPlayerBoard(game1.board[1])
+            )
+    )
+
+    val game3 = ConnectFour(
+            longArrayOf(
+                    game1.board[0],
+                    game1.board[1]
+            )
+    )
+
+    println(game1.storageRecordPrimaryKey)
+    println(game3.storageRecordPrimaryKey)
+
+    println()
+
+    println(game1.board[0].toString())
+    println(game1.board[1].toString())
+    println(game3.board[0].toString())
+    println(game3.board[1].toString())
+
+    println()
+
+    println(game1)
+
+    /*
+
+    println(game1)
+
+    var game2 = ConnectFour()
+    game2 = game2.move(Move(0))
+    game2 = game2.move(Move(1))
+    game2 = game2.move(Move(0))
+    game2 = game2.move(Move(1))
+    game2 = game2.move(Move(1))
+
+
+    println(game2)
+
+    println(game1.storageRecordPrimaryKey)
+    println(game2.storageRecordPrimaryKey)
+
+     */
+
+
+    /*
+
+    var game = ConnectFour()
+    game = game.move(Move(0))
+    game = game.move(Move(1))
+
+    return
+
+    Minimax.Storage.seedByMovesPlayed<Move>(2, 40)
+
+    return
+
     Tests()
+
+     */
 
     /*
 

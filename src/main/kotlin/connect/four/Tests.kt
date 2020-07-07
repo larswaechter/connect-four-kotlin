@@ -31,10 +31,7 @@ class Tests {
                 0b0_0000000_0000000___0000001_0000001_0000001_0000000_0000000_0000000_0000000 // O
         )
 
-        var game = ConnectFour(
-                board = board,
-                heights = intArrayOf(3, 7, 14, 21, 29, 36, 43)
-        )
+        var game = ConnectFour(board = board)
 
         // player 1 should play win-move
         game = game.bestMove()
@@ -64,10 +61,7 @@ class Tests {
                 0b0_0000000_0000000___0000011_0000000_0000000_0000000_0000000_0000000_0000000 // O
         )
 
-        var game = ConnectFour(
-                board = board,
-                heights = intArrayOf(0, 7, 15, 22, 28, 35, 44)
-        )
+        var game = ConnectFour(board = board)
 
         // player 1 plays move
         game = game.bestMove()
@@ -108,16 +102,12 @@ class Tests {
                 0b0_0000000_0000000___0000000_0000000_0000000_0000000_0000001_0000001_0000000 // O
         )
 
-        var game = ConnectFour(
-                board = board,
-                heights = intArrayOf(3, 8, 15, 21, 28, 35, 42),
-                currentPlayer = -1
-        )
+        var game = ConnectFour(board = board, currentPlayer = -1)
 
-        // player -1 plays move -> prevent player 1 from getting 4-in-a-row
+        // player -1 plays move -> prevent player 1 from win-move
         game = game.bestMove()
 
-        // player 1 cannot win any more with this move
+        // player 1 cannot play win-move
         game = game.bestMove()
 
         assert(!game.hasWinner())
@@ -146,13 +136,9 @@ class Tests {
                 0b0_0000000_0000000___0000001_0000000_0000000_0000000_0000000_0000000_0000000 // O
         )
 
-        var game = ConnectFour(
-                board = board,
-                heights = intArrayOf(0, 7, 15, 22, 28, 35, 43),
-                currentPlayer = -1
-        )
+        var game = ConnectFour(board = board, currentPlayer = -1)
 
-        // player -1 plays move
+        // player -1 plays move -> player 1 cannot play win-move in his next-next move
         game = game.bestMove()
 
         // player 1 plays move
