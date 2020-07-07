@@ -69,6 +69,24 @@ class Server {
             } else ctx.html(createHtmlAlert(Alert.danger, "Invalid request!"))
         }
 
+        app.get("/:id/undo/:amount") { ctx ->
+            val paramID = ctx.pathParam("id")
+            val paramAmount = ctx.pathParam("amount")
+
+            // Validate parameters
+            if (this.localGames.containsKey(paramID) && paramAmount.matches(Regex("^\\d+\$"))) {
+                // Undo move
+                var game = this.localGames[paramID]!!
+                game = game.undoMove(paramAmount.toInt())
+
+                // Update in HashMap
+                this.localGames[paramID] = game
+
+                ctx.html(game.toHTML())
+
+            } else ctx.html(createHtmlAlert(Alert.danger, "Invalid request!"))
+        }
+
         app.ws("/ws/create/:id") { ws ->
             ws.onConnect { ctx ->
                 val id = ctx.pathParam("id")
@@ -118,6 +136,12 @@ class Server {
         }
     }
 
+    /**
+     * Handle websocket disconnect.
+     * Notify player that his opponent has left.
+     *
+     * @param [ctx] ws context of player who left the game
+     */
     private fun handleWebsocketDisconnect(ctx: WsCloseContext) {
         val id = ctx.pathParam("id")
 
@@ -140,6 +164,11 @@ class Server {
         }
     }
 
+    /**
+     * Handle websocket message (player move).
+     *
+     * @param [ctx] ws context of player making the request
+     */
     private fun handleWebsocketMessage(ctx: WsMessageContext) {
         val id = ctx.pathParam("id")!!
         val column = ctx.message()
@@ -170,7 +199,19 @@ class Server {
         }
     }
 
+    /**
+     * Validate session id
+     *
+     * @param [id] session id to validate
+     * @return is session id valid
+     */
     private fun isValidSessionID(id: String): Boolean = id.matches(Regex("[a-z]{16}"))
 
+    /**
+     * Check if a lobby exist for the given session id
+     *
+     * @param [id] session id of lobby
+     * @return does lobby exist
+     */
     private fun doesLobbyExists(id: String): Boolean = this.isValidSessionID(id) && this.onlineGames.containsKey(id)
 }
