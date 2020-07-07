@@ -170,13 +170,36 @@ class ConnectFour(
         )
     }
 
+    override fun searchInStorage(): Minimax.Storage.Record<Move>? {
+        if (this.storageIndex >= 0) {
+            val storage = Minimax.Storage.doStorageLookup<Move>(this.storageIndex) // Load storage
+
+            this.getStorageRecordKeys().forEach { storageRecordKey ->
+                val key = storageRecordKey()
+
+                if (storage.map.containsKey(key.first)) {
+                    val storageRecord = storage.map[key.first]!! // Load from storage
+
+                    // Create new storageRecord based on key
+                    val newStorageRecord = key.second(storageRecord)
+                    if (newStorageRecord != null) return newStorageRecord
+                }
+            }
+        }
+
+        return null
+    }
+
     override fun getStorageRecordKeys(): List<() -> Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?>> {
 
         /**
          * ##### Symmetries #####
          *
          * Applying the following actions to the board do not change its evaluation
-         * but we might have to modify the StorageRecord entry which we return -> second pair value
+         * but we might have to modify the StorageRecord entry which we return -> second pair value.
+         *
+         * We encapsulate the keys in functions to avoid unnecessary key calculations.
+         * The keys gets calculated when we call the according method.
          *
          * - Inverse board: -1 to 1 and vice versa
          * - Mirror board on center y-Axis

@@ -131,8 +131,11 @@ interface Minimax<Board, Move> {
             /**
              * Generate random zobrist-hashes and write them to storage file.
              * Warning: If you do this, already existing transposition tables become invalid
+             *
+             * Create one hash for each board cell (47) and each player (2)
+             * We have to create some more because the top board row is unused
              */
-            fun generateZobristHashes() {
+            private fun generateZobristHashes() {
                 val file = File("$transpositionTablesPath/zobrist_hashes.txt")
                 var res = ""
 
@@ -382,6 +385,13 @@ interface Minimax<Board, Move> {
     fun getRandomMove(possibleMoves: List<Move> = this.getPossibleMoves()): Move = possibleMoves.random()
 
     /**
+     * Search best move for current board in storage. Including symmetries etc.
+     *
+     * @return best move if it exists in storage otherwise null
+     */
+    fun searchInStorage(): Storage.Record<Move>?
+
+    /**
      * Get all possible storage keys for the current board with according methods to transform the associated move.
      * - This might include symmetries or inverted boards for example
      * - Index 0 should be [storageRecordPrimaryKey]
@@ -412,26 +422,8 @@ interface Minimax<Board, Move> {
             return Storage.Record(null, null, game.evaluate(currentDepth), game.currentPlayer)
 
         // Check if board exists in storage
-        var existsInStorage = false
-        val storageIndex = game.storageIndex
-
-        if (storageIndex >= 0) {
-            val storage = Storage.doStorageLookup<Move>(storageIndex) // Load storage
-
-            // We check every possible key under which the board could be stored
-            game.getStorageRecordKeys().forEach { storageRecordKey ->
-                val key = storageRecordKey()
-
-                if (storage.map.containsKey(key.first)) {
-                    val storageRecord = storage.map[key.first]!! // Load from storage
-                    existsInStorage = true
-
-                    // Create new storageRecord based on key
-                    val newStorageRecord = key.second(storageRecord)
-                    if (newStorageRecord != null) return newStorageRecord
-                }
-            }
-        }
+        val storedMove = game.searchInStorage()
+        if (storedMove != null) return storedMove
 
         val possibleMoves = game.getPossibleMoves(true)
 
@@ -463,8 +455,8 @@ interface Minimax<Board, Move> {
         val finalMove = Storage.Record(game.storageRecordPrimaryKey, minOrMax.first, minOrMax.second, game.currentPlayer)
 
         // We add board evaluation temporary to storage if it does not already exist in it.
-        if (!seeding && !existsInStorage && storageIndex >= 0)
-            Storage.doStorageLookup<Move>(storageIndex).map[game.storageRecordPrimaryKey] = finalMove
+        if (!seeding && game.storageIndex >= 0)
+            Storage.doStorageLookup<Move>(game.storageIndex).map[game.storageRecordPrimaryKey] = finalMove
 
         return finalMove
     }
