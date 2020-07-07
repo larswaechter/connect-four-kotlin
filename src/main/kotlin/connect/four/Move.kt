@@ -8,7 +8,7 @@ class Move(val column: Int) {
          * Instantiate based on move-value in storage entry
          * Required to read move from storage .txt file
          *
-         * @param [move]
+         * @param [move] as in string representation
          * @return Move
          */
         fun ofStorageEntry(move: String) = Move(move.toInt())

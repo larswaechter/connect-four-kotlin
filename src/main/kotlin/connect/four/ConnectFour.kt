@@ -8,14 +8,15 @@ import kotlin.math.*
  * @param [board] array of 2 bitboards
  * @param [currentPlayer] current player
  * @param [difficulty] AI strength
+ * @param [storageRecordPrimaryKey] key under which the board will be saved to storage
  * @param [heights] current height of board columns
  * @param [history] history of boards
  * @param [multiplayer] playing vs ai or another human player
  */
 class ConnectFour(
         override val board: LongArray = longArrayOf(
-                0b0_0000000_0000000___0000000_0000000_0000000_0000000_0000000_0000000_0000000, // X
-                0b0_0000000_0000000___0000000_0000000_0000000_0000000_0000000_0000000_0000000 // O
+                0b0_0000000_0000000___0000000_0000000_0000000_0000000_0000000_0000000_0000000, // X = player 1 (red)
+                0b0_0000000_0000000___0000000_0000000_0000000_0000000_0000000_0000000_0000000 // O = player -1 (yellow)
         ),
         override val currentPlayer: Int = 1,
         override val difficulty: Int = 5,
@@ -29,6 +30,11 @@ class ConnectFour(
 
     companion object {
         /**
+         * Most top column cells in bitboards
+         */
+        const val top = 0b1000000_1000000_1000000_1000000_1000000_1000000_1000000L
+
+        /**
          * Play exactly n given random moves with ending up in a draw position.
          * This method is mainly used to create different random game positions for the transposition tables.
          *
@@ -39,14 +45,14 @@ class ConnectFour(
             var game = ConnectFour()
             for (i in 1..n) {
                 game = game.move(game.getRandomMove())
-                if (game.hasWinner()) return playRandomMoves(n)
+                if (game.hasWinner(-game.currentPlayer)) return playRandomMoves(n)
 
             }
             return game
         }
 
         /**
-         * Calculate zobrist hash for a given board
+         * Calculate zobrist-hash for a given board
          *
          * @param [board] board to hash
          * @return hash for given board
@@ -54,13 +60,11 @@ class ConnectFour(
         fun calcZobristHash(board: LongArray): Long {
             var hash = 0L
 
-            for (i in intArrayOf(1, -1)) {
-                val tmpBoard: Long = if (i == 1) board[0] else board[1]
-                for (k in 0..47) {
-                    if (1L shl k and tmpBoard != 0L) {
-                        hash = hash xor Minimax.Storage.getZobristHash(k, i)
-                    }
-                }
+            for (player in intArrayOf(1, -1)) {
+                val tmpBoard: Long = if (player == 1) board[0] else board[1]
+                for (cell in 0..47)
+                    if (1L shl cell and tmpBoard != 0L)
+                        hash = hash xor Minimax.Storage.getZobristHash(cell, player)
             }
 
             return hash
@@ -73,7 +77,7 @@ class ConnectFour(
          * @return array of heights for given board
          */
         fun calcBoardHeights(board: LongArray): IntArray {
-            assert(isValidBoard(board))
+            assert(isValidBoard(board)) { "Cannot calculate board heights! The given board is invalid." }
             val heights = IntArray(7) { 0 }
 
             // loop columns
@@ -83,19 +87,13 @@ class ConnectFour(
 
                 // loop rows down -> up
                 for (row in column..column + 5)
-                // Check if either player 1 or player -1 has set a stone
+                // Check if either player 1 or player -1 has set a chip
                     if ((1L shl row and board[0] != 0L) || 1L shl row and board[1] != 0L)
                         heights[index] = row + 1
             }
 
             return heights
         }
-
-        /**
-         * Check if the given board is a valid one
-         * - No player can have a stone at the same cell
-         */
-        fun isValidBoard(board: LongArray): Boolean = board[0] and board[1] == 0L
 
         /**
          * Mirror player board on center y-axis
@@ -114,28 +112,38 @@ class ConnectFour(
 
             return mirror
         }
+
+        /**
+         * Check if the given board is a valid one.
+         * There can't be two chips at the same cell.
+         *
+         * @param [board] board to validate
+         * @return is valid board
+         */
+        private fun isValidBoard(board: LongArray): Boolean = board[0] and board[1] == 0L
     }
 
     override fun move(move: Move): ConnectFour {
-        val top = 0b1000000_1000000_1000000_1000000_1000000_1000000_1000000L
+        assert(move.column in 0..6) { "Invalid move! Move should be in range of 0-6. Found: ${move.column}}" }
+        assert(top and (1L shl this.heights[move.column]) == 0L) { "Invalid move! No more space in given column." }
 
-        assert(move.column in 0..6)
-        assert(top and (1L shl this.heights[move.column]) == 0L)
-
-        val shiftedMove = 1L shl this.heights[move.column]
-
-        val newHeights = heights.clone()
+        // Update column height
+        val newHeights = this.heights.clone()
         newHeights[move.column] += 1
 
+        // Shift move to the according cell
+        val shiftedMove = 1L shl this.heights[move.column]
+
+        // Update current player's board
         val newPlayerBoard = this.getPlayerBoard() xor shiftedMove
         val newBoards = when (this.currentPlayer) {
             1 -> longArrayOf(newPlayerBoard, this.board[1])
             else -> longArrayOf(this.board[0], newPlayerBoard)
         }
 
+        // Calculate new zobrist-hash
         val insertedAt = this.heights[move.column]
-
-        var newZobristHash = this.storageRecordPrimaryKey xor Minimax.Storage.getZobristHash(insertedAt, this.currentPlayer)
+        val newZobristHash = this.storageRecordPrimaryKey xor Minimax.Storage.getZobristHash(insertedAt, this.currentPlayer)
 
         return ConnectFour(
                 board = newBoards,
@@ -149,7 +157,7 @@ class ConnectFour(
     }
 
     override fun undoMove(number: Int): ConnectFour {
-        assert(number <= this.history.size)
+        assert(number <= this.history.size) { "You cannot undo more moves than moves were played!" }
 
         val nextPlayer: Int = if (number % 2 == 0) this.currentPlayer else -this.currentPlayer
 
@@ -188,7 +196,7 @@ class ConnectFour(
                 Pair(calcZobristHash(this.mirrorBoard()), { storageRecord ->
                     if (this.currentPlayer == storageRecord.player) {
                         val newMove = storageRecord.move!!.mirrorYAxis()
-                        Minimax.Storage.Record(storageRecord.key, newMove, storageRecord.score, storageRecord.player)
+                        Minimax.Storage.Record(this.storageRecordPrimaryKey, newMove, storageRecord.score, storageRecord.player)
                     } else null
                 })
 
@@ -196,7 +204,7 @@ class ConnectFour(
         val key3 = fun(): Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
                 Pair(calcZobristHash(longArrayOf(this.board[1], this.board[0])), { storageRecord ->
                     if (this.currentPlayer != storageRecord.player)
-                        Minimax.Storage.Record(storageRecord.key, storageRecord.move!!, -storageRecord.score, this.currentPlayer)
+                        Minimax.Storage.Record(this.storageRecordPrimaryKey, storageRecord.move!!, -storageRecord.score, this.currentPlayer)
                     else null
                 })
 
@@ -205,16 +213,26 @@ class ConnectFour(
                 Pair(calcZobristHash(longArrayOf(mirrorPlayerBoard(this.board[1]), mirrorPlayerBoard(this.board[0]))), { storageRecord ->
                     if (this.currentPlayer != storageRecord.player) {
                         val newMove = storageRecord.move!!.mirrorYAxis()
-                        Minimax.Storage.Record(storageRecord.key, newMove, -storageRecord.score, this.currentPlayer)
+                        Minimax.Storage.Record(this.storageRecordPrimaryKey, newMove, -storageRecord.score, this.currentPlayer)
                     } else null
                 })
 
         return listOf(key1, key2, key3, key4)
     }
 
-    override fun isGameOver(): Boolean = this.hasWinner() || this.getNumberOfPlayedMoves() == 42
+    /**
+     * Check if [getNumberOfPlayedMoves] is 42 or [hasWinner] is true
+     *
+     * @param [player] set to 1 or -1 to check only for the given player's win in [hasWinner]
+     * @return is game over
+     */
+    override fun isGameOver(player: Int): Boolean = this.hasWinner(player) || this.getNumberOfPlayedMoves() == 42
 
-    override fun hasWinner(): Boolean = this.fourInARow(this.board[0]) || this.fourInARow(this.board[1])
+    override fun hasWinner(player: Int): Boolean = when (player) {
+        1 -> this.fourInARow(this.board[0])
+        -1 -> this.fourInARow(this.board[1])
+        else -> this.fourInARow(this.board[0]) || this.fourInARow(this.board[1])
+    }
 
     override fun evaluate(depth: Int): Float = this.mcm()
 
@@ -248,10 +266,6 @@ class ConnectFour(
 
     fun toHTML(): String {
 
-        return ""
-
-        /*
-
         /**
          * TODO:
          *  - if fourInARow() -> output getWinner()
@@ -260,14 +274,10 @@ class ConnectFour(
 
         var res = "<div class='board row mx-auto shadow-lg'>"
 
-        for (i in 0..6) {
-            res += "<div class='column col-auto' data-column='$i'>"
-            for (j in 0..5) {
-                val playerColor = when (this.board[i][j]) {
-                    1 -> "red"
-                    -1 -> "yellow"
-                    else -> ""
-                }
+        for (i in 47 downTo 5 step 7) {
+            res += "<div class='column col-auto' data-column='${i / 7}'>"
+            for (k in i downTo i - 5) {
+                val playerColor = if (1L shl k and board[0] != 0L) "red" else if (1L shl k and board[1] != 0L) "yellow" else ""
                 res += "<div class='stone $playerColor'></div>"
             }
             res += "</div>"
@@ -276,8 +286,6 @@ class ConnectFour(
         res += "</div>"
 
         return res
-
-         */
     }
 
     /**
@@ -285,19 +293,17 @@ class ConnectFour(
      *
      * @return game with applied best move
      */
-    fun bestMove(): ConnectFour {
-        // val move = this.move(if (this.difficulty == 0) this.getRandomMove() else this.minimax().move!!)
-        val move = this.minimax()
+    fun bestMove(): ConnectFour = this.move(if (this.difficulty == 0) this.getRandomMove() else this.minimax().move!!)
 
-        /*
-        println(move)
-        println(this.move(move.move!!))
-        println()
 
-         */
-
-        return this.move(move.move!!)
-
+    /**
+     * Get winner of the game
+     *
+     * @return player 1 / -1 or 0 if draw
+     */
+    fun getWinner(): Int {
+        assert(this.isGameOver()) { "The game has not ended yet! There is no winner." }
+        return if (this.hasWinner()) return -this.currentPlayer else 0
     }
 
     /**
@@ -306,7 +312,7 @@ class ConnectFour(
      *
      * @return if four in a row
      */
-    fun fourInARow(bitboard: Long): Boolean {
+    private fun fourInARow(bitboard: Long): Boolean {
         val directions = intArrayOf(1, 7, 6, 8)
         var bb: Long
 
@@ -316,16 +322,6 @@ class ConnectFour(
         }
 
         return false
-    }
-
-    /**
-     * Get winner of the game
-     *
-     * @return player 1 / -1 or 0 if draw
-     */
-    fun getWinner(): Int {
-        assert(this.isGameOver())
-        return if (this.hasWinner()) return -this.currentPlayer else 0
     }
 
     /**
@@ -350,7 +346,7 @@ class ConnectFour(
                     board = board.clone(),
                     currentPlayer = currentPlayer,
                     heights = heights.clone(),
-                    storageRecordPrimaryKey = 1 // Prevent to calculate zobristHash
+                    storageRecordPrimaryKey = 1 // Prevent to calculate zobrist-hash
             )
 
             // Play random moves until game is over
@@ -374,15 +370,30 @@ class ConnectFour(
         return (this.currentPlayer * (stats.third - stats.first)).toFloat()
     }
 
+    /**
+     * Mirror board on center y-axis
+     *
+     * @return mirrored board
+     */
     private fun mirrorBoard(): LongArray = longArrayOf(mirrorPlayerBoard(this.board[0]), mirrorPlayerBoard(this.board[1]))
 
+    /**
+     * Get board of the according player.
+     * - Player 1: index 0 in [board]
+     * - Player -1: index 1 in [board]
+     *
+     * @param [player]
+     * @return player board
+     */
     private fun getPlayerBoard(player: Int = this.currentPlayer) = when (player) {
         1 -> this.board[0]
         else -> this.board[1]
     }
 
     /**
-     * We might also just return history.size but for testing purposes this ways is easier
+     * Get number of played moves of both players
+     *
+     * @return number of played moves
      */
     private fun getNumberOfPlayedMoves(): Int {
         var count = 0

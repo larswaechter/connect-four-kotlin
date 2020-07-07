@@ -17,6 +17,7 @@ let game = null;
 class Game {
     constructor(id) {
         this.id = id || this.createRandomString()
+        this.isMovePending = false
     }
 
     createRandomString = () => {
@@ -49,10 +50,14 @@ class LocalGame extends Game {
     }
 
     move = async (column) => {
-        const res = await fetch(this.id + "/move/" + column)
-        const content = await res.text()
-        $content.innerHTML = content
-        setEventListeners()
+        if (!this.isMovePending) {
+            this.isMovePending = true
+            const res = await fetch(this.id + "/move/" + column)
+            const content = await res.text()
+            $content.innerHTML = content
+            setEventListeners()
+            this.isMovePending = false
+        }
     }
 }
 
@@ -82,7 +87,11 @@ class OnlineGame extends Game {
     }
 
     move = (column) => {
-        this.ws.send(column)
+        if (!this.isMovePending) {
+            this.isMovePending = true
+            this.ws.send(column)
+            this.isMovePending = false
+        }
     }
 }
 
@@ -128,7 +137,7 @@ $startBtn.addEventListener("click", function () {
 })
 
 $joinBtn.addEventListener("click", function () {
-    if($sessionID.value.length == 16) {
+    if ($sessionID.value.length == 16) {
         $sessionID.classList.remove("is-invalid")
         $("#join-modal").modal("hide")
         $("#welcome").hide()

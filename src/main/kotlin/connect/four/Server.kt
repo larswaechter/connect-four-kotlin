@@ -31,9 +31,9 @@ class Server {
             val paramDifficulty = ctx.queryParam("difficulty", "0")!!
 
             // Validate parameters
-            if (this.isValidSessionID(id) && paramPlayers.matches(Regex("^[1-2]$")) && paramDifficulty.matches(Regex("^[1-2]$"))) {
+            if (this.isValidSessionID(id) && paramPlayers.matches(Regex("^[1-2]$")) && paramDifficulty.matches(Regex("^[0-5]$"))) {
                 // Create new game and store in HashMap
-                val newGame = ConnectFour(difficulty = paramDifficulty.toInt(), multiplayer = paramPlayers.toInt() == 2)
+                val newGame = ConnectFour(difficulty = 5, multiplayer = paramPlayers.toInt() == 2)
                 this.localGames[id] = newGame
                 ctx.html(newGame.toHTML())
             } else ctx.html(createHtmlAlert(Alert.danger, "Invalid request!"))
@@ -51,7 +51,7 @@ class Server {
                 game = game.move(Move(column))
 
                 // AI plays the move if there's no multiplayer
-                if (!game.multiplayer) game = game.move(game.getRandomMove())
+                if (!game.multiplayer) game = game.bestMove()
 
                 // Update in HashMap
                 this.localGames[paramID] = game
