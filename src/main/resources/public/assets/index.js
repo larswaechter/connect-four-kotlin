@@ -46,7 +46,6 @@ class LocalGame extends Game {
         const res = await fetch("/start/" + this.id + "?players=" + this.players + "&difficulty=" + this.difficulty)
         const content = await res.text()
         $content.innerHTML = content
-        setEventListeners()
     }
 
     move = async (column) => {
@@ -55,7 +54,16 @@ class LocalGame extends Game {
             const res = await fetch(this.id + "/move/" + column)
             const content = await res.text()
             $content.innerHTML = content
-            setEventListeners()
+            this.isMovePending = false
+        }
+    }
+
+    undoMove = async (column) => {
+        if (!this.isMovePending) {
+            this.isMovePending = true
+            const res = await fetch(this.id + "/undo")
+            const content = await res.text()
+            $content.innerHTML = content
             this.isMovePending = false
         }
     }
@@ -74,7 +82,6 @@ class OnlineGame extends Game {
 
         this.ws.onmessage = msg => {
             $content.innerHTML = msg.data
-            setEventListeners()
         }
     }
 
@@ -82,7 +89,6 @@ class OnlineGame extends Game {
         this.ws = new WebSocket("ws://" + location.hostname + ":" + location.port + "/ws/join/" + this.id);
         this.ws.onmessage = msg => {
             $content.innerHTML = msg.data
-            setEventListeners()
         }
     }
 
@@ -122,14 +128,6 @@ const joinOnlineGame = () => {
     game.join()
 }
 
-const setEventListeners = () => {
-    Array.from(document.querySelectorAll('.column')).forEach((element) => {
-        element.addEventListener('click', (e) => {
-            game.move(element.dataset.column)
-        });
-    });
-}
-
 $startBtn.addEventListener("click", function () {
     $("#setup-modal").modal("hide")
     $("#welcome").hide()
@@ -137,7 +135,7 @@ $startBtn.addEventListener("click", function () {
 })
 
 $joinBtn.addEventListener("click", function () {
-    if ($sessionID.value.length == 16) {
+    if ($sessionID.value.length === 16) {
         $sessionID.classList.remove("is-invalid")
         $("#join-modal").modal("hide")
         $("#welcome").hide()

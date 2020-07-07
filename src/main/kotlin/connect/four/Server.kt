@@ -35,7 +35,7 @@ class Server {
                 // Create new game and store in HashMap
                 val newGame = ConnectFour(difficulty = 5, multiplayer = paramPlayers.toInt() == 2)
                 this.localGames[id] = newGame
-                ctx.html(newGame.toHTML())
+                ctx.html(newGame.toHtml())
             } else ctx.html(createHtmlAlert(Alert.danger, "Invalid request!"))
         }
 
@@ -59,30 +59,29 @@ class Server {
                 // Check game status
                 if (game.hasWinner()) {
                     this.localGames.remove(paramID)
-                    ctx.html(game.toHTML())
+                    ctx.html(game.toHtml())
                 } else if (game.getNumberOfRemainingMoves() == 0) {
                     this.localGames.remove(paramID)
-                    ctx.html(game.toHTML())
+                    ctx.html(game.toHtml())
                 } else {
-                    ctx.html(game.toHTML())
+                    ctx.html(game.toHtml())
                 }
             } else ctx.html(createHtmlAlert(Alert.danger, "Invalid request!"))
         }
 
-        app.get("/:id/undo/:amount") { ctx ->
+        app.get("/:id/undo") { ctx ->
             val paramID = ctx.pathParam("id")
-            val paramAmount = ctx.pathParam("amount")
 
             // Validate parameters
-            if (this.localGames.containsKey(paramID) && paramAmount.matches(Regex("^\\d+\$"))) {
+            if (this.localGames.containsKey(paramID)) {
                 // Undo move
                 var game = this.localGames[paramID]!!
-                game = game.undoMove(paramAmount.toInt())
+                game = game.undoMove(1)
 
                 // Update in HashMap
                 this.localGames[paramID] = game
 
-                ctx.html(game.toHTML())
+                ctx.html(game.toHtml())
 
             } else ctx.html(createHtmlAlert(Alert.danger, "Invalid request!"))
         }
@@ -124,8 +123,8 @@ class Server {
                     this.onlineGames[id] = onlineGame
 
                     // Game starts
-                    onlineGame.playerOneSocket!!.send(onlineGame.game.toHTML())
-                    onlineGame.playerTwoSocket!!.send(onlineGame.game.toHTML())
+                    onlineGame.playerOneSocket!!.send(onlineGame.game.toHtml())
+                    onlineGame.playerTwoSocket!!.send(onlineGame.game.toHtml())
                 } else {
                     ctx.send(createHtmlAlert(Alert.danger, "Lobby not found!"))
                 }
@@ -192,8 +191,8 @@ class Server {
             }
 
             // Send updated board to players
-            lobby.playerOneSocket!!.send(lobby.game.toHTML())
-            lobby.playerTwoSocket!!.send(lobby.game.toHTML())
+            lobby.playerOneSocket!!.send(lobby.game.toHtml())
+            lobby.playerTwoSocket!!.send(lobby.game.toHtml())
         } else {
             ctx.send(createHtmlAlert(Alert.danger, "Invalid request!"))
         }

@@ -286,30 +286,7 @@ class ConnectFour(
         return res
     }
 
-
-    fun toHTML(): String {
-
-        /**
-         * TODO:
-         *  - if fourInARow() -> output getWinner()
-         *  - output current player (color)
-         */
-
-        var res = "<div class='board row mx-auto shadow-lg'>"
-
-        for (i in 47 downTo 5 step 7) {
-            res += "<div class='column col-auto' data-column='${i / 7}'>"
-            for (k in i downTo i - 5) {
-                val playerColor = if (1L shl k and board[0] != 0L) "red" else if (1L shl k and board[1] != 0L) "yellow" else ""
-                res += "<div class='stone $playerColor'></div>"
-            }
-            res += "</div>"
-        }
-
-        res += "</div>"
-
-        return res
-    }
+    fun toHtml(): String = this.metadataToHtml() + this.boardToHtml()
 
     /**
      * Perform best possible move for current player
@@ -328,6 +305,7 @@ class ConnectFour(
         assert(this.isGameOver()) { "The game has not ended yet! There is no winner." }
         return if (this.hasWinner()) return -this.currentPlayer else 0
     }
+
 
     /**
      * Check if four chips of the same player are in one row.
@@ -424,5 +402,61 @@ class ConnectFour(
             if ((1L shl i and this.board[0] != 0L) || (1L shl i and this.board[1] != 0L))
                 count++
         return count
+    }
+
+    private fun metadataToHtml(): String {
+        var res = "<div class='metadata row d-flex align-items-center'>"
+
+        fun running(): String {
+            val currentPlayer = when (this.currentPlayer) {
+                1 -> "Rot"
+                else -> "Gelb"
+            }
+
+            var content = "<div class='col-auto'><h3 class='mb-0'>Aktueller Spieler: $currentPlayer</h3></div>"
+
+            content += "<div class='col text-center'><div class='spinner-border' role='status'>" +
+                    "  <span class='sr-only'>Loading...</span>\n" +
+                    "</div></div>"
+
+            content += "<div class='col text-right'>" +
+                    "<button class='btn btn-primary mr-2' onclick='game.undoMove()'>KI move</button>" +
+                    "<button class='btn btn-secondary' onclick='game.undoMove()'>Undo</button></div>"
+
+            return content
+        }
+
+        fun finish(): String = "<div class='col'><h3 class='text-center'>" + when (this.getWinner()) {
+            1 -> "Spieler Rot gewinnt!"
+            -1 -> "Spieler Gelb gewinnt!"
+            else -> "Unentschieden!"
+        } + "</h3></div>"
+
+        if (this.isGameOver()) {
+            res += finish()
+        } else {
+            res += running()
+        }
+
+        res += "</div><hr class='featurette-divider'>"
+
+        return res
+    }
+
+    private fun boardToHtml(): String {
+        var res = "<div class='board row mx-auto shadow-lg'>"
+
+        for (i in 47 downTo 5 step 7) {
+            res += "<div class='column col-auto' onclick='game.move(${i / 7})'>"
+            for (k in i downTo i - 5) {
+                val playerColor = if (1L shl k and board[0] != 0L) "red" else if (1L shl k and board[1] != 0L) "yellow" else ""
+                res += "<div class='stone $playerColor'></div>"
+            }
+            res += "</div>"
+        }
+
+        res += "</div>"
+
+        return res
     }
 }

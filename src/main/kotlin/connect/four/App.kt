@@ -5,7 +5,7 @@ package connect.four
 
 fun main() {
 
-    Tests()
+    Server()
 
     /*
 
