@@ -436,7 +436,7 @@ interface Minimax<Board, Move> {
             val tmpGame = game.move(move)
             if (tmpGame.hasWinner())
                 return Storage.Record(
-                        tmpGame.storageRecordPrimaryKey,
+                        game.storageRecordPrimaryKey,
                         move,
                         game.currentPlayer * Float.MAX_VALUE,
                         game.currentPlayer
