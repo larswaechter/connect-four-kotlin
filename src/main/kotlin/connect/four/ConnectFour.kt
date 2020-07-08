@@ -1,5 +1,9 @@
 package connect.four
 
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.*
 
 /**
@@ -341,42 +345,39 @@ class ConnectFour(
      * @return evaluation score
      */
     private fun mcm(numberOfSimulations: Int = 200): Float {
-        // Defeats - Draws - Wins for current player
-        var stats = Triple(0, 0, 0)
         val remainingMoves = this.getNumberOfRemainingMoves()
+        val score = AtomicInteger()
 
         // Simulate games
-        //    runBlocking {
-        //        repeat(numberOfSimulations) {
-        //            launch {
-        for (i in 1..numberOfSimulations) {
-            // Apply only the essential properties
-            var game = ConnectFour(
-                    board = board.clone(),
-                    currentPlayer = currentPlayer,
-                    heights = heights.clone(),
-                    storageRecordPrimaryKey = 1 // Prevent to calculate zobrist-hash
-            )
+        runBlocking {
+            repeat(numberOfSimulations) {
+                launch {
+                    // Apply only the essential properties
+                    var game = ConnectFour(
+                            board = board.clone(),
+                            currentPlayer = currentPlayer,
+                            heights = heights.clone(),
+                            storageRecordPrimaryKey = 1 // Prevent to calculate zobrist-hash
+                    )
 
-            // Play random moves until game is over
-            // Factor: the earlier the game has ended, the better is the move
-            var factor = remainingMoves
-            while (!game.isGameOver()) {
-                game = game.move(game.getRandomMove())
-                factor--
-            }
+                    // Play random moves until game is over
+                    // Factor: the earlier the game has ended, the better is the move
+                    var factor = remainingMoves
+                    while (!game.isGameOver()) {
+                        game = game.move(game.getRandomMove())
+                        factor--
+                    }
 
-            // Update stats based on winner
-            when (game.getWinner()) {
-                -currentPlayer -> stats = Triple(stats.first + 1 + 5 * factor, stats.second, stats.third)
-                0 -> stats = Triple(stats.first, stats.second + 1, stats.third)
-                currentPlayer -> stats = Triple(stats.first, stats.second, stats.third + 1 + 5 * factor)
+                    // Update stats based on winner
+                    when (game.getWinner()) {
+                        -currentPlayer -> score.addAndGet(1 + 5 * factor) // win
+                        currentPlayer -> score.addAndGet(-(1 + 5 * factor)) // defeat
+                    }
+                }
             }
-            //         }
-            //     }
         }
 
-        return (this.currentPlayer * (stats.third - stats.first)).toFloat()
+        return score.toFloat()
     }
 
     /**
