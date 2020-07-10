@@ -19,16 +19,17 @@ import kotlin.math.*
 class ConnectFour(
         override val board: LongArray = longArrayOf(
                 0b0_0000000_0000000___0000000_0000000_0000000_0000000_0000000_0000000_0000000, // X = player 1 (red)
-                0b0_0000000_0000000___0000000_0000000_0000000_0000000_0000000_0000000_0000000 // O = player -1 (yellow)
+                0b0_0000000_0000000___0000000_0000000_0000000_0000000_0000000_0000000_0000000  // O = player -1 (yellow)
         ),
         override val currentPlayer: Int = 1,
         override val difficulty: Int = 5,
         override val storageRecordPrimaryKey: Long = calcZobristHash(board),
+        val numberOfPlayedMoves: Int = calcNumberOfPlayedMoves(board),
         private val heights: IntArray = calcBoardHeights(board),
         private val history: List<LongArray> = listOf()) : Minimax<LongArray, Move> {
 
     // Storage index based on number of played moves -> In steps of three
-    override val storageIndex = ceil((this.getNumberOfPlayedMoves().toDouble() / 3)).toInt() - 1
+    override val storageIndex = ceil((this.numberOfPlayedMoves.toDouble() / 3)).toInt() - 1
 
     companion object {
         /**
@@ -98,6 +99,19 @@ class ConnectFour(
         }
 
         /**
+         * Get number of played moves of both players
+         *
+         * @return number of played moves
+         */
+        fun calcNumberOfPlayedMoves(board: LongArray): Int {
+            var count = 0
+            for (i in 0..47)
+                if ((1L shl i and board[0] != 0L) || (1L shl i and board[1] != 0L))
+                    count++
+            return count
+        }
+
+        /**
          * Mirror player board on center y-axis
          *
          * @param [board] player board as bit representation
@@ -152,6 +166,7 @@ class ConnectFour(
                 currentPlayer = -this.currentPlayer,
                 difficulty = this.difficulty,
                 storageRecordPrimaryKey = newZobristHash,
+                numberOfPlayedMoves = this.numberOfPlayedMoves + 1,
                 heights = newHeights,
                 history = this.history.plusElement(this.board)
         )
@@ -166,11 +181,12 @@ class ConnectFour(
                 board = if (number > 0) this.history[this.history.size - number] else this.board,
                 currentPlayer = nextPlayer,
                 difficulty = this.difficulty,
+                numberOfPlayedMoves = this.numberOfPlayedMoves - number,
                 history = this.history.subList(0, this.history.size - number)
         )
     }
 
-    override fun searchInStorage(): Minimax.Storage.Record<Move>? {
+    override fun searchBestMoveInStorage(): Minimax.Storage.Record<Move>? {
         if (this.storageIndex >= 0) {
             val storage = Minimax.Storage.doStorageLookup<Move>(this.storageIndex) // Load storage
 
@@ -206,7 +222,7 @@ class ConnectFour(
          * - Mirror board and inverse
          */
 
-        // storageRecordPrimaryKey (base)
+        // storageRecordPrimaryKey (base) - exact match
         val key1 = fun(): Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
                 Pair(this.storageRecordPrimaryKey, { storageRecord ->
                     if (this.currentPlayer == storageRecord.player)
@@ -227,7 +243,7 @@ class ConnectFour(
         val key3 = fun(): Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
                 Pair(calcZobristHash(longArrayOf(this.board[1], this.board[0])), { storageRecord ->
                     if (this.currentPlayer != storageRecord.player)
-                        Minimax.Storage.Record(this.storageRecordPrimaryKey, storageRecord.move!!, -storageRecord.score, this.currentPlayer)
+                        Minimax.Storage.Record(this.storageRecordPrimaryKey, storageRecord.move!!, -storageRecord.score, -storageRecord.player)
                     else null
                 })
 
@@ -236,7 +252,7 @@ class ConnectFour(
                 Pair(calcZobristHash(longArrayOf(mirrorPlayerBoard(this.board[1]), mirrorPlayerBoard(this.board[0]))), { storageRecord ->
                     if (this.currentPlayer != storageRecord.player) {
                         val newMove = storageRecord.move!!.mirrorYAxis()
-                        Minimax.Storage.Record(this.storageRecordPrimaryKey, newMove, -storageRecord.score, this.currentPlayer)
+                        Minimax.Storage.Record(this.storageRecordPrimaryKey, newMove, -storageRecord.score, -storageRecord.player)
                     } else null
                 })
 
@@ -244,12 +260,12 @@ class ConnectFour(
     }
 
     /**
-     * Check if [getNumberOfPlayedMoves] is 42 or [hasWinner] is true
+     * Check if [numberOfPlayedMoves] is 42 or [hasWinner] is true
      *
      * @param [player] set to 1 or -1 to check only for the given player's win in [hasWinner]
      * @return is game over
      */
-    override fun isGameOver(player: Int): Boolean = this.hasWinner(player) || this.getNumberOfPlayedMoves() == 42
+    override fun isGameOver(player: Int): Boolean = this.hasWinner(player) || this.numberOfPlayedMoves == 42
 
     override fun hasWinner(player: Int): Boolean = when (player) {
         1 -> this.fourInARow(this.board[0])
@@ -270,7 +286,7 @@ class ConnectFour(
         return if (shuffle) possibleMoves.shuffled() else possibleMoves.toList()
     }
 
-    override fun getNumberOfRemainingMoves(): Int = 42 - this.getNumberOfPlayedMoves()
+    override fun getNumberOfRemainingMoves(): Int = 42 - this.numberOfPlayedMoves
 
     override fun toString(): String {
         var res = ""
@@ -284,19 +300,6 @@ class ConnectFour(
         }
 
         return res
-    }
-
-    /**
-     * Get number of played moves of both players
-     *
-     * @return number of played moves
-     */
-    fun getNumberOfPlayedMoves(): Int {
-        var count = 0
-        for (i in 0..47)
-            if ((1L shl i and this.board[0] != 0L) || (1L shl i and this.board[1] != 0L))
-                count++
-        return count
     }
 
     /**
@@ -314,7 +317,7 @@ class ConnectFour(
      */
     fun getWinner(): Int {
         assert(this.isGameOver()) { "The game has not ended yet! There is no winner." }
-        return if (this.hasWinner()) return -this.currentPlayer else 0
+        return if (this.hasWinner()) -this.currentPlayer else 0
     }
 
     fun toHtml(): String = this.metadataToHtml() + this.boardToHtml()
@@ -354,30 +357,31 @@ class ConnectFour(
                 launch {
                     // Apply only the essential properties
                     var game = ConnectFour(
-                            board = board.clone(),
+                            board = longArrayOf(board[0], board[1]),
                             currentPlayer = currentPlayer,
                             heights = heights.clone(),
-                            storageRecordPrimaryKey = 1 // Prevent to calculate zobrist-hash
+                            storageRecordPrimaryKey = 1, // Prevent to calculate zobrist-hash
+                            numberOfPlayedMoves = numberOfPlayedMoves
                     )
 
                     // Play random moves until game is over
                     // Factor: the earlier the game has ended, the better is the move
                     var factor = remainingMoves
-                    while (!game.isGameOver()) {
+                    while (!game.isGameOver(-game.currentPlayer)) {
                         game = game.move(game.getRandomMove())
                         factor--
                     }
 
                     // Update stats based on winner
                     when (game.getWinner()) {
-                        -currentPlayer -> score.addAndGet(1 + 5 * factor) // win
-                        currentPlayer -> score.addAndGet(-(1 + 5 * factor)) // defeat
+                        currentPlayer -> score.addAndGet(1 + 5 * factor) // win
+                        -currentPlayer -> score.addAndGet(-(1 + 5 * factor)) // defeat
                     }
                 }
             }
         }
 
-        return score.toFloat()
+        return this.currentPlayer * score.toFloat()
     }
 
     /**

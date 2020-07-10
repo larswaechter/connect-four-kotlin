@@ -82,7 +82,7 @@ class Server {
                 var game = this.localGames[paramID]!!
 
                 // Check if there was at least one move played
-                if (game.getNumberOfPlayedMoves() > 0) {
+                if (game.numberOfPlayedMoves > 0) {
                     game = game.undoMove(1)
                     this.localGames[paramID] = game
                 }

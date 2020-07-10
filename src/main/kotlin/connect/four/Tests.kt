@@ -36,7 +36,7 @@ class Tests {
         // player 1 should play win-move
         game = game.bestMove()
 
-        assert(game.getWinner() == 1)
+        assert(game.getWinner() == 1) {"Failed test #1: Player 1 (X) should have won!"}
     }
 
     /**
@@ -72,7 +72,7 @@ class Tests {
         // player 1 should play win-move
         game = game.bestMove()
 
-        assert(game.getWinner() == 1)
+        assert(game.getWinner() == 1) {"Failed test #2: Player 1 (X) should have won!"}
     }
 
     // Die Spiel-Engine kann im überübernächsten Zug gewinnen (Sichttiefe 5)
@@ -110,7 +110,7 @@ class Tests {
         // player 1 cannot play win-move
         game = game.bestMove()
 
-        assert(!game.hasWinner())
+        assert(!game.hasWinner(1)) {"Failed test #1: Player 1 (X) should not have won!"}
     }
 
 
@@ -150,6 +150,6 @@ class Tests {
         // player 1 plays move
         game = game.bestMove()
 
-        assert(!game.hasWinner())
+        assert(!game.hasWinner(1)) {"Failed test #5: Player 1 (X) should not have won"}
     }
 }

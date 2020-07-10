@@ -26,7 +26,7 @@ interface Minimax<Board, Move> {
 
         companion object {
             private const val numberOfTranspositionTables = 14
-            private const val maxTreeDepthTranspositionTables = 10
+            private const val maxTreeDepthTranspositionTables = 5
             private const val transpositionTablesPath = "src/main/resources/transposition_tables"
             private val zobristTable: Array<Array<Long>> = buildZobristTable()
             private val storages: Array<Storage<*>?> = Array(numberOfTranspositionTables) { null }
@@ -385,11 +385,12 @@ interface Minimax<Board, Move> {
     fun getRandomMove(possibleMoves: List<Move> = this.getPossibleMoves()): Move = possibleMoves.random()
 
     /**
-     * Search best move for current board in storage. Including symmetries etc.
+     * Search best move for current board and player in storage.
+     * Including symmetries etc.
      *
      * @return best move if it exists in storage otherwise null
      */
-    fun searchInStorage(): Storage.Record<Move>?
+    fun searchBestMoveInStorage(): Storage.Record<Move>?
 
     /**
      * Get all possible storage keys for the current board with according methods to transform the associated move.
@@ -422,20 +423,26 @@ interface Minimax<Board, Move> {
             return Storage.Record(null, null, game.evaluate(currentDepth), game.currentPlayer)
 
         // Check if board exists in storage
-        val storedMove = game.searchInStorage()
+        val storedMove = game.searchBestMoveInStorage()
         if (storedMove != null) return storedMove
 
         val possibleMoves = game.getPossibleMoves(true)
 
-        // If there's a move which results in a win for the current player we immediately return this move.
-        // This way we don't have to evaluate other possible moves -> Performance + 1 :)
+        /**
+         * If there's a move which results in a win for the current player we immediately return this move.
+         * This way we don't have to evaluate other possible moves -> Performance + 1 :)
+         *
+         * We add the currentDepth, otherwise the AI plays randomly if it will lose definitely.
+         * This way the AI tries to "survive" as long as possible, even if it can't win anymore.
+         * (if the opponent plays perfect)
+         */
         possibleMoves.forEach { move ->
             val tmpGame = game.move(move)
             if (tmpGame.hasWinner(game.currentPlayer))
                 return Storage.Record(
                         game.storageRecordPrimaryKey,
                         move,
-                        game.currentPlayer * Float.MAX_VALUE,
+                        game.currentPlayer * (1_000_000F + currentDepth),
                         game.currentPlayer
                 )
         }
@@ -445,7 +452,7 @@ interface Minimax<Board, Move> {
 
         for (move in possibleMoves) {
             val newGame = game.move(move)
-            val moveScore = minimax(newGame, startingDepth, currentDepth - 1, !maximize).score
+            val moveScore = minimax(newGame, startingDepth, currentDepth - 1, !maximize, seeding).score
 
             // Check for maximum or minimum
             if ((maximize && moveScore > minOrMax.second) || (!maximize && moveScore < minOrMax.second))
@@ -454,8 +461,10 @@ interface Minimax<Board, Move> {
 
         val finalMove = Storage.Record(game.storageRecordPrimaryKey, minOrMax.first, minOrMax.second, game.currentPlayer)
 
-        // We add board evaluation temporary to storage if it does not already exist in it.
-        if (!seeding && game.storageIndex >= 0)
+
+        // Add board evaluation temporary to storage
+        // For data seeding we don't add it because it's added inside the seed method.
+        if (game.storageIndex >= 0 && !(startingDepth == currentDepth && seeding))
             Storage.doStorageLookup<Move>(game.storageIndex).map[game.storageRecordPrimaryKey] = finalMove
 
         return finalMove

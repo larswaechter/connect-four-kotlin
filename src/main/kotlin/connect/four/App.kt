@@ -5,11 +5,40 @@ package connect.four
 
 fun main() {
 
+    Minimax.Storage.registerStorages<Move>()
+
     Tests()
+
+    /*
+
+    val a = 100_000F + 10 * 2
+    val b = 100_000F
+    println(a)
+    println(b)
+    println(a > b)
 
     return
 
-    Server()
+     */
+
+
+/*
+
+    var game = ConnectFour(
+            difficulty = 5,
+            currentPlayer = -1,
+            board = longArrayOf(
+                    0b0_0000000_0000000___0001000_0000000_0000000_0000011_0000000_0000111_0000111, // X = player 1 (red)
+                    0b0_0000000_0000000___0000111_0000001_0000001_0000000_0000011_0000000_0001000
+            )
+    )
+
+    println(game.hasWinner())
+    println(game.bestMove())
+
+ */
+
+
 
     /*
 
@@ -138,13 +167,13 @@ fun main() {
 }
 
 fun train() {
-    for (i in 3 downTo 1) {
-        for (k in 1..3) Minimax.Storage.seedByMovesPlayed<Move>(2500, i)
+    for (i in 18 downTo 10) {
+        for (k in 1..5) Minimax.Storage.seedByMovesPlayed<Move>(300, i)
     }
 }
 
 fun playGame() {
-    var game = ConnectFour(difficulty = 4)
+    var game = ConnectFour()
 
     while (!game.isGameOver()) {
         println(game)
