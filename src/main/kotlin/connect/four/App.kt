@@ -5,9 +5,11 @@ package connect.four
 
 fun main() {
 
-    Minimax.Storage.registerStorages<Move>()
+    Server()
 
-    Tests()
+    return
+
+    train()
 
     /*
 
@@ -167,8 +169,8 @@ fun main() {
 }
 
 fun train() {
-    for (i in 18 downTo 10) {
-        for (k in 1..5) Minimax.Storage.seedByMovesPlayed<Move>(300, i)
+    for (i in 27 downTo 7) {
+        for (k in 1..5) Minimax.Storage.seedByMovesPlayed<Move>(500, i)
     }
 }
 

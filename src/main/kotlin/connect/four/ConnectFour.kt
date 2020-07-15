@@ -1,5 +1,6 @@
 package connect.four
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -13,6 +14,7 @@ import kotlin.math.*
  * @param [currentPlayer] current player
  * @param [difficulty] AI strength
  * @param [storageRecordPrimaryKey] key under which the board will be saved to storage
+ * @param [numberOfPlayedMoves] number of already played moves
  * @param [heights] current height of board columns
  * @param [history] history of boards
  */
@@ -83,14 +85,12 @@ class ConnectFour(
             assert(isValidBoard(board)) { "Cannot calculate board heights! The given board is invalid." }
             val heights = IntArray(7) { 0 }
 
-            // loop columns
             for ((index, column) in (0..42 step 7).withIndex()) {
                 // set bottom as default
                 heights[index] = column
 
-                // loop rows down -> up
                 for (row in column..column + 5)
-                // Check if either player 1 or player -1 has set a chip
+                    // Check if either player 1 or player -1 has set a chip
                     if ((1L shl row and board[0] != 0L) || 1L shl row and board[1] != 0L)
                         heights[index] = row + 1
             }
@@ -106,8 +106,7 @@ class ConnectFour(
         fun calcNumberOfPlayedMoves(board: LongArray): Int {
             var count = 0
             for (i in 0..47)
-                if ((1L shl i and board[0] != 0L) || (1L shl i and board[1] != 0L))
-                    count++
+                if ((1L shl i and board[0] != 0L) || (1L shl i and board[1] != 0L)) count++
             return count
         }
 
@@ -353,29 +352,31 @@ class ConnectFour(
 
         // Simulate games
         runBlocking {
-            repeat(numberOfSimulations) {
-                launch {
-                    // Apply only the essential properties
-                    var game = ConnectFour(
-                            board = longArrayOf(board[0], board[1]),
-                            currentPlayer = currentPlayer,
-                            heights = heights.clone(),
-                            storageRecordPrimaryKey = 1, // Prevent to calculate zobrist-hash
-                            numberOfPlayedMoves = numberOfPlayedMoves
-                    )
+            withContext(Dispatchers.Default) {
+                repeat(numberOfSimulations) {
+                    launch {
+                        // Apply only the essential properties
+                        var game = ConnectFour(
+                                board = longArrayOf(board[0], board[1]),
+                                currentPlayer = currentPlayer,
+                                heights = heights.clone(),
+                                storageRecordPrimaryKey = 1, // Prevent to calculate zobrist-hash
+                                numberOfPlayedMoves = numberOfPlayedMoves
+                        )
 
-                    // Play random moves until game is over
-                    // Factor: the earlier the game has ended, the better is the move
-                    var factor = remainingMoves
-                    while (!game.isGameOver(-game.currentPlayer)) {
-                        game = game.move(game.getRandomMove())
-                        factor--
-                    }
+                        // Play random moves until game is over
+                        // Factor: the earlier the game has ended, the better is the move
+                        var factor = remainingMoves
+                        while (!game.isGameOver(-game.currentPlayer)) {
+                            game = game.move(game.getRandomMove())
+                            factor--
+                        }
 
-                    // Update stats based on winner
-                    when (game.getWinner()) {
-                        currentPlayer -> score.addAndGet(1 + 5 * factor) // win
-                        -currentPlayer -> score.addAndGet(-(1 + 5 * factor)) // defeat
+                        // Update stats based on winner
+                        when (game.getWinner()) {
+                            currentPlayer -> score.addAndGet(1 + 5 * factor) // win
+                            -currentPlayer -> score.addAndGet(-(1 + 5 * factor)) // defeat
+                        }
                     }
                 }
             }
@@ -424,11 +425,20 @@ class ConnectFour(
             return content
         }
 
-        fun finish(): String = "<div class='col'><h3 class='text-center'>" + when (this.getWinner()) {
-            1 -> "Spieler Rot gewinnt!"
-            -1 -> "Spieler Gelb gewinnt!"
-            else -> "Unentschieden!"
-        } + "</h3></div>"
+        fun finish(): String {
+            var content = "<div class='col'><h3 class='text-center'>" + when (this.getWinner()) {
+                1 -> "Spieler Rot gewinnt!"
+                -1 -> "Spieler Gelb gewinnt!"
+                else -> "Unentschieden!"
+            } + "</h3></div>"
+
+            content += "<div class='col-auto'>" +
+                    "<button class='btn btn-secondary' onclick='game.undoMove()'>Undo</button></div>"
+
+            return content
+        }
+
+
 
         var res: String
 

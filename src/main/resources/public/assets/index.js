@@ -1,46 +1,33 @@
-const $content = document.querySelector("#game-wrapper")
-
-const $startBtn = document.querySelector("#start-game")
-const $joinBtn = document.querySelector("#join-game")
-
-const $players = document.querySelector("#players")
-const $playersMode = document.querySelector("#players-mode")
-const $playersModeForm = document.querySelector("#players-mode-form")
-
-const $sessionID = document.querySelector("#sessionID")
-
-const $difficulty = document.querySelector("#difficulty")
-const $difficultyForm = document.querySelector("#difficulty-form")
+const $content = document.querySelector("#game-wrapper");
+const $startBtn = document.querySelector("#start-game");
+const $players = document.querySelector("#players");
+const $startPlayer = document.querySelector("#start-player")
+const $difficulty = document.querySelector("#difficulty");
+const $difficultyForm = document.querySelector("#difficulty-form");
 
 let game = null;
 
+/**
+ *
+ * TODO: Fix undo AI move
+ *
+ *
+ */
+
 class Game {
-    constructor(id) {
-        this.id = id || this.createRandomString()
+    constructor(id, players, difficulty, starter) {
+        this.id = id
+        this.players = players
+        this.difficulty = difficulty
+        this.starter = starter
+
         this.isMovePending = false
         this.isGameOver = false
     }
 
-    createRandomString = () => {
-        let randomNumber = ""
-        do randomNumber += String.fromCharCode(Math.floor(Math.random() * (122 - 97 + 1)) + 97);
-        while (randomNumber.length < 16)
-
-        return randomNumber
-    }
-}
-
-class LocalGame extends Game {
-    constructor(players, difficulty, multiplayer) {
-        super();
-        this.players = players
-        this.difficulty = difficulty
-    }
-
     start = async () => {
-        const res = await fetch("/start/" + this.id + "?players=" + this.players + "&difficulty=" + this.difficulty)
-        const content = await res.text()
-        $content.innerHTML = content
+        const res = await fetch("/start/" + this.id + "?difficulty=" + this.difficulty + "&starter=" + this.starter)
+        $content.innerHTML = await res.text()
     }
 
     move = async (column) => {
@@ -50,8 +37,11 @@ class LocalGame extends Game {
             $content.innerHTML = await res.text()
             this.isMovePending = false
 
+            // Check if game is over
             if (document.querySelector(".metadata").classList.contains("finished")) this.isGameOver = true
-            if (this.players == 1 && !this.isGameOver) await this.aiMove()
+
+            // Play AI move
+            if (this.players === 1 && !this.isGameOver) await this.aiMove()
         }
     }
 
@@ -62,104 +52,41 @@ class LocalGame extends Game {
             $content.innerHTML = await res.text()
             this.isMovePending = false
 
+            // Check if game is over
             if (document.querySelector(".metadata").classList.contains("finished")) this.isGameOver = true
         }
     }
 
-    undoMove = async (column) => {
+    undoMove = async () => {
         if (!this.isMovePending) {
+            this.isGameOver = false
             this.isMovePending = true
             const res = await fetch(this.id + "/undo")
-            const content = await res.text()
-            $content.innerHTML = content
-            this.isMovePending = false
-        }
-    }
-}
-
-class OnlineGame extends Game {
-    constructor(id) {
-        super(id);
-    }
-
-    create = () => {
-        this.ws = new WebSocket("ws://" + location.hostname + ":" + location.port + "/ws/create/" + this.id);
-        this.ws.onopen = () => {
-            alert("Your Session-ID is: " + this.id)
-        }
-
-        this.ws.onmessage = msg => {
-            $content.innerHTML = msg.data
-        }
-    }
-
-    join = () => {
-        this.ws = new WebSocket("ws://" + location.hostname + ":" + location.port + "/ws/join/" + this.id);
-        this.ws.onmessage = msg => {
-            $content.innerHTML = msg.data
-        }
-    }
-
-    move = (column) => {
-        if (!this.isMovePending) {
-            this.isMovePending = true
-            this.ws.send(column)
+            $content.innerHTML = await res.text()
             this.isMovePending = false
         }
     }
 
-    aiMove = () => {
+    static createRandomString = () => {
+        let randomNumber = ""
+        do randomNumber += String.fromCharCode(Math.floor(Math.random() * (122 - 97 + 1)) + 97);
+        while (randomNumber.length < 16)
+        return randomNumber
     }
-}
-
-const createGame = async () => {
-    const players = $players.value
-    const playersMode = $playersMode.value
-
-    if (players === "1" || (players === "2" && playersMode === "1")) createLocalGame()
-    else createOnlineGame()
 }
 
 const createLocalGame = async () => {
-    const players = $players.value
-    const difficulty = $difficulty.value
-
-    game = new LocalGame(players, difficulty)
+    game = new Game(Game.createRandomString(), parseInt($players.value), parseInt($difficulty.value), parseInt($startPlayer.value))
     await game.start()
-}
-
-const createOnlineGame = () => {
-    game = new OnlineGame()
-    game.create()
-}
-
-const joinOnlineGame = () => {
-    const sessionID = $sessionID.value
-    game = new OnlineGame(sessionID)
-    game.join()
 }
 
 $startBtn.addEventListener("click", function () {
     $("#setup-modal").modal("hide")
     $("#welcome").hide()
-    createGame()
-})
-
-$joinBtn.addEventListener("click", function () {
-    if ($sessionID.value.length === 16) {
-        $sessionID.classList.remove("is-invalid")
-        $("#join-modal").modal("hide")
-        $("#welcome").hide()
-        joinOnlineGame()
-    } else $sessionID.classList.add("is-invalid")
-})
+    createLocalGame()
+});
 
 $players.addEventListener("change", function () {
-    if (this.value == 2) {
-        $difficultyForm.classList.add("d-none")
-        $playersModeForm.classList.remove("d-none")
-    } else {
-        $playersModeForm.classList.add("d-none")
-        $difficultyForm.classList.remove("d-none")
-    }
-})
+    if (this.value == 2) $difficultyForm.classList.add("d-none")
+    else $difficultyForm.classList.remove("d-none")
+});

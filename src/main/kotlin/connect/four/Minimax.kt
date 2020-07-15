@@ -461,9 +461,8 @@ interface Minimax<Board, Move> {
 
         val finalMove = Storage.Record(game.storageRecordPrimaryKey, minOrMax.first, minOrMax.second, game.currentPlayer)
 
-
         // Add board evaluation temporary to storage
-        // For data seeding we don't add it because it's added inside the seed method.
+        // For data seeding we don't add the final move because it's added inside the seed method.
         if (game.storageIndex >= 0 && !(startingDepth == currentDepth && seeding))
             Storage.doStorageLookup<Move>(game.storageIndex).map[game.storageRecordPrimaryKey] = finalMove
 
