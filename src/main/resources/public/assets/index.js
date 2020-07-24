@@ -28,8 +28,11 @@ class Game {
         const res = await fetch("/start/" + this.id + "?difficulty=" + this.difficulty + "&starter=" + this.starter);
         $content.innerHTML = await res.text();
 
-        // AI starts
-        if (this.players === 1 && this.starter === 2) await this.aiMove();
+        // AI starts after 1s
+        if (this.players === 1 && this.starter === 2)
+            setTimeout(async () => {
+                await this.aiMove()
+            }, 1000)
     }
 
     restart = async () => {
