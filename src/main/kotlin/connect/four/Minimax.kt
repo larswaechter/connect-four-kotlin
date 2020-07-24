@@ -1,8 +1,5 @@
 package connect.four
 
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import kotlin.math.pow
 import kotlin.random.Random
@@ -28,10 +25,10 @@ interface Minimax<Board, Move> {
         var map: HashMap<Long, Record<Move>> = HashMap()
 
         companion object {
-            private const val numberOfTranspositionTables = 14
-            private const val maxTreeDepthTranspositionTables = 10
+            private const val numberOfTranspositionTables = 7
+            private const val maxTreeDepthTranspositionTables = 5
             private const val transpositionTablesPath = "src/main/resources/transposition_tables"
-            private val zobristTable: Array<Array<Array<Long>>> = buildZobristTable()
+            private val zobristTable: Array<Array<Long>> = buildZobristTable()
             private val storages: Array<Storage<*>?> = Array(numberOfTranspositionTables) { null }
 
             /**
@@ -50,7 +47,7 @@ interface Minimax<Board, Move> {
              * @return Storage
              */
             fun <Move> doStorageLookup(index: Int): Storage<Move> {
-                assert(index in 0 until numberOfTranspositionTables)
+                assert(index in 0 until numberOfTranspositionTables) { "Index is higher than number of transposition tables." }
                 Storage<Move>(index).register()
                 return storages[index]!! as Storage<Move>
             }
@@ -65,6 +62,8 @@ interface Minimax<Board, Move> {
              * @param [movesPlayed] number of played moves
              * */
             fun <Move> seedByMovesPlayed(amount: Int, movesPlayed: Int) {
+                assert(movesPlayed < 42)
+
                 println("\nStart seeding storage for #$movesPlayed played moves...")
 
                 val startTime = System.currentTimeMillis()
@@ -81,7 +80,7 @@ interface Minimax<Board, Move> {
                     game = ConnectFour.playRandomMoves(movesPlayed)
                     storage = doStorageLookup(game.storageIndex)
 
-                    assert(game.getNumberOfRemainingMoves() > 0)
+                    assert(game.getNumberOfRemainingMoves() > 0) { "No more moves left! Cannot calculate best move." }
 
                     countIterations++
 
@@ -94,7 +93,7 @@ interface Minimax<Board, Move> {
 
                     countNewRecords++
 
-                    val storageRecord = runBlocking { game.minimax(currentDepth = maxTreeDepthTranspositionTables, seeding = true) }
+                    val storageRecord = game.minimax(currentDepth = maxTreeDepthTranspositionTables, seeding = true)
                     newHashMap[storageRecord.key!!] = storageRecord as Record<Move>
 
                 } while (countIterations < amount)
@@ -113,72 +112,80 @@ interface Minimax<Board, Move> {
              * @return file name
              */
             fun getFilename(storageIndex: Int): String {
-                assert(storageIndex < numberOfTranspositionTables)
+                assert(storageIndex < numberOfTranspositionTables) { "Index is higher than number of transposition tables." }
                 val id = if (storageIndex < 10) "0$storageIndex" else "$storageIndex"
-                val from = storageIndex * 3 + 1
-                val to = from + 2
+                val from = storageIndex * 6
+                val to = from + 5
                 return "${id}_table_${from}_${to}.txt"
             }
 
             /**
-             * Generate random zobrist keys and write them to storage file.
-             * Warning: If you do this, already existing transposition tables become invalid
+             * Get zobrist-hash for given player and position
+             *
+             * @param [cell] from 0 to 47
+             * @param [player] player 1 or -1
+             * @return zobrist-hash for given positions
              */
-            fun generateZobristHashes() {
+            fun getZobristHash(cell: Int, player: Int): Long = zobristTable[cell][if (player == 1) 0 else 1]
+
+            /**
+             * Generate random zobrist-hashes and write them to storage file.
+             * Warning: If you do this, already existing transposition tables become invalid
+             *
+             * Create one hash for each board cell (47) and each player (2)
+             * We have to create some more because the top board row is unused
+             */
+            private fun generateZobristHashes() {
                 val file = File("$transpositionTablesPath/zobrist_hashes.txt")
                 var res = ""
 
-                for (i in 0..6)
-                    for (j in 0..5)
-                        for (k in 0..1)
-                            res += "${Random.nextLong(2F.pow(64).toLong())}\n"
+                for (i in 0..47)
+                    for (k in 0..1)
+                        res += "${Random.nextLong(2F.pow(64).toLong())}\n"
 
                 file.writeText(res)
             }
 
-            /**
-             * Get zobrist hash for given player and position
-             *
-             * @param [col]
-             * @param [row]
-             * @param [player]
-             * @return zobrist key for given positions
-             */
-            fun getZobristHash(col: Int, row: Int, player: Int): Long = zobristTable[col][row][if (player == 1) 0 else 1]
 
             /**
-             * Load zobrist table based on zobrist keys
+             * Load zobrist table based on zobrist-hashes
              *
              * @return 3D array of keys for every board position and player
              */
-            private fun buildZobristTable(): Array<Array<Array<Long>>> {
+            private fun buildZobristTable(): Array<Array<Long>> {
                 val keys = readZobristHashes()
-                val table = Array(7) { Array(6) { Array(2) { 0L } } }
+                val table = Array(48) { Array(2) { 0L } }
 
                 var count = 0
-                for (i in 0..6)
-                    for (j in 0..5)
-                        for (k in 0..1)
-                            table[i][j][k] = keys[count++]
+                for (i in 0..47)
+                    for (k in 0..1)
+                        table[i][k] = keys[count++]
 
                 return table
             }
 
             /**
-             * Read zobrist hashes from .txt file
+             * Read zobrist-hashes from .txt file.
+             * Create new ones if they don't exist yet.
              *
              * @return array of hashes
              */
             private fun readZobristHashes(): Array<Long> {
                 val file = File("$transpositionTablesPath/zobrist_hashes.txt")
-                val keys = Array<Long>(84) { 0 }
+                val keys = Array<Long>(96) { 0 }
+
+                if (file.readLines().isEmpty()) {
+                    println("No Zobrist hashes found. Creating...")
+                    generateZobristHashes()
+                    return readZobristHashes()
+                }
 
                 var count = 0
                 file.forEachLine {
                     keys[count++] = it.toLong()
                 }
 
-                assert(keys.size == 84)
+                assert(count == 96) { "There should be 96 zobrist-hashes" }
 
                 return keys
             }
@@ -340,16 +347,18 @@ interface Minimax<Board, Move> {
     /**
      * Check if a player has won
      *
-     * @return is game over
+     * @param [player] set to 1 or -1 to check only if the given player has won
+     * @return has a player won
      */
-    fun hasWinner(): Boolean
+    fun hasWinner(player: Int = 0): Boolean
 
     /**
-     * Check if [getNumberOfRemainingMoves] is 0 or [hasWinner] is true
+     * Check if a player has won or no more moves are possible
      *
+     * @param [player] set to 1 or -1 to check only for the given player's win in [hasWinner]
      * @return is game over
      */
-    fun isGameOver(): Boolean
+    fun isGameOver(player: Int = 0): Boolean
 
     /**
      * Do move and return new game
@@ -374,6 +383,14 @@ interface Minimax<Board, Move> {
      * @return a random move
      */
     fun getRandomMove(possibleMoves: List<Move> = this.getPossibleMoves()): Move = possibleMoves.random()
+
+    /**
+     * Search best move for current board and player in storage.
+     * Including symmetries etc.
+     *
+     * @return best move if it exists in storage otherwise null
+     */
+    fun searchBestMoveInStorage(): Storage.Record<Move>?
 
     /**
      * Get all possible storage keys for the current board with according methods to transform the associated move.
@@ -402,43 +419,30 @@ interface Minimax<Board, Move> {
             seeding: Boolean = false
     ): Storage.Record<Move> {
         // Recursion anchor -> Evaluate board
-        if (currentDepth == 0 || game.isGameOver())
+        if (currentDepth == 0 || game.isGameOver(-game.currentPlayer))
             return Storage.Record(null, null, game.evaluate(currentDepth), game.currentPlayer)
 
         // Check if board exists in storage
-        var existsInStorage = false
-        val storageIndex = game.storageIndex
-
-        if (storageIndex >= 0) {
-            val storage = Storage.doStorageLookup<Move>(storageIndex) // Load storage
-
-            // We check every possible key under which the field could be stored
-            // or might be associated with already existing records
-            game.getStorageRecordKeys().forEach { storageRecordKey ->
-                val key = storageRecordKey()
-
-                if (storage.map.containsKey(key.first)) {
-                    val storageRecord = storage.map[key.first]!! // Load from storage
-                    existsInStorage = true
-
-                    // Create new storageRecord based on key
-                    val newStorageRecord = key.second(storageRecord)
-                    if (newStorageRecord != null) return newStorageRecord
-                }
-            }
-        }
+        val storedMove = game.searchBestMoveInStorage()
+        if (storedMove != null) return storedMove
 
         val possibleMoves = game.getPossibleMoves(true)
 
-        // If there's a move which results in a win for the current player we immediately return this move.
-        // This way we don't have to evaluate other possible moves -> Performance :)
+        /**
+         * If there's a move which results in a win for the current player we immediately return this move.
+         * This way we don't have to evaluate other possible moves -> Performance + 1 :)
+         *
+         * We add the currentDepth, otherwise the AI plays randomly if it will lose definitely.
+         * This way the AI tries to "survive" as long as possible, even if it can't win anymore.
+         * (if the opponent plays perfect)
+         */
         possibleMoves.forEach { move ->
             val tmpGame = game.move(move)
-            if (tmpGame.hasWinner())
+            if (tmpGame.hasWinner(game.currentPlayer))
                 return Storage.Record(
                         game.storageRecordPrimaryKey,
                         move,
-                        game.currentPlayer * Float.MAX_VALUE,
+                        game.currentPlayer * (1_000_000F + currentDepth),
                         game.currentPlayer
                 )
         }
@@ -448,7 +452,7 @@ interface Minimax<Board, Move> {
 
         for (move in possibleMoves) {
             val newGame = game.move(move)
-            val moveScore = minimax(newGame, startingDepth, currentDepth - 1, !maximize).score
+            val moveScore = minimax(newGame, startingDepth, currentDepth - 1, !maximize, seeding).score
 
             // Check for maximum or minimum
             if ((maximize && moveScore > minOrMax.second) || (!maximize && moveScore < minOrMax.second))
@@ -457,9 +461,10 @@ interface Minimax<Board, Move> {
 
         val finalMove = Storage.Record(game.storageRecordPrimaryKey, minOrMax.first, minOrMax.second, game.currentPlayer)
 
-        // We add board evaluation temporary to storage if it does not already exist in it.
-        if (!seeding && !existsInStorage && storageIndex >= 0)
-            Storage.doStorageLookup<Move>(storageIndex).map[game.storageRecordPrimaryKey] = finalMove
+        // Add board evaluation temporary to storage
+        // For data seeding we don't add the final move because it's added inside the seed method.
+        if (game.storageIndex >= 0 && !(startingDepth == currentDepth && seeding))
+            Storage.doStorageLookup<Move>(game.storageIndex).map[game.storageRecordPrimaryKey] = finalMove
 
         return finalMove
     }

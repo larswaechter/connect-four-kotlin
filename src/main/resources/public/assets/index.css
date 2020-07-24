@@ -1,6 +1,5 @@
 .board {
     background-color: #343a40;
-    width: max-content;
 }
 
 .board .column {
@@ -25,5 +24,17 @@
 }
 
 .board .stone.yellow {
-    background-color: yellow;
+    background-color: #FFD400;
+}
+
+.metadata h3 {
+    margin-bottom: 0;
+}
+
+.color-yellow {
+    color: #FFD400
+}
+
+.color-red {
+    color: red
 }

@@ -23,15 +23,12 @@
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#setup-modal">
                     Spiel starten
                 </button>
-                <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#join-modal">
-                    Spiel beitreten
-                </button>
                 <button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#join-modal">
                     Tests ausführen
                 </button>
             </div>
         </div>
-        <div class="col-12" id="board-wrapper"></div>
+        <div class="col-auto mx-auto" id="game-wrapper"></div>
     </div>
 </div>
 <!-- Spiel starten - Modal -->
@@ -53,50 +50,24 @@
                         <option value="2">2</option>
                     </select>
                 </div>
-                <div class="form-group d-none" id="players-mode-form">
-                    <label for="players">Spielmodus</label>
-                    <select class="form-control" id="players-mode">
-                        <option value="1">Lokal</option>
-                        <option value="2">Online</option>
+                <div class="form-group">
+                    <label for="players">Start Spieler</label>
+                    <select class="form-control" id="start-player">
+                        <option value="1">1 - Rot</option>
+                        <option value="2">2 - Gelb (AI)</option>
                     </select>
                 </div>
                 <div class="form-group" id="difficulty-form">
                     <label for="difficulty">Schwierigkeitsstufe</label>
                     <select class="form-control" id="difficulty">
-                        <option value="1">Easy</option>
-                        <option value="2">Medium</option>
-                        <option value="3">Hard</option>
+                        <option value="5">Normal</option>
+                        <option value="3">Leicht (Zufällig)</option>
                     </select>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
                 <button type="button" class="btn btn-primary" id="start-game">Starten</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Spiel beitreten - Modal -->
-<div class="modal fade" id="join-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-     aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Spiel beitreten</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="sessionID">Session-ID</label>
-                    <input type="text" class="form-control" id="sessionID" aria-describedby="emailHelp">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Schließen</button>
-                <button type="button" class="btn btn-primary" id="join-game">Beitreten</button>
             </div>
         </div>
     </div>
