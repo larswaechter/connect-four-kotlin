@@ -5,6 +5,9 @@ import io.javalin.Javalin
 class Server {
     private val localGames: HashMap<String, ConnectFour> = hashMapOf()
 
+    /**
+     * Bootstrap alert classes
+     */
     enum class Alert {
         warning, danger
     }

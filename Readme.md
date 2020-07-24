@@ -4,7 +4,7 @@ Eine Vier-Gewinnt Implementierung in Kotlin mittels des Javalin Frameworks.
 
 ## Allgemeines
 
-- Name: Lars Wächter
+- Autor: Lars Wächter
 - Matrikel-Nr: 5280456
 - Hochschule: Technische Hochschule Mittelhessen
 - Studiengang: Bachelor of Science - Informatik
@@ -14,11 +14,11 @@ Eine Vier-Gewinnt Implementierung in Kotlin mittels des Javalin Frameworks.
 
 ## Anleitung
 
-Die Spielregeln entsprechen dem des klassischen Vier-Gewinnt: Ziel ist es, vier Steine seiner eigenen Farbe in einer Reihe (horizontal, vertikal oder diagonal) zu platzieren. Erreicht dies kein Spieler bis alle Züge (42) gespielt wurden, endet das Spiel Unentschieden.
+Die Spielregeln entsprechen dem des klassischen Vier-Gewinnt: Ziel ist es, vier Steine seiner eigenen Farbe in einer Reihe (horizontal, vertikal oder diagonal) zu platzieren. Die Spieler wechseln sich dabei gegenseitig ab. Erreicht dies kein Spieler bis alle Züge (42) gespielt wurden, endet das Spiel Unentschieden.
 
-## Dateiübersicht und Lines-Of-Code
+## Übersicht
 
-Die folgende Veranschaulichung spiegelt die Ordnerstruktur des Projektes wider. Im Anschluss darauf wird genauer auf die einzelnen Dateien und deren Rollen eingegangen.
+Die folgende Veranschaulichung spiegelt die Ordnerstruktur mit den wichtigsten Dateien des Projekts wider. Im Anschluss darauf wird genauer auf die einzelnen Dateien und deren Rollen eingegangen.
 
 ```
 connect-four-kotlin (root)
@@ -46,30 +46,28 @@ connect-four-kotlin (root)
 
 ---
 
-### Dateien in `src/main/kotlin/connect/four`
+Dateien in `src/main/kotlin/connect/four`:
 
-| Dateiname      | Typ       | Rolle                                                    | LOC  |
-| -------------- | --------- | -------------------------------------------------------- | ---- |
-| App.kt         | Klasse    | Einstiegspunkt der Anwendung                             |      |
-| ConnectFour.kt | Klasse    | Spiel-Logik, Darstellung des Spiels                      |      |
-| Minimax.kt     | Interface | KI-Engine, Datenbankmanagement                           |      |
-| Move.kt        | Klasse    | Repräsentiert einen Zug                                  |      |
-| Server.kt      | Klasse    | Steuert ein- und ausgehende HTTP Requests bzw. Responses |      |
-| Tests.kt       | Klasse    | Durchführung der fünf Testszenarien                      |      |
+| Dateiname      | Typ       | Rolle                                           | LOC  |
+| -------------- | --------- | ----------------------------------------------- | ---- |
+| App.kt         | Klasse    | Einstiegspunkt der Anwendung                    |      |
+| ConnectFour.kt | Klasse    | Spiel-Logik, Symmetrien, Darstellung des Spiels |      |
+| Minimax.kt     | Interface | KI-Engine, Datenbankmanagement                  |      |
+| Move.kt        | Klasse    | Repräsentation eines Zug                        |      |
+| Server.kt      | Klasse    | Steuerung der HTTP Requests und Responses       |      |
+| Tests.kt       | Klasse    | Durchführung der einzelnen Testszenarien        |      |
+|                |           |                                                 | 2000 |
 
----
-
-### Dateien in `src/main/resources/public`
+Dateien in `src/main/resources/public`:
 
 | Dateiname  | Rolle                                                   | LOC  |
 | ---------- | ------------------------------------------------------- | ---- |
 | index.css  | Cascading Style Sheets für User-Interface               |      |
 | index.js   | JavaScript zur Kommunikation zwischen Client und Server |      |
 | index.html | User-Interface                                          |      |
+|            |                                                         | 2000 |
 
----
-
-### Dateien in `src/main/resources/transposition_tables`
+Dateien in `src/main/resources/transposition_tables`:
 
 Dieser Ordner beinhaltet die einzelnen Transposition Tables, welche als Datenbank dienen.
 
@@ -77,25 +75,31 @@ Dieser Ordner beinhaltet die einzelnen Transposition Tables, welche als Datenban
 
 ## Engine
 
-Folgender Abschnitt behandelt die im Projekt umgesetzte Spiel-Engine. Dies beinhaltet unter anderem die Wahl des AI Algorithmus zur Berechnung des bestmöglichen Zuges, dessen Performance-Optimierung, als auch die Bewertung einer Spielsituation mittels der Monte-Carlo-Methode.
+Folgender Abschnitt behandelt die im Projekt umgesetzte Spiel-Engine. Dies beinhaltet unter anderem die Wahl des KI-Algorithmus zur Berechnung des bestmöglichen Zugs, dessen Performance-Optimierung, als auch die Bewertung einer Spielsituation mittels der Monte-Carlo-Methode.
 
 ### Wahl des Algorithmus
 
-Zur Berechnung des bestmöglichen nächsten Zuges, wird der Minimax-Algorithmus verwendet. Dieser rechnet bis zu einer Tiefer von 5.
+Zur Berechnung des bestmöglichen Zugs, wird der Minimax-Algorithmus verwendet. Dieser rechnet bis zu einer Tiefe von 5. Mittels des Parameters `maximize` wird gesteuert, ob man sich gerade in der Rolle des Maximizers oder Minimizers befindet.
+
+#### Erweiterungen
+
+- Überprüfung, ob man mit einem Zug sofort gewinnen kann
+- Überprüfung, ob vorheriger Spieler gewonnen hat
 
 ### Wiederverwendung von berechneten Stellungswerten
 
-Wie viele andere Spiele auch, beinhaltet Vier-Gewinnt einige Symmetrien in dessen Spielbrett,
-welche jeweils zu dem selben Ausgangsergebnis führen. Die Verwendung solcher Symmetrien können die Anzahl der zu berechnenden Boards reduzieren und somit einen großen Einfluss auf die Laufzeit des Minimax-Algorithmus haben.
+Wie viele andere Spiele auch, beinhaltet Vier-Gewinnt Symmetrien in dessen Spielbrett, welche jeweils zu dem selben Ausgangsergebnis führen. Die Verwendung solcher Symmetrien kann die Anzahl der zu berechnenden Boards reduzieren und somit einen großen Einfluss auf die Laufzeit des KI-Algorithmus haben.
 
-Im folgenden Abschnitt wird genauer auf die verschieden Arten der Spielbrett-Symmetrien eingegangen und wie diese im Code implementiert sind. Insgesamt gibt es drei Symmetrien.
+Im folgenden Abschnitt wird genauer auf die verschieden Arten der Spielbrett-Symmetrien eingegangen und wie diese im Code implementiert sind.
 
 #### Arten von Symmetrien
+
+Insgesamt gibt es drei Symmetrien.
 
 ##### 1. Spiegelung an der mittleren Y-Achse
 
 Bei dieser Symmetrie wird das Spielbrett an der mittleren Y-Achse (Spalte #4) gespiegelt.
-Hierbei werden die Spielsteine wie folgt getauscht:
+Hierbei werden die Spielsteine in den jeweiligen Spalten wie folgt getauscht:
 
 - Spalte 1 <=> 7
 - Spalte 2 <=> 6
@@ -203,11 +207,9 @@ Board #2 (Board #1 gespiegelt und invertiert) (best move = 6, allerdings für Ge
 
 #### Implementierung der Symmetrien
 
-##### Beschreibung
-
 Die verschiedenen Symmetrien wurden mittels einer Art Schlüssel-System implementiert. Für jede mögliche Board-Stellung gibt es vier dazugehörige Schlüssel, welche aus dem Zobrist-Hash des Boards nach Anwendung der jeweiligen Symmetrie erzeugt werden.
 
-##### Schlüssel Arten
+##### Schlüssel
 
 Der erste Schlüssel ist der `storageRecordPrimaryKey`. Dieser repräsentiert den reinen Zobrist-Hash der aktuellen Board-Stellung ohne jegliche angewandte Symmetrie. Unter diesem Schlüssel werden berechnete Board-Stellungen in den Transposition-Tables gespeichert.
 
@@ -238,30 +240,30 @@ Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Krit
 - Zweiter Schlüssel (Spiegelung):
   - Wurde ein Eintrag unter diesem Schlüssel gefunden, darf der Eintrag nur verwendet werden,
   wenn der aktuelle Spieler dem des Spielers im Eintrag entspricht
-  - Da bei diesem Schlüssel die Symmetrie der Spiegelung verwendet wurde, muss ebenfalls der im Eintrag gespeicherte Move gespiegelt werden
+  - Da bei diesem Schlüssel die Symmetrie der Spiegelung verwendet wurde, muss ebenfalls der im Eintrag gespeicherte Zug gespiegelt werden
 - Dritter Schlüssel (Invertierung):
   - Wurde ein Eintrag unter diesem Schlüssel gefunden, darf der Eintrag nur verwendet werden,
   wenn der aktuelle Spieler NICHT dem des Spielers im Eintrag entspricht, da die Steine invertiert wurden
   - Zusätzlich muss der Score des Eintrags invertiert werden
-- Vierter Schlüssel (Spiegelung & Invertiertung):
+- Vierter Schlüssel (Spiegelung & Invertierung):
   - Wurde ein Eintrag unter diesem Schlüssel gefunden, darf der Eintrag nur verwendet werden,
   wenn der aktuelle Spieler NICHT dem des Spielers im Eintrag entspricht, da die Steine invertiert wurden
-  - Da bei diesem Schlüssel die Symmetrie der Spiegelung verwendet wurde, muss ebenfalls der im Eintrag gespeicherte Move gespiegelt werden
+  - Da bei diesem Schlüssel die Symmetrie der Spiegelung verwendet wurde, muss ebenfalls der im Eintrag gespeicherte Zug gespiegelt werden
   - Zusätzlich muss der Score des Eintrags invertiert werden
 
 Ein Schlüssel und dessen Processing-Methode werden im Code als `Pair<>` repräsentiert. Der `first` Value entspricht dem Schlüssel und der `second` Value beinhaltet die Processing-Methode.
 
 Um einen Eintrag im Speicher auf die Kritieren eines Schlüssels zu überprüfen, wird dieser als Argument beim Aufruf der Processing Methode mit übergeben.
 
-Sind alle Kritieren für einen Schlüssel erfüllt, gibt die Processing Methode eine neue Instanz der Klasse `Minimax.Storage.Record` mit angepassten Werten zurück und Minimax führt ein `return` dieser Instanz durch. Sind die Kritieren nicht erfüllt, wird `null` von der Methode zurückgegeben, worauf der ursprünglich im Speicher gefundene Eintrag verworfen und der nächste Schlüssel innerhalb von Minimax geprüft wird.
+Sind alle Kriterien für einen Schlüssel erfüllt, gibt die Processing Methode eine neue Instanz der Klasse `Minimax.Storage.Record` mit angepassten Werten zurück und Minimax führt ein `return` dieser Instanz durch. Sind die Kriterien nicht erfüllt, wird `null` von der Methode zurückgegeben, worauf der ursprünglich im Speicher gefundene Eintrag verworfen und der nächste Schlüssel innerhalb von Minimax geprüft wird.
 
 ### Stellungsbewertung bei imperfektem Spiel
 
 Damit der Minimax-Algorithmus ein Board aus der Sicht eines beliebigen Spielers bewerten kann, ist eine `evaluate`-Methode notwendig. Im Projekt wurde eine solche Evaluierung mittels der **Monte-Carlo-Methode** umgesetzt.
 
-Hierbei wird ausgehend von einer gegebenen Stellung abwechselnd für jeden Spieler ein zufälliger Zug ausgeführt, bis das schließlich Spiel beendet ist (keine Züge mehr möglich oder Sieg eines Spielers). Dieses Vorgehen wird eine gewünschte Anzahl, im Projet 200, Mal wiederholt.
+Hierbei wird ausgehend von einer gegebenen Stellung abwechselnd für jeden Spieler ein zufälliger Zug ausgeführt, bis das schließlich Spiel beendet ist (keine Züge mehr möglich oder Sieg eines Spielers). Dieses Vorgehen wird eine gewünschte Anzahl, im Projekt 200, Mal wiederholt.
 
-Anhand der Anzahl der Gewinne für einen gegebenen Spieler wird ein Score ermittelt, welcher als Evaluations-Wert für das aktuelle Board dient.
+Anhand der Anzahl der Gewinne für einen gegebenen Spieler wird ein Score ermittelt, welcher als Evaluationswert für das aktuelle Board dient.
 
 Je höher dieser Wert für den Maximizer bzw. umso niedriger er für den Minimizer ist, desto
 besser ist der Score und dementsprechend auch der Zug, der zu der gegebenen Ausgangsstellung führte.
@@ -271,9 +273,9 @@ besser ist der Score und dementsprechend auch der Zug, der zu der gegebenen Ausg
 Eine weitere Performance-Optimierung ist das Anlegen einer Datenbank, auch Transposition Tables genannt, bestehend aus bereits evaluierten Boards und deren bestmöglichen Züge. Eine Datenbank ermöglicht, dass innerhalb des Minimax-Algorithmus nicht jede mögliche Board-Stellung neu evaluiert werden muss, da manche bereits in der Datenbank vorhanden sind und dort ausgelesen werden können.
 
 Anknüpfend wird die Realisierung einer solchen Datenbank beschrieben.
-#### Verzeichnisstruktur der Datenbanken
+#### Verzeichnisstruktur
 
-Die komplette Datenbank besteht aus 14 einzelnen Transposition Tables, welche als Text-Dateien umgesetzt sind.
+Die komplette Datenbank besteht aus 14 einzelnen Transposition Tables, welche als Text-Dateien umgesetzt sind. Sie beinhalten bereits berechnete Board-Stellungen mit deren dazugehörigen bestmöglichen Zügen.
 
 Der Name einer solchen Transposition Table ergibt sich wie folgt:
 
@@ -285,7 +287,7 @@ Der Name einer solchen Transposition Table ergibt sich wie folgt:
 
 In welche Transposition Table ein Eintrag bzw. Spiel-Board geschrieben wird, hängt davon ab, wie viele Züge bisher in dem Spiel gespielt wurden.
 
-#### Aufbau einer Datenbank
+#### Aufbau einer Transposition Table
 
 Eine Transposition Table besteht aus mehreren Eintägen nach folgendem Schema:
 
@@ -296,9 +298,7 @@ Eine Transposition Table besteht aus mehreren Eintägen nach folgendem Schema:
 - **Score**: die Bewertung des Zugs
 - **Player**: der durchführende Spieler
 
-#### Seeding - Befüllung der Datenbanken
-
-##### Beschreibung
+#### Befüllung der Datenbank
 
 Da die Transposition Tables basierend auf der Anzahl an gespielten Zügen voneinander getrennt sind,
 ist es möglich, gezielt einzelne dieser zu befüllen.
@@ -314,16 +314,13 @@ Der Algorithmus generiert also `amount` viele Datensätze bestehend aus Spielen 
 
 1. Anlegen einer neuen leeren HashMap
 2. Erstellung eines Boards mit `movesPlayed` gespielten Zügen
-3. Überprüfung, ob Board bereits im Speicher vorhanden ist
-4. Berechung des bestmöglichen des Zugs für das Board mittels Minimax-Algorithmus
+3. Überprüfung, ob das Board bereits im Speicher vorhanden ist
+4. Berechnung des bestmöglichen des Zugs mittels Minimax-Algorithmus
 5. Das Ergebnis in die neu angelegte HashMap hinzufügen
 
-Diese Prozedur wird genau `amount` Mal wiederholt. Wurden diese Wiederholungen alle abgearbeitet,
-wird die zuvor neu angelegte HashMap persistent in den jeweiligen Speicher geschrieben.
+Diese Prozedur wird genau `amount` Mal wiederholt. Wurden diese Wiederholungen alle abgearbeitet, wird die zuvor neu angelegte HashMap persistent in den jeweiligen Speicher geschrieben.
 
-Ist eine Board-Stellung bereits im Speicher vorhanden, wird dies im 3. Schritt erkannt und das Board wird übersprungen.
-
-Um ein Board mit einer genauen Anzahl an gespielten Zügen zu generieren, wird die Methode `ConnectFour.playRandomMoves` verwendet.
+Ist eine Board-Stellung bereits im Speicher vorhanden, wird dies im 3. Schritt erkannt und es wird übersprungen.
 
 Es ergibt sich als effizient, wenn man bei der Befüllung der Datenbanken erst Datensätze mit möglichst vielen gespielten Zügen generiert und diese Schrittweise reduziert. Hierdurch kann der Minimax-Algorithmus auf bereits vorhandene Einträge im Speicher zurückgreifen.
 
@@ -336,8 +333,26 @@ Es ergibt sich als effizient, wenn man bei der Befüllung der Datenbanken erst D
 
 #### Bitboards
 
+---
+
 ## Testing
 
+### Testszenario 1
+
+### Testszenario 2
+
+### Testszenario 3
+
+### Testszenario 4
+
+### Testszenario 5
+
+---
+
 ## GUI
+
+gui
+
+----
 
 ## Quellen
