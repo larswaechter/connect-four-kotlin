@@ -37,7 +37,7 @@ class Server {
             val paramStarter = ctx.queryParam("starter", "0")!!
 
             // Validate parameters
-            if (this.isValidSessionID(id) && paramDifficulty.matches(Regex("^[0-5]$")) && paramStarter.matches(Regex("^[1-2]$"))) {
+            if (this.isValidSessionID(id) && !this.localGames.containsKey(id) && paramDifficulty.matches(Regex("^[0-5]$")) && paramStarter.matches(Regex("^[1-2]$"))) {
                 // Create new game and store in HashMap
                 val newGame = ConnectFour(difficulty = paramDifficulty.toInt(), currentPlayer = if (paramStarter.toInt() == 1) 1 else -1)
                 this.localGames[id] = newGame
