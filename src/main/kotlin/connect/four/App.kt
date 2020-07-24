@@ -5,12 +5,12 @@ package connect.four
 
 fun main() {
 
-    train()
+    Server()
 
 }
 
 fun train() {
-    for (i in 27 downTo 4) {
+    for (i in 41 downTo 36) {
         for (k in 1..5) Minimax.Storage.seedByMovesPlayed<Move>(500, i)
     }
 }

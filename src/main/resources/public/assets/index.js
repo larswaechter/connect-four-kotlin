@@ -28,6 +28,17 @@ class Game {
     start = async () => {
         const res = await fetch("/start/" + this.id + "?difficulty=" + this.difficulty + "&starter=" + this.starter)
         $content.innerHTML = await res.text()
+
+        // AI starts
+        if(this.players === 1 && this.starter === 2)
+            await this.aiMove()
+    }
+
+    restart = async () => {
+        this.id = Game.createRandomString()
+        this.isGameOver = false
+
+        await this.start()
     }
 
     move = async (column) => {
@@ -38,7 +49,7 @@ class Game {
             this.isMovePending = false
 
             // Check if game is over
-            if (document.querySelector(".metadata").classList.contains("finished")) this.isGameOver = true
+            this.isGameOver = document.querySelector(".metadata").classList.contains("finished")
 
             // Play AI move
             if (this.players === 1 && !this.isGameOver) await this.aiMove()
@@ -47,13 +58,19 @@ class Game {
 
     aiMove = async () => {
         if (!this.isMovePending && !this.isGameOver) {
+            const $spinner = document.querySelector('.spinner-border')
+
             this.isMovePending = true
+            $spinner.classList.remove("d-none")
+
             const res = await fetch(this.id + "/ai-move")
             $content.innerHTML = await res.text()
+
             this.isMovePending = false
+            $spinner.classList.add("d-none")
 
             // Check if game is over
-            if (document.querySelector(".metadata").classList.contains("finished")) this.isGameOver = true
+            this.isGameOver = document.querySelector(".metadata").classList.contains("finished")
         }
     }
 

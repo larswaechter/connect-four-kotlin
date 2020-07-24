@@ -30,8 +30,8 @@ class ConnectFour(
         private val heights: IntArray = calcBoardHeights(board),
         private val history: List<LongArray> = listOf()) : Minimax<LongArray, Move> {
 
-    // Storage index based on number of played moves -> In steps of three
-    override val storageIndex = ceil((this.numberOfPlayedMoves.toDouble() / 3)).toInt() - 1
+    // Storage index based on number of played moves -> In steps of six
+    override val storageIndex = floor((this.numberOfPlayedMoves.toDouble() / 6)).toInt()
 
     companion object {
         /**
@@ -90,7 +90,7 @@ class ConnectFour(
                 heights[index] = column
 
                 for (row in column..column + 5)
-                    // Check if either player 1 or player -1 has set a chip
+                // Check if either player 1 or player -1 has set a chip
                     if ((1L shl row and board[0] != 0L) || 1L shl row and board[1] != 0L)
                         heights[index] = row + 1
             }
@@ -139,8 +139,7 @@ class ConnectFour(
     }
 
     override fun move(move: Move): ConnectFour {
-        assert(move.column in 0..6) { "Invalid move! Move should be in range of 0-6. Found: ${move.column}}" }
-        assert(top and (1L shl this.heights[move.column]) == 0L) { "Invalid move! No more space in given column." }
+        assert(this.isValidMove(move)) { "Invalid move!" }
 
         // Update column height
         val newHeights = this.heights.clone()
@@ -302,6 +301,14 @@ class ConnectFour(
     }
 
     /**
+     * Check if given move is valid
+     *
+     * @param [move] move to check
+     * @return is move valid
+     */
+    fun isValidMove(move: Move): Boolean = move.column in 0..6 && top and (1L shl this.heights[move.column]) == 0L
+
+    /**
      * Perform best possible move for current player
      *
      * @return game with applied best move
@@ -408,13 +415,13 @@ class ConnectFour(
     private fun metadataToHtml(): String {
         fun running(): String {
             val currentPlayer = when (this.currentPlayer) {
-                1 -> "Rot"
-                else -> "Gelb"
+                1 -> "<span class='color-red'>Rot</span>"
+                else -> "<span class='color-yellow'>Gelb</span>"
             }
 
             var content = "<div class='col-auto'><h3>Aktueller Spieler: $currentPlayer</h3></div>"
 
-            content += "<div class='col text-center'><div class='spinner-border' role='status'>" +
+            content += "<div class='col text-center'><div class='spinner-border d-none' role='status'>" +
                     "  <span class='sr-only'>Loading...</span>\n" +
                     "</div></div>"
 
@@ -426,18 +433,25 @@ class ConnectFour(
         }
 
         fun finish(): String {
-            var content = "<div class='col'><h3 class='text-center'>" + when (this.getWinner()) {
-                1 -> "Spieler Rot gewinnt!"
-                -1 -> "Spieler Gelb gewinnt!"
+            var content = "<div class='col-auto'><h3 class='text-center'>" + when (this.getWinner()) {
+                1 -> "Spieler <span class='color-red'>Rot</span> gewinnt!"
+                -1 -> "Spieler <span class='color-yellow'>Gelb</span> gewinnt!"
                 else -> "Unentschieden!"
             } + "</h3></div>"
 
+            /*
             content += "<div class='col-auto'>" +
                     "<button class='btn btn-secondary' onclick='game.undoMove()'>Undo</button></div>"
 
+             */
+
+            content += "<div class='col text-right'>" +
+                    "<button class='btn btn-primary mr-2' onclick='game.restart()'>Restart</button>" +
+                    "<button class='btn btn-secondary' onclick='game.undoMove()'>Undo</button></div>"
+
+
             return content
         }
-
 
 
         var res: String

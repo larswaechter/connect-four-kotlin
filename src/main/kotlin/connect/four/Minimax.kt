@@ -25,7 +25,7 @@ interface Minimax<Board, Move> {
         var map: HashMap<Long, Record<Move>> = HashMap()
 
         companion object {
-            private const val numberOfTranspositionTables = 14
+            private const val numberOfTranspositionTables = 7
             private const val maxTreeDepthTranspositionTables = 5
             private const val transpositionTablesPath = "src/main/resources/transposition_tables"
             private val zobristTable: Array<Array<Long>> = buildZobristTable()
@@ -62,7 +62,7 @@ interface Minimax<Board, Move> {
              * @param [movesPlayed] number of played moves
              * */
             fun <Move> seedByMovesPlayed(amount: Int, movesPlayed: Int) {
-                assert(movesPlayed <= 40)
+                assert(movesPlayed < 42)
 
                 println("\nStart seeding storage for #$movesPlayed played moves...")
 
@@ -114,8 +114,8 @@ interface Minimax<Board, Move> {
             fun getFilename(storageIndex: Int): String {
                 assert(storageIndex < numberOfTranspositionTables) { "Index is higher than number of transposition tables." }
                 val id = if (storageIndex < 10) "0$storageIndex" else "$storageIndex"
-                val from = storageIndex * 3 + 1
-                val to = from + 2
+                val from = storageIndex * 6
+                val to = from + 5
                 return "${id}_table_${from}_${to}.txt"
             }
 

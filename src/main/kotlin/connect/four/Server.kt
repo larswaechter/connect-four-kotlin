@@ -39,7 +39,7 @@ class Server {
             // Validate parameters
             if (this.isValidSessionID(id) && paramDifficulty.matches(Regex("^[0-5]$")) && paramStarter.matches(Regex("^[1-2]$"))) {
                 // Create new game and store in HashMap
-                val newGame = ConnectFour(difficulty = paramDifficulty.toInt(), currentPlayer = if(paramStarter.toInt() == 1) 1 else -1)
+                val newGame = ConnectFour(difficulty = paramDifficulty.toInt(), currentPlayer = if (paramStarter.toInt() == 1) 1 else -1)
                 this.localGames[id] = newGame
                 ctx.html(newGame.toHtml())
             } else ctx.html(createHtmlAlert(Alert.danger, "Invalid request!"))
@@ -55,11 +55,12 @@ class Server {
             // Validate parameters
             if (this.localGames.containsKey(paramID) && paramColumn.matches(Regex("^[0-6]\$"))) {
                 var game = this.localGames[paramID]!!
-                val column = paramColumn.toInt()
-                game = game.move(Move(column))
+                val move = Move(paramColumn.toInt())
 
-                // Update in HashMap
-                this.localGames[paramID] = game
+                if (game.isValidMove(move)) {
+                    game = game.move(move)
+                    this.localGames[paramID] = game
+                }
 
                 ctx.html(game.toHtml())
 
@@ -77,7 +78,6 @@ class Server {
                 var game = this.localGames[paramID]!!
                 game = game.bestMove()
 
-                // Update in HashMap
                 this.localGames[paramID] = game
 
                 ctx.html(game.toHtml())
