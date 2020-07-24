@@ -94,6 +94,10 @@ const createLocalGame = async () => {
     await game.start();
 }
 
+const runTests = async () => {
+    await fetch("/tests")
+}
+
 $startBtn.addEventListener("click", async () => {
     $("#setup-modal").modal("hide");
     $("#welcome").hide();

@@ -2,11 +2,13 @@ package connect.four
 
 class Tests {
     init {
+        println("\nStarting tests!")
         this.runTest1()
         this.runTest2()
         this.runTest3()
         this.runTest4()
         this.runTest5()
+        println("Tests finished!")
     }
 
     /**
@@ -33,7 +35,7 @@ class Tests {
 
         var game = ConnectFour(board = board)
 
-        // player 1 should play win-move
+        // player X should play win-move
         game = game.bestMove()
 
         assert(game.getWinner() == 1) {"Failed test #1: Player 1 (X) should have won!"}
@@ -63,13 +65,13 @@ class Tests {
 
         var game = ConnectFour(board = board)
 
-        // player 1 plays move
+        // player X plays move
         game = game.bestMove()
 
-        // player -1 plays move
+        // player O plays move
         game = game.bestMove()
 
-        // player 1 should play win-move
+        // player X should play win-move
         game = game.bestMove()
 
         assert(game.getWinner() == 1) {"Failed test #2: Player 1 (X) should have won!"}
@@ -104,10 +106,10 @@ class Tests {
 
         var game = ConnectFour(board = board, currentPlayer = -1)
 
-        // player -1 plays move -> prevent player 1 from win-move
+        // player O plays move -> prevent player X from win-move
         game = game.bestMove()
 
-        // player 1 cannot play win-move
+        // player X cannot play win-move
         game = game.bestMove()
 
         assert(!game.hasWinner(1)) {"Failed test #1: Player 1 (X) should not have won!"}
@@ -138,16 +140,16 @@ class Tests {
 
         var game = ConnectFour(board = board, currentPlayer = -1)
 
-        // player -1 plays move -> player 1 cannot play win-move in his next-next move
+        // player O plays move -> player X cannot play win-move in his next-next move
         game = game.bestMove()
 
-        // player 1 plays move
+        // player X plays move
         game = game.bestMove()
 
-        // player -1 plays move
+        // player O plays move
         game = game.bestMove()
 
-        // player 1 plays move
+        // player X plays move
         game = game.bestMove()
 
         assert(!game.hasWinner(1)) {"Failed test #5: Player 1 (X) should not have won"}
