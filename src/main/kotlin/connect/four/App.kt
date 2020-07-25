@@ -4,15 +4,23 @@
 package connect.four
 
 fun main() {
-
-    Server()
+    train()
 
 }
 
 fun train() {
-    for (i in 41 downTo 36) {
+
+    for (i in 11 downTo 6) {
         for (k in 1..5) Minimax.Storage.seedByMovesPlayed<Move>(500, i)
     }
+
+    /*
+
+    for (i in 12 downTo 6) {
+        for (k in 1..5) Minimax.Storage.seedByMovesPlayed<Move>(1500, i)
+    }
+
+     */
 }
 
 fun playGame() {

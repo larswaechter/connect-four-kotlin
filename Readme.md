@@ -1,105 +1,149 @@
-# connect-four-kotlin
+# Vier Gewinnt (PiS, SoSe 2020)
 
-Eine Vier-Gewinnt Implementierung in Kotlin mittels des Javalin Frameworks.
+Autor: Lars Wächter, 5280456
 
-## Allgemeines
+Ich habe die Zulassung für PiS im SoSe 2020 bei Herrn Herzberg erhalten.
 
-- Autor: Lars Wächter
-- Matrikel-Nr: 5280456
-- Hochschule: Technische Hochschule Mittelhessen
-- Studiengang: Bachelor of Science - Informatik
-- Modul: Programmierung interaktiver Systeme (CS1016)
-- Semester: SS2020 (Herzberg)
-- Zweck: Prüfungsleistung
+## Einleitung
 
-## Anleitung
+### Spielregeln
 
-Die Spielregeln entsprechen dem des klassischen Vier-Gewinnt: Ziel ist es, vier Steine seiner eigenen Farbe in einer Reihe (horizontal, vertikal oder diagonal) zu platzieren. Die Spieler wechseln sich dabei gegenseitig ab. Erreicht dies kein Spieler bis alle Züge (42) gespielt wurden, endet das Spiel Unentschieden.
+Die Spielregeln entsprechen dem des klassischen Vier-Gewinnts: Ziel ist es, vier Steine seiner eigenen Farbe in einer Reihe (horizontal, vertikal oder diagonal) zu platzieren. Die Spieler wechseln sich dabei gegenseitig ab. Erreicht dies kein Spieler bis alle Züge (42) gespielt wurden, endet das Spiel Unentschieden.
 
-## Übersicht
+### Bedienungsanleitung
 
-Die folgende Veranschaulichung spiegelt die Ordnerstruktur mit den wichtigsten Dateien des Projekts wider. Im Anschluss darauf wird genauer auf die einzelnen Dateien und deren Rollen eingegangen.
+...
 
-```
-connect-four-kotlin (root)
-└───src
-    └───main
-        └───kotlin/connect/four
-        │   │   App.kt
-        │   │   ConnectFour.kt
-        │   │   Minimax.kt
-        │   │   Move.kt
-        │   │   Server.kt
-        │   │   Tests.kt
-        └───resources
-        │   └───public
-        │   │   └───assets
-        │   │   │   │   index.css
-        │   │   │   │   index.js
-        │   │   │   index.html
-        │   └───transposition_tables
-        │   │   │   00_table_1_3.txt
-        │   │   │   01_table_4_6.txt
-        │   │   │   ...
-        │   │   │   13_table_40_42.txt
-```
+### Dateiübersicht
+
+...
+
+## Spiel-Engine (ENG)
+
+| Feature    | M    | H + S | MC   | eD   | B+I  | Summe    |
+| ---------- | ---- | ----- | ---- | ---- | ---- | -------- |
+| Umsetzung  | 100  | 100   | 100  | 130  | 66.6 |          |
+| Gewichtung | 0.4  | 0.3   | 0.3  | 0.3  | 0.3  |          |
+| Ergebnis   | 40   | 30    | 30   | 39   | 20   | **159%** |
+
+Folgender Abschnitt behandelt die Implementierung der Spiel-Engine sowie Besonderheiten im Code.
+
+### KI-Algorithmus
+
+*Im Code*
+
+- `Minimax.minimax()`
 
 ---
 
-Dateien in `src/main/kotlin/connect/four`:
+Zur Berechnung des bestmöglichen Zugs, wird der Minimax-Algorithmus verwendet. Dieser rechnet bis zu einer Tiefe von fünf. Mittels des Parameters `maximize` wird gesteuert, ob man sich gerade in der Rolle des Maximizers oder Minimizers befindet.
 
-| Dateiname      | Typ       | Rolle                                           | LOC  |
-| -------------- | --------- | ----------------------------------------------- | ---- |
-| App.kt         | Klasse    | Einstiegspunkt der Anwendung                    |      |
-| ConnectFour.kt | Klasse    | Spiel-Logik, Symmetrien, Darstellung des Spiels |      |
-| Minimax.kt     | Interface | KI-Engine, Datenbankmanagement                  |      |
-| Move.kt        | Klasse    | Repräsentation eines Zug                        |      |
-| Server.kt      | Klasse    | Steuerung der HTTP Requests und Responses       |      |
-| Tests.kt       | Klasse    | Durchführung der einzelnen Testszenarien        |      |
-|                |           |                                                 | 2000 |
+Der Algorithmus enthält zwei zusätzliche Performance-Optimierungen:
 
-Dateien in `src/main/resources/public`:
+**Eine Überprüfung, ob der vorheriger Spieler gewonnen hat:**
 
-| Dateiname  | Rolle                                                   | LOC  |
-| ---------- | ------------------------------------------------------- | ---- |
-| index.css  | Cascading Style Sheets für User-Interface               |      |
-| index.js   | JavaScript zur Kommunikation zwischen Client und Server |      |
-| index.html | User-Interface                                          |      |
-|            |                                                         | 2000 |
+Eine Abbruchbedingung des Minimax-Algorithmus ist, wenn einer der beiden Spieler das Spiel gewonnen hat. Da der Zug eines Spielers nicht zum Sieg des anderen Spielers führen kann, muss man innerhalb des Algorithmus nicht jedes Mal auf den Sieg beider Spieler prüfen. Es reicht zu überprüfen, ob der vorherige Spieler das Spiel gewonnen hat, da dieser den letzten Zug gespielt hat. Für den aktuellen Spieler spielt der Zug des vorherigen Spielers keine Rolle, weshalb dieser nicht als Sieger geprüft werden muss.
 
-Dateien in `src/main/resources/transposition_tables`:
+**Eine Überprüfung, ob man mit einem der möglichen Züge sofort gewinnen kann:**
 
-Dieser Ordner beinhaltet die einzelnen Transposition Tables, welche als Datenbank dienen.
+Bevor innerhalb des Minimax-Algorithmus alle möglichen Züge bewerten werden, wird einmal über die Liste aller möglichen Züge iteriert und geprüft, ob der aktuelle Spieler mit einem dieser Züge direkt gewinnen kann. Ist dies der Fall, spart man sich die Evaluierung der restlichen Züge.
+
+### Datenbank
+
+Eine weitere Performance-Optimierung ist das Anlegen einer Datenbank, auch Transposition Tables genannt, bestehend aus bereits evaluierten Boards und deren bestmöglichen Züge. Eine Datenbank ermöglicht, dass innerhalb des Minimax-Algorithmus nicht jede mögliche Board-Stellung neu evaluiert werden muss, da manche bereits in der Datenbank vorhanden sind und dort ausgelesen werden können.
+
+Anknüpfend wird die Realisierung einer solchen Datenbank beschrieben.
+
+#### Aufbau 
+
+Die komplette Datenbank besteht aus sieben einzelnen Transposition Tables, welche als Text-Dateien umgesetzt sind. Sie beinhalten bereits berechnete Spielstellungen mit deren dazugehörigen bestmöglichen Zügen. Zu finden sind diese in `src/main/resources/transposition_tables`.
+
+Der Dateiname einer solchen Transposition Table gibt an, wie viele Züge jeweils in dem Spiel gespielt wurden, dessen Evaluierung in die Tabelle eingetragen wurde. Die Tabelle `00_table_0_5.txt` beinhaltet somit beispielsweise nur Spielstellungen, bei denen zwischen 0 und 5 Zügen gespielt wurde. Tabelle `01_table_6_11.txt` besteht nur aus Spielen mit 6 bis 11 gespielten Zügen.
+
+#### Transposition Table
+
+*Im Code*
+
+- `class Minimax.Storage` 
+- `class Minimax.Storage.Record`
 
 ---
 
-## Engine
+Eine Transposition Table beinhaltet Spielstellungen und deren Bewertungen für eine jeweils angegebene Anzahl an gespielten Spielzügen. Sie besteht aus mehreren Einträgen nach folgendem Schema:
 
-Folgender Abschnitt behandelt die im Projekt umgesetzte Spiel-Engine. Dies beinhaltet unter anderem die Wahl des KI-Algorithmus zur Berechnung des bestmöglichen Zugs, dessen Performance-Optimierung, als auch die Bewertung einer Spielsituation mittels der Monte-Carlo-Methode.
+`#Hash# #Move# #Score# #Player#`
 
-### Wahl des Algorithmus
+- **Hash**: der Zobrist-Hash des Boards
+- **Move**: der bestmögliche Zug in der jeweiligen Situation
+- **Score**: die Bewertung des Zugs
+- **Player**: der durchführende Spieler
 
-Zur Berechnung des bestmöglichen Zugs, wird der Minimax-Algorithmus verwendet. Dieser rechnet bis zu einer Tiefe von 5. Mittels des Parameters `maximize` wird gesteuert, ob man sich gerade in der Rolle des Maximizers oder Minimizers befindet.
+Beispiel: `1369919444299124995 3 -5727.0 -1`
 
-#### Erweiterungen
+Ein solcher Eintrag einer Transposition Table wird mit Hilfe der Klasse `Minimax.Storage.Record` repräsentiert. Diese beinhaltet unter anderem die oben genannten Begriffe als Instanzvariablen.
 
-- Überprüfung, ob man mit einem Zug sofort gewinnen kann
-- Überprüfung, ob vorheriger Spieler gewonnen hat
+Die einzelnen Transposition werden als Instanz der Klasse `Minimax.Storage` implementiert. Diese kümmert sich um das Lesen und Schreiben der dazugehörigen Textdatei. Außerdem beinhaltet sie eine `HashMap`, welche die Tabelleneinträge als Instanz der Klasse `Minimax.Storage.Record` umfasst.
 
-### Wiederverwendung von berechneten Stellungswerten
+#### Zobrist Hash
 
-Wie viele andere Spiele auch, beinhaltet Vier-Gewinnt Symmetrien in dessen Spielbrett, welche jeweils zu dem selben Ausgangsergebnis führen. Die Verwendung solcher Symmetrien kann die Anzahl der zu berechnenden Boards reduzieren und somit einen großen Einfluss auf die Laufzeit des KI-Algorithmus haben.
+*Im Code*
 
-Im folgenden Abschnitt wird genauer auf die verschieden Arten der Spielbrett-Symmetrien eingegangen und wie diese im Code implementiert sind.
+- `class Minimax.Storage`
+
+---
+
+Der Zobrist Hash wird verwendet, um die verschiedenen Spielsituationen als Hashwert darzustellen. Wenn keine Kollisionen auftreten, sollte jede mögliche Spielstellung ihren eigenen einzigartigen Zobrist-Hash besitzen. Unter diesem Hashwert werden die Spielstellungen in die Datenbank gespeichert.
+
+##### Vorbereitung
+
+*Im Code*
+
+- `Minimax.Storage.generateZobristHashes()` 
+- `Minimax.Storage.readZobristHashes()`
+- `Minimax.Storage.buildZobristTable()`
+
+---
+
+Um den Zobrist Hash einer Spielstellung zu berechnen, müssen zuerst für jede vorhandene Spielfeldzelle und für jeden möglichen Spieler innerhalb einer Zelle, zufällige Zahlen generiert werden (`generateZobristHashes`). Hierbei wurden Zahlen vom Typ `Long` (64 Bit) genommen. Diese dienen als "Schlüssel". Insgesamt werden 96 solcher Schlüssel erzeugt.
+
+Die erzeugten Schlüssel werden persistent in einer Textdatei abgespeichert: `src/main/resources/transposition_tables/zobrist_hashes.txt`
+
+Bei Programmstart werden die Schlüssel aus der Textdatei geladen und in ein 2D-Array hinterlegt. Dies passiert mittels der Methode `Minimax.Storage.buildZobristTable()`.
+
+Folgende Tabelle soll den Aufbau nochmal verdeutlichen: Für jede Zelle des Spielbretts gibt es für beide Spieler eine zufällige Zahl (aus Platzgründen sind diese hier verkürzt dargestellt).
+
+| Spielfeld Zelle | 0            | 1            | 2            | 3            | ...  |
+| --------------- | ------------ | ------------ | ------------ | ------------ | ---- |
+| Spieler 1       | ... 6389 ... | ... 2725 ... | ... 6402 ... | ... 3206 ... |      |
+| Spieler -1      | ... 8625 ... | ... 2805 ... | ... 4394 ... | ... 1259 ... |      |
+
+##### Berechnung
+
+*Im Code*
+
+- `ConnectFour.calcZobristHash()`
+
+---
+
+Nachdem eine Tabelle mit zufälligen (pseudo) Zahlen erstellt wurde, ist es möglich, den Zobrist-Hash für eine jeweilige Stellung zu berechnen. 
+
+Hierfür wird für jeden gesetzten Stein beider Spieler der Wert der dazugehörigen Zelle aus der zuvor erzeugten Tabelle (siehe oben) entnommen und per `XOR` Operation miteinander verknüpft. Der dadurch entstandene Wert entspricht dem Zobrist-Hash der jeweiligen Stellung.
+
+Ein großer Vorteil dieses Verfahrens ist, dass der Hash nicht nach jedem Spielzug komplett neu berechnet werden muss: 
+
+Führt ein Spieler einen Zug aus, muss nur der Zobrist-Schlüssel für diesen Spieler und der Spielfeldzelle, in die der Stein gesetzt wurde, aus der Tabelle geladen und per `XOR` Operation mit dem Zobrist-Hash der aktuellen Spielstellung verknüpft werden.
+
+### Symmetrien
+
+Wie viele andere Spiele auch, beinhaltet Vier-Gewinnt Symmetrien in dessen Spielbrett. Diese entstehen beispielsweise durch Drehungen oder Spiegelungen des Spielbretts. Sie haben die Eigenschaft, dass sie jeweils zu dem selben Spielergebnis führen bzw. die selbe Evaluierung haben. Die Verwendung solcher Symmetrien kann die Anzahl der zu berechnenden Boards reduzieren und somit einen großen Einfluss auf die Laufzeit des KI-Algorithmus haben.
 
 #### Arten von Symmetrien
 
-Insgesamt gibt es drei Symmetrien.
+Vier-Gewinnt besitzt insgesamt drei Symmetrien.
 
 ##### 1. Spiegelung an der mittleren Y-Achse
 
-Bei dieser Symmetrie wird das Spielbrett an der mittleren Y-Achse (Spalte #4) gespiegelt.
-Hierbei werden die Spielsteine in den jeweiligen Spalten wie folgt getauscht:
+Bei dieser Symmetrie wird das Spielbrett an der mittleren Y-Achse (Spalte #4) gespiegelt. Hierbei werden die Spielsteine in den jeweiligen Spalten wie folgt getauscht:
 
 - Spalte 1 <=> 7
 - Spalte 2 <=> 6
@@ -207,152 +251,42 @@ Board #2 (Board #1 gespiegelt und invertiert) (best move = 6, allerdings für Ge
 
 #### Implementierung der Symmetrien
 
-Die verschiedenen Symmetrien wurden mittels einer Art Schlüssel-System implementiert. Für jede mögliche Board-Stellung gibt es vier dazugehörige Schlüssel, welche aus dem Zobrist-Hash des Boards nach Anwendung der jeweiligen Symmetrie erzeugt werden.
+Folgender Abschnitt thematisiert die Implementierung der Symmetrien sowie deren Anwendung innerhalb des Minimax-Algorithmus.
 
-##### Schlüssel
+Die verschiedenen Symmetrien wurden mittels einer Art "Schlüssel-System" implementiert. Für jede mögliche Board-Stellung gibt es vier dazugehörige Schlüssel, welche aus dem Zobrist-Hash des Boards nach Anwendung der jeweiligen Symmetrie erzeugt werden.
 
-Der erste Schlüssel ist der `storageRecordPrimaryKey`. Dieser repräsentiert den reinen Zobrist-Hash der aktuellen Board-Stellung ohne jegliche angewandte Symmetrie. Unter diesem Schlüssel werden berechnete Board-Stellungen in den Transposition-Tables gespeichert.
+#### 
 
-**Hinweis**: Die Berechnung des Zobrist-Hashs und die Speicherung von Board-Stellungen werden
-im Abschnitt "Verwendung einer Datenbank mit Stellungswerten" genauer behandelt.
+##### Hashes
 
-Die restlichen drei Schlüssel werden mittels des Zobrist-Hashs nach Anwendung einer Symmetrie auf das Board berechnet:
+Der erste Hash ist der `storageRecordPrimaryKey`. Dieser repräsentiert den reinen Zobrist-Hash der aktuellen Board-Stellung ohne jegliche angewandte Symmetrie. Unter diesem Hash werden berechnete Board-Stellungen in den Transposition-Tables gespeichert.
 
-- Zweiter Schlüssel: 1. Symmetrie (Spiegelung) + Berechnung des Hashs
-- Dritter Schlüssel: 2. Symmetrie (Invertierung) + Berechnung des Hashs 
-- Vierter Schlüssel: 3. Symmetrie (Spiegelung & Invertierung) + Berechnung des Hashs
+**Hinweis**: Die Berechnung des Zobrist-Hashs und die Speicherung von Board-Stellungen werden im Abschnitt "Verwendung einer Datenbank mit Stellungswerten" genauer behandelt.
 
-Die berechneten Schlüssel werden innerhalb des Minimax-Algorithmus verwendet, um zu überprüfen, ob bereits ein Eintrag unter einem der jeweiligen Schlüssel im Speicher vorliegt. Ist ein Schlüssel vorhanden,
-wird der dazugehörige Eintrag aus dem Speicher gelesen und weiterverarbeitet.
+Die restlichen drei Hashs werden mittels des Zobrist-Hashs nach Anwendung einer Symmetrie auf das Board berechnet:
+
+- Zweiter Hash: 1. Symmetrie (Spiegelung) + Berechnung des Hashs
+- Dritter Hash: 2. Symmetrie (Invertierung) + Berechnung des Hashs 
+- Vierter Hash: 3. Symmetrie (Spiegelung & Invertierung) + Berechnung des Hashs
+
+Die berechneten Hashes werden innerhalb des Minimax-Algorithmus verwendet, um zu überprüfen, ob bereits ein Eintrag unter einem der jeweiligen Schlüssel im Speicher vorliegt. Ist ein Schlüssel vorhanden, wird der dazugehörige Eintrag aus dem Speicher gelesen und weiterverarbeitet.
 
 Im Code werden alle möglichen Schlüssel eines Boards mit Hilfe der Methode `ConnectFour.getStorageRecordKeys` erzeugt und in einer Liste zurückgegeben. Zu jedem Schlüssel gibt es zusätzlich noch eine Processing-Methode, welche benötigt wird, um einen Speicher-Eintrag zu verarbeiten.
 
-##### Processing-Methode
+## Tests
 
-Die Processing Methode wird benötigt, da nicht ohne Weiteres ein aus dem Speicher geladener Eintrag
-verwendet werden darf. Je nach Schlüssel bzw. Symmetrie gibt es verschiedene Kritieren, die erfüllt sein müssen, damit ein Eintrag aus dem Speicher verwendet werden darf.
+| Szenario | 1    | 2    | 3    | 4    | 5    | Summe |
+| -------- | ---- | ---- | ---- | ---- | ---- | ----- |
+| ok       | X    | X    | X    | X    | -    | 0.8   |
 
-Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Kritieren zu überprüfen.
+Die Tests werden wie folgt ausgeführt:
 
-- Erster Schlüssel (`storageRecordPrimaryKey`):
-  - Wurde ein Eintrag unter diesem Schlüssel gefunden, darf der Eintrag nur verwendet werden,
-  wenn der aktuelle Spieler dem des Spielers im Eintrag entspricht
-- Zweiter Schlüssel (Spiegelung):
-  - Wurde ein Eintrag unter diesem Schlüssel gefunden, darf der Eintrag nur verwendet werden,
-  wenn der aktuelle Spieler dem des Spielers im Eintrag entspricht
-  - Da bei diesem Schlüssel die Symmetrie der Spiegelung verwendet wurde, muss ebenfalls der im Eintrag gespeicherte Zug gespiegelt werden
-- Dritter Schlüssel (Invertierung):
-  - Wurde ein Eintrag unter diesem Schlüssel gefunden, darf der Eintrag nur verwendet werden,
-  wenn der aktuelle Spieler NICHT dem des Spielers im Eintrag entspricht, da die Steine invertiert wurden
-  - Zusätzlich muss der Score des Eintrags invertiert werden
-- Vierter Schlüssel (Spiegelung & Invertierung):
-  - Wurde ein Eintrag unter diesem Schlüssel gefunden, darf der Eintrag nur verwendet werden,
-  wenn der aktuelle Spieler NICHT dem des Spielers im Eintrag entspricht, da die Steine invertiert wurden
-  - Da bei diesem Schlüssel die Symmetrie der Spiegelung verwendet wurde, muss ebenfalls der im Eintrag gespeicherte Zug gespiegelt werden
-  - Zusätzlich muss der Score des Eintrags invertiert werden
+...
 
-Ein Schlüssel und dessen Processing-Methode werden im Code als `Pair<>` repräsentiert. Der `first` Value entspricht dem Schlüssel und der `second` Value beinhaltet die Processing-Methode.
+Die Testausführung protokolliert sich über die Konsole wie folgt:
 
-Um einen Eintrag im Speicher auf die Kritieren eines Schlüssels zu überprüfen, wird dieser als Argument beim Aufruf der Processing Methode mit übergeben.
+## Umsetzung der GUI
 
-Sind alle Kriterien für einen Schlüssel erfüllt, gibt die Processing Methode eine neue Instanz der Klasse `Minimax.Storage.Record` mit angepassten Werten zurück und Minimax führt ein `return` dieser Instanz durch. Sind die Kriterien nicht erfüllt, wird `null` von der Methode zurückgegeben, worauf der ursprünglich im Speicher gefundene Eintrag verworfen und der nächste Schlüssel innerhalb von Minimax geprüft wird.
+## Hinweise
 
-### Stellungsbewertung bei imperfektem Spiel
-
-Damit der Minimax-Algorithmus ein Board aus der Sicht eines beliebigen Spielers bewerten kann, ist eine `evaluate`-Methode notwendig. Im Projekt wurde eine solche Evaluierung mittels der **Monte-Carlo-Methode** umgesetzt.
-
-Hierbei wird ausgehend von einer gegebenen Stellung abwechselnd für jeden Spieler ein zufälliger Zug ausgeführt, bis das schließlich Spiel beendet ist (keine Züge mehr möglich oder Sieg eines Spielers). Dieses Vorgehen wird eine gewünschte Anzahl, im Projekt 200, Mal wiederholt.
-
-Anhand der Anzahl der Gewinne für einen gegebenen Spieler wird ein Score ermittelt, welcher als Evaluationswert für das aktuelle Board dient.
-
-Je höher dieser Wert für den Maximizer bzw. umso niedriger er für den Minimizer ist, desto
-besser ist der Score und dementsprechend auch der Zug, der zu der gegebenen Ausgangsstellung führte.
-
-### Verwendung einer Datenbank mit Stellungswerten
-
-Eine weitere Performance-Optimierung ist das Anlegen einer Datenbank, auch Transposition Tables genannt, bestehend aus bereits evaluierten Boards und deren bestmöglichen Züge. Eine Datenbank ermöglicht, dass innerhalb des Minimax-Algorithmus nicht jede mögliche Board-Stellung neu evaluiert werden muss, da manche bereits in der Datenbank vorhanden sind und dort ausgelesen werden können.
-
-Anknüpfend wird die Realisierung einer solchen Datenbank beschrieben.
-#### Verzeichnisstruktur
-
-Die komplette Datenbank besteht aus 14 einzelnen Transposition Tables, welche als Text-Dateien umgesetzt sind. Sie beinhalten bereits berechnete Board-Stellungen mit deren dazugehörigen bestmöglichen Zügen.
-
-Der Name einer solchen Transposition Table ergibt sich wie folgt:
-
-`#index#_table_#playedMovesFrom#_#playedMovesTo#.txt`
-
-- **index**: Index der Transposition Table (aufsteigende Zahlen)
-- **playedMovesFrom**:
-- **playedMovesTo**:
-
-In welche Transposition Table ein Eintrag bzw. Spiel-Board geschrieben wird, hängt davon ab, wie viele Züge bisher in dem Spiel gespielt wurden.
-
-#### Aufbau einer Transposition Table
-
-Eine Transposition Table besteht aus mehreren Eintägen nach folgendem Schema:
-
-`#StorageRecordPrimaryKey# #Move# #Score# #Player#`
-
-- **StorageRecordPrimaryKey**: der Zobrist-Hash des Boards
-- **Move**: der bestmögliche Zug in der jeweiligen Situation
-- **Score**: die Bewertung des Zugs
-- **Player**: der durchführende Spieler
-
-#### Befüllung der Datenbank
-
-Da die Transposition Tables basierend auf der Anzahl an gespielten Zügen voneinander getrennt sind,
-ist es möglich, gezielt einzelne dieser zu befüllen.
-
-Im Code ist dies mittels der Methode `Minimax.Storage.seedByMovesPlayed` möglich. Diese erwartet zwei Parameter:
-
-- `amount: Int` - Anzahl an Datensätzen, die erstellt werden sollen
-- `movesPlayed: Int` - Anzahl an gespielten Zügen
-
-Der Algorithmus generiert also `amount` viele Datensätze bestehend aus Spielen mit `movesPlayed` gespielten Zügen.
-
-##### Ablauf einer Befüllung
-
-1. Anlegen einer neuen leeren HashMap
-2. Erstellung eines Boards mit `movesPlayed` gespielten Zügen
-3. Überprüfung, ob das Board bereits im Speicher vorhanden ist
-4. Berechnung des bestmöglichen des Zugs mittels Minimax-Algorithmus
-5. Das Ergebnis in die neu angelegte HashMap hinzufügen
-
-Diese Prozedur wird genau `amount` Mal wiederholt. Wurden diese Wiederholungen alle abgearbeitet, wird die zuvor neu angelegte HashMap persistent in den jeweiligen Speicher geschrieben.
-
-Ist eine Board-Stellung bereits im Speicher vorhanden, wird dies im 3. Schritt erkannt und es wird übersprungen.
-
-Es ergibt sich als effizient, wenn man bei der Befüllung der Datenbanken erst Datensätze mit möglichst vielen gespielten Zügen generiert und diese Schrittweise reduziert. Hierdurch kann der Minimax-Algorithmus auf bereits vorhandene Einträge im Speicher zurückgreifen.
-
-
-### Programmierstil
-
-#### Immutabilität
-
-#### Interface
-
-#### Bitboards
-
----
-
-## Testing
-
-### Testszenario 1
-
-### Testszenario 2
-
-### Testszenario 3
-
-### Testszenario 4
-
-### Testszenario 5
-
----
-
-## GUI
-
-gui
-
-----
-
-## Quellen
+## Quellennachweis
