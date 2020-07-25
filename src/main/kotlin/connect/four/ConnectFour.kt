@@ -189,8 +189,9 @@ class ConnectFour(
             val storage = Minimax.Storage.doStorageLookup<Move>(this.storageIndex) // Load storage
 
             this.getStorageRecordKeys().forEach { storageRecordKey ->
-                val key = storageRecordKey()
+                val key = storageRecordKey() // Calculate key
 
+                // Check if hash exists in storage
                 if (storage.map.containsKey(key.first)) {
                     val storageRecord = storage.map[key.first]!! // Load from storage
 

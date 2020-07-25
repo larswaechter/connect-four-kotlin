@@ -230,9 +230,9 @@ Im Code werden alle möglichen Schlüssel eines Boards mit Hilfe der Methode `Co
 ##### Processing-Methode
 
 Die Processing Methode wird benötigt, da nicht ohne Weiteres ein aus dem Speicher geladener Eintrag
-verwendet werden darf. Je nach Schlüssel bzw. Symmetrie gibt es verschiedene Kritieren, die erfüllt sein müssen, damit ein Eintrag aus dem Speicher verwendet werden darf.
+verwendet werden darf. Je nach Schlüssel bzw. Symmetrie gibt es verschiedene Kriterien, die erfüllt sein müssen, damit ein Eintrag aus dem Speicher verwendet werden darf.
 
-Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Kritieren zu überprüfen.
+Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Kriterien zu überprüfen.
 
 - Erster Schlüssel (`storageRecordPrimaryKey`):
   - Wurde ein Eintrag unter diesem Schlüssel gefunden, darf der Eintrag nur verwendet werden,
@@ -253,7 +253,7 @@ Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Krit
 
 Ein Schlüssel und dessen Processing-Methode werden im Code als `Pair<>` repräsentiert. Der `first` Value entspricht dem Schlüssel und der `second` Value beinhaltet die Processing-Methode.
 
-Um einen Eintrag im Speicher auf die Kritieren eines Schlüssels zu überprüfen, wird dieser als Argument beim Aufruf der Processing Methode mit übergeben.
+Um einen Eintrag im Speicher auf die Kriterien eines Schlüssels zu überprüfen, wird dieser als Argument beim Aufruf der Processing Methode mit übergeben.
 
 Sind alle Kriterien für einen Schlüssel erfüllt, gibt die Processing Methode eine neue Instanz der Klasse `Minimax.Storage.Record` mit angepassten Werten zurück und Minimax führt ein `return` dieser Instanz durch. Sind die Kriterien nicht erfüllt, wird `null` von der Methode zurückgegeben, worauf der ursprünglich im Speicher gefundene Eintrag verworfen und der nächste Schlüssel innerhalb von Minimax geprüft wird.
 
