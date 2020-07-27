@@ -33,6 +33,8 @@ Der Spielablauf ist immer gleich: beide Spieler spielen abwechselnd ihre Züge i
 
 Nachdem der menschliche Spieler eine Auswahl getroffen hat, spielt daraufhin die KI ihren Zug. Anschließend ist wieder der menschliche Spieler an der Reihe. Hat man bei Spielstart den 2 Spieler Modus ausgewählt, wäre anstelle der KI der zweite Menschliche Spieler am Zug.
 
+**Achtung:** Macht man als menschlicher Spieler einen Zug der KI rückgängig, ist der menschliche Spieler wieder an der Reihe und nicht die KI. Es kommt also sozusagen zu einem Farb- bzw. Spielerwechsel. Andernfalls würde die KI wieder direkt mit einem Zug antworten und es wäre unmöglich, einen einzelnen Zug der KI rückgängig zu machen.
+
 #### Spielende
 
 Das Spiel endet, sobald einer der beiden Spieler vier Steine seiner Farbe in einer Reihe (horizontal, vertikal oder diagonal) platziert hat oder kein Züge mehr gespielt werden können. Nach Spielende wird der Gewinner, falls es einen gibt, angezeigt. Der Spieler kann in diesem Fall wie folgt weiter verfahren:
@@ -84,9 +86,9 @@ Folgender Abschnitt behandelt die Implementierung der Spiel-Engine sowie Besonde
 
 ---
 
-Zur Berechnung des bestmöglichen Zugs, wird der Minimax-Algorithmus verwendet. Dieser rechnet bis zu einer Tiefe von einschließlich fünf. Mittels des Parameters `maximize` wird gesteuert, ob man sich gerade in der Rolle des Maximizers oder Minimizers befindet.
+Zur Berechnung des bestmöglichen Zugs, wird der Minimax-Algorithmus verwendet. Dieser rechnet bis zu einer Suchtiefe von einschließlich fünf. Mittels des Parameters `maximize` wird gesteuert, ob man sich gerade in der Rolle des Maximizers oder Minimizers befindet.
 
-Neben Performance-Optimierungen wie einer Datenbank und Symmetrien, welche später behandelt werden, enthält der Algorithmus zwei zusätzliche Performance-Optimierungen:
+Neben Performance-Optimierungen wie einer Datenbank und Symmetrien, welche später behandelt werden, enthält der Algorithmus noch zwei zusätzliche Performance-Optimierungen:
 
 **1. Eine Überprüfung, ob der vorherige Spieler gewonnen hat:**
 
@@ -108,7 +110,7 @@ Die komplette Datenbank besteht aus sieben einzelnen Transposition Tables, welch
 
 Der Dateiname einer solchen Transposition Table gibt an, wie viele Züge in den Spielen gespielt wurde, deren Evaluierungen in die Tabelle eingetragen wurden. Die Tabelle `00_table_0_5.txt` beinhaltet beispielsweise nur Spielstellungen, bei denen zwischen 0 und 5 Zügen gespielt wurde. Tabelle `01_table_6_11.txt` besteht aus Stellungen mit 6 bis 11 gespielten Zügen.
 
-Zu jedem Zeitpunkt des Spiels weiß man, anhand der Anzahl an gespielten Züge, in welcher Transposition Table die aktuelle Spielstellung zu finden ist. Dies lässt sich wie folgt berechnen: `floor((numberOfPlayedMoves / 6))`.  Der dadurch entstandene Wert (`ConnectFour.storageIndex`) entspricht dem Index der Transposition Table.
+Zu jedem Zeitpunkt des Spiels weiß man, anhand der Anzahl an gespielten Züge, in welcher Transposition Table die aktuelle Spielstellung zu finden sein könnte. Dies lässt sich wie folgt berechnen: `floor((numberOfPlayedMoves / 6))`.  Der dadurch entstandene Wert (`ConnectFour.storageIndex`) entspricht dem Index der Transposition Table.
 
 #### Transposition Table
 
@@ -124,7 +126,7 @@ Eine Transposition Table beinhaltet Spielstellungen und deren Bewertungen für e
 `#Hash# #Move# #Score# #Player#`
 
 - **Hash**: der Zobrist-Hash der Spielstellung
-- **Move**: der bestmögliche Zug für diese Spielstellung
+- **Move**: der bestmögliche Zug (Spalte) für diese Spielstellung
 - **Score**: die Bewertung des Zugs
 - **Player**: der durchführende Spieler
 
@@ -156,7 +158,7 @@ Der Zobrist Hash wird verwendet, um die verschiedenen Spielsituationen als Hashw
 
 ---
 
-Um den Zobrist Hash einer Spielstellung zu berechnen, müssen zuerst für jede vorhandene Spielfeldzelle und für jeden möglichen Spieler innerhalb einer Zelle, zufällige Zahlen generiert werden (`generateZobristHashes`). Hierbei wurden Zahlen vom Typ `Long` (64 Bit) genommen. Diese dienen als "Schlüssel". Insgesamt werden 96 solcher Schlüssel erzeugt.
+Um den Zobrist Hash einer Spielstellung zu berechnen, müssen zuerst für jede vorhandene Spielfeldzelle und für jeden möglichen Spieler innerhalb einer Zelle, zufällige Zahlen generiert werden (`generateZobristHashes()`). Hierbei wurden Zahlen vom Typ `Long` (64 Bit) genommen. Diese dienen als "Schlüssel". Insgesamt werden 96 solcher Schlüssel erzeugt.
 
 Die erzeugten Schlüssel werden persistent in einer Textdatei abgespeichert: `src/main/resources/transposition_tables/zobrist_hashes.txt`
 
@@ -167,7 +169,7 @@ Folgende Tabelle verdeutlicht nochmal den Aufbau: Für jede Zelle des Spielbrett
 | Spielfeld Zelle | 0            | 1            | 2            | 3            | ...  |
 | --------------- | ------------ | ------------ | ------------ | ------------ | ---- |
 | Spieler 1       | ... 6389 ... | ... 2725 ... | ... 6402 ... | ... 3206 ... |      |
-| Spieler -1      | ... 8625 ... | ... 2805 ... | ... 4394 ... | ... 1259 ... |      |
+| Spieler 2       | ... 8625 ... | ... 2805 ... | ... 4394 ... | ... 1259 ... |      |
 
 ##### Berechnung
 
@@ -179,6 +181,8 @@ Folgende Tabelle verdeutlicht nochmal den Aufbau: Für jede Zelle des Spielbrett
 
 Nachdem eine Tabelle mit zufälligen (pseudo) Zahlen erstellt wurde, ist es möglich, den Zobrist-Hash für eine jeweilige Stellung zu berechnen. Hierfür wird für jeden gesetzten Stein beider Spieler der Wert der dazugehörigen Zelle aus der zuvor erzeugten Tabelle (siehe oben) entnommen und per `XOR` Operation miteinander verknüpft. Der dadurch entstandene Wert entspricht dem Zobrist-Hash der jeweiligen Stellung.
 
+**Beispiel:** Spieler 1 hat einen Stein in Zelle #0 und Spieler 2 einen Stein in Zelle #1. Der Zobrist Hash berechnet sich dann wie folgt:   `...6389... XOR ...2805...`.
+
 Ein großer Vorteil dieses Verfahrens ist, dass der Hash nicht nach jedem Spielzug komplett neu berechnet werden muss: Führt ein Spieler einen Zug aus, muss nur der Zobrist-Schlüssel für diesen Spieler und der Spielfeldzelle, in die der Stein gesetzt wurde, aus der Tabelle geladen und per `XOR` Operation mit dem Zobrist-Hash der aktuellen Spielstellung verknüpft werden.
 
 #### Befüllung
@@ -189,18 +193,18 @@ Ein großer Vorteil dieses Verfahrens ist, dass der Hash nicht nach jedem Spielz
 
 ---
 
-Um die einzelnen Transposition Tables zu befüllen, wurde eine eigene Methode entwickelt: `Minimax.Storage.seedByMovesPlayed`. Diese erwartet zwei Parameter:
+Um die einzelnen Transposition Tables zu befüllen, wurde eine eigene Methode entwickelt: `Minimax.Storage.seedByMovesPlayed()`. Diese erwartet zwei Parameter:
 
 - `amount: Int` - Anzahl an Datensätzen, die erstellt werden sollen
 - `movesPlayed: Int` - Anzahl an gespielten Zügen
 
-Hierbei generiert der Algorithmus ein Spiel, in dem genau `movesPlayed` zufällige Züge gespielt wurden. Anschließend wird geprüft, ob die hierbei entstandene Spielstellung oder eine Symmetrie dieser bereits in der Datenbank vorhanden ist. Ist dies nicht der Fall, wird mit Hilfe des Minimax-Algorithmus der bestmögliche Zug für die Stellung berechnet und in die Datenbank eingetragen.
+Hierbei generiert der Algorithmus ein Spiel, in dem genau `movesPlayed` zufällige Züge gespielt wurden. Zu beachten ist, dass nach diesen Zügen noch kein Gewinner feststeht. Anschließend wird geprüft, ob die hierbei entstandene Spielstellung, oder eine Symmetrie dieser, bereits in der Datenbank vorhanden ist. Ist das nicht der Fall, wird mit Hilfe des Minimax-Algorithmus der bestmögliche Zug für die Stellung berechnet und in die Datenbank eingetragen.
 
 Dieses Verfahren wird genau `amount` mal wiederholt. Es werden also bis zu `amount` viele Datensätze für Spiele bestehend aus `movesPlayed` zufällig gespielten Zügen generiert. 
 
 ### Symmetrien
 
-Wie viele andere Spiele auch, beinhaltet Vier-Gewinnt Symmetrien in dessen Spielbrett. Diese entstehen beispielsweise durch Drehungen oder Spiegelungen des Spielbretts. Sie haben die Eigenschaft, dass sie jeweils zu dem selben Spielergebnis führen bzw. die selbe Evaluierung haben. Die Verwendung solcher Symmetrien kann die Anzahl der zu berechnenden Spielstellungen reduzieren und somit einen großen Einfluss auf die Laufzeit des KI-Algorithmus haben.
+Wie viele andere Spiele auch, beinhaltet Vier-Gewinnt Symmetrien in dessen Spielbrett. Diese entstehen beispielsweise durch Drehungen oder Spiegelungen des Spielbretts. Sie haben die Eigenschaft, dass sie jeweils zu dem selben Spielergebnis führen bzw. die selbe Evaluierung haben. Die Verwendung solcher Symmetrien kann die Anzahl der zu berechnenden Spielstellungen deutlich reduzieren und somit einen großen Einfluss auf die Laufzeit des KI-Algorithmus haben.
 
 #### Arten von Symmetrien
 
@@ -247,7 +251,7 @@ Hierbei ist zu erkennen, dass beide Board-Stellungen zu demselben Ergebnis führ
 
 Hat man nun beispielsweise den bestmöglichen Zug für `Board #1` bereits berechnet und im Speicher vorliegen, kann man im Falle von `Board #2` das Board spiegeln, wodurch man `Board #1` erhält, und den bestmöglichen Zug von `Board #1` aus dem Speicher lesen und übernehmen. Es gilt zu beachten, dass dieser Zug dann ebenfalls gespiegelt werden muss. Aus dem Zug `2` wird also `6`.
 
-Wichtig hierbei ist, dass dies nur gilt, wenn man die Board-Stellung in beiden Situationen aus der Sicht desselben Spielers (X) betrachtet. Für Spieler O wären die eben genannten Züge nicht die bestmöglichen.
+Wichtig ist, dass dies nur gilt, wenn man die Board-Stellung in beiden Situationen aus der Sicht desselben Spielers (X) betrachtet. Für Spieler O wären die eben genannten Züge nicht die bestmöglichen.
 
 **Hinweis:** Maßnahmen zur Anpassung eines aus dem Speicher geladenen Zugs und wann diese verwendet werden dürfen, werden im Abschnitt "Processing-Methode" genauer behandelt.
 
@@ -290,7 +294,7 @@ Wichtig hierbei ist, dass dies nur gilt, wenn man die Board-Stellung in `Board #
 
 ##### 3. Spiegelung an der mittleren Y-Achse und Invertierung des Spielbretts
 
-Diese Symmetrie ist eine Kombination aus den ersten beiden. Zuerst wird das Board gespiegelt und anschließend invertiert.
+Diese Symmetrie ist eine Kombination aus den ersten beiden. Zuerst wird die Spielstellung gespiegelt und anschließend invertiert.
 
 Beispiel:
 
@@ -331,11 +335,13 @@ Wie auch im vorherigen Fall, gilt dies nur, wenn man die Board-Stellung in `Boar
 
 ---
 
-Folgender Abschnitt thematisiert die Implementierung der Symmetrien sowie deren Anwendung innerhalb des Minimax-Algorithmus. Für jede mögliche Board-Stellung gibt es vier dazugehörige Hashes, welche aus dem Zobrist-Hash des aktuellen Boards nach Anwendung der jeweiligen Symmetrie berechnet werden.
+Folgender Abschnitt thematisiert die Implementierung der Symmetrien sowie deren Anwendung innerhalb des Minimax-Algorithmus.
+
+Für jede mögliche Spielstellung gibt es vier dazugehörige Hashes, welche aus dem Zobrist-Hash der aktuellen Stellung nach Anwendung der jeweiligen Symmetrie berechnet werden. Basierend auf diesen Hashes wird überprüft, ob eine Stellung in der Datenbank vorhanden ist oder nicht.
 
 ##### Hashes
 
-Der erste Hash ist der Zobrist-Hash der aktuellen Board-Stellung ohne jegliche angewandte Symmetrie. Unter diesem Hash werden bewertete Spielstellungen in den Transposition-Tables gespeichert. Im Code wird dieser als `storageRecordPrimaryKey` bezeichnet.
+Der erste Hash ist der Zobrist-Hash der aktuellen Spielstellung ohne jegliche angewandte Symmetrie. Unter diesem Hash werden bewertete Spielstellungen in den Transposition-Tables gespeichert. Im Code wird dieser als `storageRecordPrimaryKey` bezeichnet.
 
 Die anderen drei Hashes werden mittels des Zobrist-Hashs nach Anwendung einer Symmetrie auf das Board berechnet:
 
@@ -361,15 +367,16 @@ Die zweite Methode wird verwendet, um nach bereits vorhandenen Spielstellungen, 
 
 Die Processing Methode wird benötigt, da nicht ohne Weiteres ein aus dem Speicher gelesener Eintrag verwendet werden darf. Je nach Symmetrie gibt es verschiedene Kriterien, die erfüllt sein müssen, damit ein Eintrag aus dem Speicher verwendet werden darf.
 
-Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Kriterien der Symmetrie  zu überprüfen.
+Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Kriterien der Symmetrie zu überprüfen. Die Kriterien lauten wie folgt:
 
 - Erster Hash (`storageRecordPrimaryKey`):
+  - Keine Symmetrie
   - Wurde ein Eintrag unter diesem Hash gefunden, darf der Eintrag nur verwendet werden,
     wenn der aktuelle Spieler dem des Spielers im Eintrag entspricht
 - Zweiter Hash (Spiegelung):
   - Wurde ein Eintrag unter diesem Hash gefunden, darf der Eintrag nur verwendet werden,
     wenn der aktuelle Spieler dem des Spielers im Eintrag entspricht
-  - Da bei diesem Hash die Symmetrie der Spiegelung verwendet wurde, muss ebenfalls der im Eintrag gespeicherte Zug gespiegelt werden
+  - Da hierbei eine Spiegelung stattfand, muss ebenfalls der im Eintrag gespeicherte Zug gespiegelt werden
 - Dritter Hash (Invertierung):
   - Wurde ein Eintrag unter diesem Hash gefunden, darf der Eintrag nur verwendet werden,
     wenn der aktuelle Spieler NICHT dem des Spielers im Eintrag entspricht, da die Steine invertiert wurden
@@ -377,7 +384,7 @@ Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Krit
 - Vierter Hash (Spiegelung & Invertierung):
   - Wurde ein Eintrag unter diesem Hash gefunden, darf der Eintrag nur verwendet werden,
     wenn der aktuelle Spieler NICHT dem des Spielers im Eintrag entspricht, da die Steine invertiert wurden
-  - Da bei diesem Schlüssel die Symmetrie der Spiegelung verwendet wurde, muss ebenfalls der im Eintrag gespeicherte Zug gespiegelt werden
+  - Da hierbei eine Spiegelung stattfand, muss ebenfalls der im Eintrag gespeicherte Zug gespiegelt werden
   - Zusätzlich muss der Score des Eintrags invertiert werden
 
 Ein Hashwert und dessen Processing-Methode werden im Code als `Pair<>` repräsentiert. Der `first` Value entspricht dem Hash und der `second` Value beinhaltet die Processing-Methode.
@@ -385,6 +392,21 @@ Ein Hashwert und dessen Processing-Methode werden im Code als `Pair<>` repräsen
 Um einen Eintrag im Speicher auf die Kriterien eines Hashs zu überprüfen, wird dieser als Argument beim Aufruf der Processing Methode mit übergeben.
 
 Sind alle Kriterien für einen Hash erfüllt, gibt die Processing Methode eine neue Instanz der Klasse `Minimax.Storage.Record` mit angepassten Werten zurück. Sind die Kriterien nicht erfüllt, wird `null` von der Methode zurückgegeben, worauf der ursprünglich im Speicher gefundene Eintrag verworfen und der nächste Hash innerhalb von `ConncetFour.searchBestMoveInStorage()` geprüft wird.
+
+**Beispiel:**
+
+Folgender Code-Ausschnitt (`ConnectFour.getStorageRecordKeys()`) soll das Verfahren nochmal veranschaulichen:
+
+Der `Pair.first` Value entspricht dem ersten Hash einer Spielstellung (ohne jegliche angewandte Symmetrie). Der `Pair.second` Value entspricht der Processing-Methode. Diese überprüft, ob der aktuelle Spieler dem des Spielers aus dem Datenbankeintrag entspricht. Ist dies der Fall, wird der Eintrag zurückgegeben, andernfalls `null`.
+
+````kotlin
+val key1 = fun(): Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
+	Pair(this.storageRecordPrimaryKey, { storageRecord ->
+		if (this.currentPlayer == storageRecord.player)
+			storageRecord
+		else null
+	})
+````
 
 ### Stellungsbewertung
 
@@ -411,15 +433,17 @@ besser ist der Score und dementsprechend auch der Zug, der zu der gegebenen Ausg
 
 ---
 
-Das Minimax Interface ist ein generisches Interface, welches wichtige Attribute und Methoden zur Implementierung von 2-Personen spielen beinhaltet bzw. vorschreibt.
+Das Minimax Interface ist ein generisches Interface, welches wichtige Attribute und Methoden zur Implementierung von 2-Personen spielen beinhaltet bzw. vorschreibt:
 
 - Berechnung des bestmöglichen Zugs
 - Datenbankverwaltung
 - Spielsteuerung (`move, undoMove...`)
 
-Der Interface-Kopf sieht wie folgt aus: `interface Minimax<Board, Move>`. Er erwartet also zwei Parameter als generische Datentypen. Einen für das Spielbrett und einen für die Züge.
+Der Interface-Kopf sieht wie folgt aus: `interface Minimax<Board, Move>`. Er erwartet zwei Parameter als generische Datentypen. Einen für das Spielbrett und einen für die Züge.
 
 Das Interface beinhaltet außerdem noch zwei geschachtelte Klassen: `Storage` und `Storage.Record`. Diese dienen zur Datenbankverwaltung. Siehe dazu Abschnitt "Datenbank".
+
+### Spiellogik
 
 
 
@@ -499,7 +523,7 @@ Möchte der Benutzer die Testdurchläufe ausführen, wird ein HTTP Request an de
 
 ---
 
-Die Spielseite wird angezeigt, sobald ein neues Spiel gestartet wurde. Der Inhalt des Spiels wird komplett serverseitig in `ConnectFour.toHtml()` generiert. Er besteht aus zwei Teilen:
+Die Spielseite wird angezeigt, sobald ein neues Spiel gestartet wurde. Das Layout des Spiels wird komplett serverseitig in `ConnectFour.toHtml()` generiert. Es besteht aus zwei Teilen:
 
 1. Metadaten => Spielstatus, Dauer der Zugberechnung, Aktions-Buttons
 2. Spielbrett => Vier-Gewinnt Spielbrett
@@ -516,7 +540,7 @@ Die Event-Listeners zum Ausführen von Aktionen werden ebenfalls serverseitig in
 
 ---
 
-Die Serverendpunkte dienen als Schnittstelle zwischen dem Client und der Spiel-Engine. Zur Erstellung des HTTP-Servers wurde das Javalin Framework verwendet. Es gibt insgesamt fünf Server Endpunkte:
+Die Serverendpunkte dienen als Schnittstelle zwischen dem Client und der Spiel-Engine. Zur Erstellung des HTTP-Servers wurde das Javalin Framework verwendet. Es gibt insgesamt fünf Server Endpunkte, welche vom Client angefragt werden können:
 
 1. `GET /tests` => Führt die Testdurchläufe aus
 2. `GET /start/:id` => Startet ein neues Spiel mit der gegebenen ID
