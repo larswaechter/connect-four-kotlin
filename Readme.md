@@ -12,11 +12,48 @@ Die Spielregeln entsprechen dem des klassischen Vier-Gewinnts: Ziel ist es, vier
 
 ### Bedienungsanleitung
 
+Auf der Startseite kann man entweder ein neues Spiel starten oder die Testdurchläufe ausführen. Diese werden im Abschnitt "Tests (TST)" genauer behandelt.
+
+#### Spielstart
+
+Zu Beginn des Spiels öffnet sich ein Modal, in dem man die Anzahl der menschlichen Spieler auswählt und den Startspieler (Rot oder Gelb) festlegt:
+
+- 1 Spieler: Mensch gegen KI
+- 2 Spieler: Mensch gegen Mensch
+
+Wählt man hierbei 1 Spieler und als Startspieler "Gelb" aus, beginnt die KI das Spiel. Andernfalls der menschliche Spieler.
+
+#### Spielablauf
+
+
+
 ...
 
 ### Dateiübersicht
 
-...
+````
+connect-four\Readme.md
+
+connect-four\src\main\kotlin\connect\four\App.kt
+connect-four\src\main\kotlin\connect\four\ConnectFour.kt
+connect-four\src\main\kotlin\connect\four\Minimax.kt
+connect-four\src\main\kotlin\connect\four\Move.kt
+connect-four\src\main\kotlin\connect\four\Server.kt
+connect-four\src\main\kotlin\connect\four\Tests.kt
+
+connect-four\src\main\resources\public\index.html
+connect-four\src\main\resources\public\assets\index.css
+connect-four\src\main\resources\public\assets\index.js
+
+connect-four\src\main\resources\transposition_tables\00_table_0_5.txt
+connect-four\src\main\resources\transposition_tables\01_table_6_11.txt
+connect-four\src\main\resources\transposition_tables\02_table_12_17.txt
+connect-four\src\main\resources\transposition_tables\03_table_18_23.txt
+connect-four\src\main\resources\transposition_tables\04_table_24_29.txt
+connect-four\src\main\resources\transposition_tables\05_table_30_35.txt
+connect-four\src\main\resources\transposition_tables\06_table_36_41.txt
+connect-four\src\main\resources\transposition_tables\zobrist_hashes.txt
+````
 
 ## Spiel-Engine (ENG)
 
@@ -64,8 +101,8 @@ Der Dateiname einer solchen Transposition Table gibt an, wie viele Züge in den 
 
 *Im Code*
 
-- `class Minimax.Storage` 
-- `class Minimax.Storage.Record`
+- `Minimax.Storage` 
+- `Minimax.Storage.Record`
 
 ---
 
@@ -88,7 +125,7 @@ Die einzelnen Transposition Table werden als Instanz der Klasse `Minimax.Storage
 
 *Im Code*
 
-- `class Minimax.Storage`
+- `Minimax.Storage`
 
 ---
 
@@ -110,7 +147,7 @@ Die erzeugten Schlüssel werden persistent in einer Textdatei abgespeichert: `sr
 
 Bei Programmstart werden die Schlüssel aus der Textdatei geladen und in ein 2D-Array hinterlegt. Dies passiert mittels der Methode `Minimax.Storage.buildZobristTable()`.
 
-Folgende Tabelle verdeutlicht den Aufbau nochmal:: Für jede Zelle des Spielbretts gibt es für beide Spieler eine zufällige Zahl (aus Platzgründen sind diese hier verkürzt dargestellt).
+Folgende Tabelle verdeutlicht nochmal den Aufbau: Für jede Zelle des Spielbretts gibt es für beide Spieler eine zufällige Zahl (aus Platzgründen sind diese hier verkürzt dargestellt).
 
 | Spielfeld Zelle | 0            | 1            | 2            | 3            | ...  |
 | --------------- | ------------ | ------------ | ------------ | ------------ | ---- |
@@ -131,17 +168,30 @@ Ein großer Vorteil dieses Verfahrens ist, dass der Hash nicht nach jedem Spielz
 
 #### Befüllung
 
+Um die einzelnen Transposition Tables zu befüllen, 
+
+
+
+Da die Transposition Tables basierend auf der Anzahl an gespielten Zügen voneinander getrennt sind, ist es möglich, gezielt einzelne dieser zu befüllen.
+
+Im Code ist dies mittels der Methode `Minimax.Storage.seedByMovesPlayed` möglich. Diese erwartet zwei Parameter:
+
+- `amount: Int` - Anzahl an Datensätzen, die erstellt werden sollen
+- `movesPlayed: Int` - Anzahl an gespielten Zügen
+
+Der Algorithmus generiert also `amount` viele Datensätze bestehend aus Spielen mit `movesPlayed` gespielten Zügen.
+
 ### Symmetrien
 
 Wie viele andere Spiele auch, beinhaltet Vier-Gewinnt Symmetrien in dessen Spielbrett. Diese entstehen beispielsweise durch Drehungen oder Spiegelungen des Spielbretts. Sie haben die Eigenschaft, dass sie jeweils zu dem selben Spielergebnis führen bzw. die selbe Evaluierung haben. Die Verwendung solcher Symmetrien kann die Anzahl der zu berechnenden Boards reduzieren und somit einen großen Einfluss auf die Laufzeit des KI-Algorithmus haben.
 
 #### Arten von Symmetrien
 
-Vier-Gewinnt besitzt insgesamt drei Symmetrien.
+Insgesamt gibt es drei verschiedene Symmetrien.
 
 ##### 1. Spiegelung an der mittleren Y-Achse
 
-Bei dieser Symmetrie wird das Spielbrett an der mittleren Y-Achse (Spalte #4) gespiegelt. Hierbei werden die Spielsteine in den jeweiligen Spalten wie folgt getauscht:
+Bei dieser Symmetrie wird das Spielbrett an der mittleren Y-Achse (Spalte #4) gespiegelt. Es werden die Spielsteine in den jeweiligen Spalten also wie folgt getauscht:
 
 - Spalte 1 <=> 7
 - Spalte 2 <=> 6
@@ -247,6 +297,14 @@ Board #2 (Board #1 gespiegelt und invertiert) (best move = 6, allerdings für Ge
 . . X O X O .
 ```
 
+Ausgehend von einer Board-Stellung wie in `Board #1`, wäre für Spieler X der bestmögliche Zug, einen Stein in Spalte 2 zu werfen. Er hätte damit gewonnen.
+
+Ausgehend von einer Board-Stellung wie in `Board #2`, wäre für Spieler O der bestmögliche Zug, einen Stein in Spalte 6 zu werfen. Er hätte damit ebenfalls gewonnen.
+
+Hat man nun beispielsweise den bestmöglichen Zug für `Board #1` bereits berechnet und im Speicher vorliegen, kann man im Falle von `Board #2` das Board spiegeln und invertieren, wodurch man `Board #1` erhält, und den bestmöglichen Zug von `Board #1` aus dem Speicher lesen und übernehmen.
+
+Wie auch im vorherigen Fall, gilt dies nur, wenn man die Board-Stellung in `Board #2` aus der Sicht des anderen Spielers als in `Board #1` betrachtet. Im Falle von `Board #2` also als Spieler O, da in `Board #1` das Board als Spieler X betrachtet wurde. Außerdem muss ebenfalls der Zug gespiegelt werden: `2 <=> 6`.
+
 #### Implementierung der Symmetrien
 
 *Im Code*
@@ -256,11 +314,11 @@ Board #2 (Board #1 gespiegelt und invertiert) (best move = 6, allerdings für Ge
 
 ---
 
-Folgender Abschnitt thematisiert die Implementierung der Symmetrien sowie deren Anwendung innerhalb des Minimax-Algorithmus. Für jede mögliche Board-Stellung gibt es vier dazugehörige Hashes, welche aus dem Zobrist-Hash aktuellen des Boards nach Anwendung der jeweiligen Symmetrie berechnet werden.
+Folgender Abschnitt thematisiert die Implementierung der Symmetrien sowie deren Anwendung innerhalb des Minimax-Algorithmus. Für jede mögliche Board-Stellung gibt es vier dazugehörige Hashes, welche aus dem Zobrist-Hash des aktuellen Boards nach Anwendung der jeweiligen Symmetrie berechnet werden.
 
 ##### Hashes
 
-Der erste Hash ist der `storageRecordPrimaryKey`. Dieser repräsentiert den reinen Zobrist-Hash der aktuellen Board-Stellung ohne jegliche angewandte Symmetrie. Unter diesem Hash werden bewertete Spielstellungen in den Transposition-Tables gespeichert.
+Der erste Hash ist der Zobrist-Hash der aktuellen Board-Stellung ohne jegliche angewandte Symmetrie. Unter diesem Hash werden bewertete Spielstellungen in den Transposition-Tables gespeichert. Im Code wird dieser als `storageRecordPrimaryKey` bezeichnet.
 
 Die anderen drei Hashes werden mittels des Zobrist-Hashs nach Anwendung einer Symmetrie auf das Board berechnet:
 
@@ -278,7 +336,7 @@ Die einzelnen Hashes werden innerhalb des Minimax-Algorithmus verwendet, um zu �
 
 2. `ConnectFour.searchBestMoveInStorage()`
 
-Die erste Methode dient dazu, die jeweiligen Hashes für die aktuelle Spielstellung zu generieren. Sie gibt eine Liste bestehend aus drei Funktionen (für jede Symmetrie eine) zurück. Ruft man eine in der Liste enthaltene Funktion auf, erhält man von dieser ein `Pair<>` bestehend aus dem Hashwert und einer "Processing-Methode", welche benötigt wird, um einen Speicher Eintrag weiterzuverarbeiten. Das `Pair<>` ist in eine zusätzliche Funktion gebettet, da man hierdurch nicht alle möglichen Hashwerte gleichzeitig berechnen muss. In manchen Fällen braucht man nicht alle Hashwerte und man spart sich somit unnötige Berechnungen.
+Die erste Methode dient dazu, die jeweiligen Hashes für die aktuelle Spielstellung zu generieren. Sie gibt eine Liste bestehend aus drei Funktionen (für jede Symmetrie eine) zurück. Ruft man eine in der Liste enthaltene Funktion auf, erhält man von dieser ein `Pair<>` bestehend aus dem Hashwert und einer weiteren Funktion (hier "Processing-Methode" genannt), welche benötigt wird, um einen Speicher Eintrag weiterzuverarbeiten. Das `Pair<>` ist in eine zusätzliche Funktion gebettet, da man hierdurch nicht alle möglichen Hashwerte gleichzeitig berechnen muss. In manchen Fällen braucht man nicht alle Hashwerte und man spart sich somit unnötige Berechnungen.
 
 Die zweite Methode wird verwendet, um nach bereits vorhandenen Spielstellungen, einschließlich Symmetrien, in der Datenbank zu suchen. Hierzu ruft sie die erste Methode auf und iteriert über die von ihr erhaltenen Listenelemente. Anschließend wird geprüft, ob einer von den erhaltenen Hashwerten in der Datenbank vorhanden ist und dessen "Processing-Methode" wird aufgerufen.
 
@@ -307,11 +365,17 @@ Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Krit
 
 Ein Hashwert und dessen Processing-Methode werden im Code als `Pair<>` repräsentiert. Der `first` Value entspricht dem Hash und der `second` Value beinhaltet die Processing-Methode.
 
-Um einen Eintrag im Speicher auf die Kriterien eines Schlüssels zu überprüfen, wird dieser als Argument beim Aufruf der Processing Methode mit übergeben.
+Um einen Eintrag im Speicher auf die Kriterien eines Hashs zu überprüfen, wird dieser als Argument beim Aufruf der Processing Methode mit übergeben.
 
 Sind alle Kriterien für einen Hash erfüllt, gibt die Processing Methode eine neue Instanz der Klasse `Minimax.Storage.Record` mit angepassten Werten zurück. Sind die Kriterien nicht erfüllt, wird `null` von der Methode zurückgegeben, worauf der ursprünglich im Speicher gefundene Eintrag verworfen und der nächste Hash innerhalb von `ConncetFour.searchBestMoveInStorage()` geprüft wird.
 
 ### Stellungsbewertung
+
+*Im Code:*
+
+- `ConnectFour.mcm()`
+
+---
 
 Damit der Minimax-Algorithmus ein Board aus der Sicht eines beliebigen Spielers bewerten kann, ist eine `evaluate`-Methode notwendig. Im Projekt wurde eine solche Evaluierung mittels der **Monte-Carlo-Methode** umgesetzt.
 
@@ -321,7 +385,7 @@ Anhand der Anzahl der Gewinne für einen gegebenen Spieler wird ein Score ermitt
 besser ist der Score und dementsprechend auch der Zug, der zu der gegebenen Ausgangsstellung führte.
 
 
-## Tests
+## Tests (TST)
 
 | Szenario | 1    | 2    | 3    | 4    | 5    | Summe |
 | -------- | ---- | ---- | ---- | ---- | ---- | ----- |
@@ -334,6 +398,12 @@ Die Tests werden wie folgt ausgeführt:
 Die Testausführung protokolliert sich über die Konsole wie folgt:
 
 ## Umsetzung der GUI
+
+### Startseite
+
+
+
+### Spielbrett
 
 ## Hinweise
 

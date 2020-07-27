@@ -31,6 +31,14 @@
     margin-bottom: 0;
 }
 
+.metadata .duration.fetching span {
+    display: none;
+}
+
+.metadata .duration:not(.fetching) .spinner-border {
+    display: none;
+}
+
 .color-yellow {
     color: #FFD400
 }

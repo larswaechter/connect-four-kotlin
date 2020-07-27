@@ -2,10 +2,8 @@ const $content = document.querySelector("#game-wrapper");
 const $startBtn = document.querySelector("#start-game");
 const $players = document.querySelector("#players");
 const $startPlayer = document.querySelector("#start-player")
-const $difficulty = document.querySelector("#difficulty");
-const $difficultyForm = document.querySelector("#difficulty-form");
 
-let game = null;
+let game;
 
 /**
  *
@@ -15,18 +13,16 @@ let game = null;
  */
 
 class Game {
-    constructor(id, players, difficulty, starter) {
+    constructor(id, players, starter) {
         this.id = id;
         this.players = players;
-        this.difficulty = difficulty;
         this.starter = starter;
-        this.isMovePending = false;
+        this.isRequestPending = false;
         this.isGameOver = false;
     }
 
     start = async () => {
-        const res = await fetch("/start/" + this.id + "?difficulty=" + this.difficulty + "&starter=" + this.starter);
-        $content.innerHTML = await res.text();
+        $content.innerHTML = await (await fetch("/start/" + this.id + "?starter=" + this.starter)).text();
 
         // AI starts after 1s
         if (this.players === 1 && this.starter === 2)
@@ -42,11 +38,10 @@ class Game {
     }
 
     move = async (column) => {
-        if (!this.isMovePending && !this.isGameOver) {
-            this.isMovePending = true;
-            const res = await fetch(this.id + "/move/" + column);
-            $content.innerHTML = await res.text();
-            this.isMovePending = false;
+        if (!this.isRequestPending && !this.isGameOver) {
+            this.isRequestPending = true;
+            $content.innerHTML = await (await fetch(this.id + "/move/" + column)).text();
+            this.isRequestPending = false;
 
             // Check if game is over
             this.isGameOver = document.querySelector(".metadata").classList.contains("finished");
@@ -57,17 +52,16 @@ class Game {
     }
 
     aiMove = async () => {
-        if (!this.isMovePending && !this.isGameOver) {
-            const $spinner = document.querySelector('.spinner-border');
+        if (!this.isRequestPending && !this.isGameOver) {
+            const $duration = document.querySelector('.metadata .duration');
 
-            this.isMovePending = true;
-            $spinner.classList.remove("d-none");
+            this.isRequestPending = true;
+            $duration.classList.add("fetching");
 
-            const res = await fetch(this.id + "/ai-move");
-            $content.innerHTML = await res.text();
+            $content.innerHTML = await (await fetch(this.id + "/ai-move")).text();
 
-            this.isMovePending = false;
-            $spinner.classList.add("d-none");
+            this.isRequestPending = false;
+            $duration.classList.remove("fetching");
 
             // Check if game is over
             this.isGameOver = document.querySelector(".metadata").classList.contains("finished");
@@ -75,12 +69,11 @@ class Game {
     }
 
     undoMove = async () => {
-        if (!this.isMovePending) {
+        if (!this.isRequestPending) {
             this.isGameOver = false;
-            this.isMovePending = true;
-            const res = await fetch(this.id + "/undo");
-            $content.innerHTML = await res.text();
-            this.isMovePending = false;
+            this.isRequestPending = true;
+            $content.innerHTML = await (await fetch(this.id + "/undo")).text();
+            this.isRequestPending = false;
         }
     }
 
@@ -93,21 +86,14 @@ class Game {
 }
 
 const createLocalGame = async () => {
-    game = new Game(Game.createRandomString(), parseInt($players.value), parseInt($difficulty.value), parseInt($startPlayer.value));
+    game = new Game(Game.createRandomString(), parseInt($players.value), parseInt($startPlayer.value));
     await game.start();
 }
 
-const runTests = async () => {
-    await fetch("/tests")
-}
+const runTests = async () => await fetch("/tests")
 
 $startBtn.addEventListener("click", async () => {
     $("#setup-modal").modal("hide");
     $("#welcome").hide();
     await createLocalGame();
-});
-
-$players.addEventListener("change", function () {
-    if (this.value == 2) $difficultyForm.classList.add("d-none");
-    else $difficultyForm.classList.remove("d-none");
 });

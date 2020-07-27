@@ -17,6 +17,7 @@ import kotlin.math.*
  * @param [numberOfPlayedMoves] number of already played moves
  * @param [heights] current height of board columns
  * @param [history] history of boards
+ * @param [moveDuration] duration of bestMove calculation
  */
 class ConnectFour(
         override val board: LongArray = longArrayOf(
@@ -28,7 +29,8 @@ class ConnectFour(
         override val storageRecordPrimaryKey: Long = calcZobristHash(board),
         val numberOfPlayedMoves: Int = calcNumberOfPlayedMoves(board),
         private val heights: IntArray = calcBoardHeights(board),
-        private val history: List<LongArray> = listOf()) : Minimax<LongArray, Move> {
+        private val history: List<LongArray> = listOf(),
+        private val moveDuration: Int = 0) : Minimax<LongArray, Move> {
 
     // Storage index based on number of played moves -> In steps of six
     override val storageIndex = floor((this.numberOfPlayedMoves.toDouble() / 6)).toInt()
@@ -138,7 +140,7 @@ class ConnectFour(
         private fun isValidBoard(board: LongArray): Boolean = board[0] and board[1] == 0L
     }
 
-    override fun move(move: Move): ConnectFour {
+    override fun move(move: Move, duration: Int): ConnectFour {
         assert(this.isValidMove(move)) { "Invalid move!" }
 
         // Update column height
@@ -166,7 +168,8 @@ class ConnectFour(
                 storageRecordPrimaryKey = newZobristHash,
                 numberOfPlayedMoves = this.numberOfPlayedMoves + 1,
                 heights = newHeights,
-                history = this.history.plusElement(this.board)
+                history = this.history.plusElement(this.board),
+                moveDuration = duration
         )
     }
 
@@ -314,7 +317,12 @@ class ConnectFour(
      *
      * @return game with applied best move
      */
-    fun bestMove(): ConnectFour = this.move(if (this.difficulty == 0) this.getRandomMove() else this.minimax().move!!)
+    fun bestMove(): ConnectFour {
+        val startTime = System.currentTimeMillis()
+        val bestMove = this.minimax().move!!
+        val endTime = (System.currentTimeMillis() - startTime).toInt()
+        return this.move(bestMove, endTime)
+    }
 
 
     /**
@@ -422,13 +430,14 @@ class ConnectFour(
 
             var content = "<div class='col-auto'><h3>Aktueller Spieler: $currentPlayer</h3></div>"
 
-            content += "<div class='col text-center'><div class='spinner-border d-none' role='status'>" +
-                    "  <span class='sr-only'>Loading...</span>\n" +
-                    "</div></div>"
+            content += "<div class='col text-center duration'>" +
+                    "<div class='spinner-border' role='status'><span class='sr-only'>Loading...</span></div>" +
+                    "<span>${this.moveDuration}ms</span>" +
+                    "</div>"
 
             content += "<div class='col text-right'>" +
-                    "<button class='btn btn-primary mr-2' onclick='game.aiMove()'>AI</button>" +
-                    "<button class='btn btn-secondary' onclick='game.undoMove()'>Undo</button></div>"
+                    "<button class='btn btn-primary mr-2' onclick='game.aiMove()'>KI Zug</button>" +
+                    "<button class='btn btn-secondary' onclick='game.undoMove()'>Rückgängig</button></div>"
 
             return content
         }
@@ -440,15 +449,9 @@ class ConnectFour(
                 else -> "Unentschieden!"
             } + "</h3></div>"
 
-            /*
-            content += "<div class='col-auto'>" +
-                    "<button class='btn btn-secondary' onclick='game.undoMove()'>Undo</button></div>"
-
-             */
-
             content += "<div class='col text-right'>" +
-                    "<button class='btn btn-primary mr-2' onclick='game.restart()'>Restart</button>" +
-                    "<button class='btn btn-secondary' onclick='game.undoMove()'>Undo</button></div>"
+                    "<button class='btn btn-primary mr-2' onclick='game.restart()'>Neustart</button>" +
+                    "<button class='btn btn-secondary' onclick='game.undoMove()'>Rückgängig</button></div>"
 
 
             return content

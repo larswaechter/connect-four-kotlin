@@ -32,8 +32,7 @@ interface Minimax<Board, Move> {
             private val storages: Array<Storage<*>?> = Array(numberOfTranspositionTables) { null }
 
             /**
-             * Register all storages.
-             * You might want to do this on app start
+             * Register all storages
              */
             fun <Move> registerStorages() {
                 for (i in storages.indices) Storage<Move>(i).register()
@@ -213,7 +212,6 @@ interface Minimax<Board, Move> {
 
         /**
          * Register storage
-         * Skipped if it's already registered
          */
         fun register() {
             if (!this.isRegistered()) {
@@ -364,9 +362,10 @@ interface Minimax<Board, Move> {
      * Do move and return new game
      *
      * @param [move] move to perform
+     * @param [duration] duration of move calculation
      * @return new game with applied move
      */
-    fun move(move: Move): Minimax<Board, Move>
+    fun move(move: Move, duration: Int = 0): Minimax<Board, Move>
 
     /**
      * Undo a number of moves
@@ -393,7 +392,7 @@ interface Minimax<Board, Move> {
     fun searchBestMoveInStorage(): Storage.Record<Move>?
 
     /**
-     * Get all possible storage keys for the current board with according methods to transform the associated move.
+     * Get all possible storage keys / hashes for the current board with according methods to transform the associated move.
      * - This might include symmetries or inverted boards for example
      * - Index 0 should be [storageRecordPrimaryKey]
      *

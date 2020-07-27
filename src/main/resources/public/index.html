@@ -15,11 +15,9 @@
         <div class="col-12" id="welcome">
             <div class="jumbotron">
                 <h1 class="display-4">Willkommen!</h1>
-                <p class="lead">This is a simple hero unit, a simple jumbotron-style component for calling extra
-                    attention to featured content or information.</p>
+                <p class="lead">Eine Vier-Gewinnt Implementierung in Kotlin mittels des Javalin Frameworks.</p>
                 <hr class="my-4">
-                <p>It uses utility classes for typography and spacing to space content out within the larger
-                    container.</p>
+                <p>Starte ein neues Spiel oder führe die Testszenarien aus (Konsole).</p>
                 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#setup-modal">
                     Spiel starten
                 </button>
@@ -44,7 +42,7 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label for="players">Anzahl der Spieler</label>
+                    <label for="players">Anzahl menschlicher Spieler</label>
                     <select class="form-control" id="players">
                         <option value="1">1</option>
                         <option value="2">2</option>
@@ -54,14 +52,7 @@
                     <label for="players">Start Spieler</label>
                     <select class="form-control" id="start-player">
                         <option value="1">1 - Rot</option>
-                        <option value="2">2 - Gelb (AI)</option>
-                    </select>
-                </div>
-                <div class="form-group" id="difficulty-form">
-                    <label for="difficulty">Schwierigkeitsstufe</label>
-                    <select class="form-control" id="difficulty">
-                        <option value="5">Normal</option>
-                        <option value="3">Leicht (Zufällig)</option>
+                        <option value="2">2 - Gelb</option>
                     </select>
                 </div>
             </div>
