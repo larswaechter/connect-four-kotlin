@@ -25,17 +25,17 @@ Im ersten Fall, Mensch gegen KI, ist die Farbe der KI Gelb. Wählt man hierbei a
 
 #### Spielablauf
 
-Der Spielablauf ist immer gleich: beide Spieler spielen abwechselnd ihre Züge indem sie einen Stein in eine freie Spalte platzieren. Der menschliche Spieler hat dabei folgende Auswahlmöglichkeiten:
+Der Spielablauf ist immer gleich: beide Spieler spielen abwechselnd ihre Züge indem sie einen Stein in eine freie Spalte des Spielbretts platzieren. Der menschliche Spieler hat dabei folgende Auswahlmöglichkeiten:
 
 1. Er spielt den Zug selbst
 2. Er lässt die KI den Zug für sich spielen
 3. Er macht einen Zug rückgängig
 
-Nachdem der menschliche Spieler eine Auswahl getroffen hat, spielt daraufhin die KI ihren Zug. Anschließend ist wieder der menschliche Spieler an der Reihe. Hat man bei Spielstart den 2 Spieler Modus ausgewählt, wäre anstelle der KI der zweite Menschliche Spieler an der Reihe.
+Nachdem der menschliche Spieler eine Auswahl getroffen hat, spielt daraufhin die KI ihren Zug. Anschließend ist wieder der menschliche Spieler an der Reihe. Hat man bei Spielstart den 2 Spieler Modus ausgewählt, wäre anstelle der KI der zweite Menschliche Spieler am Zug.
 
 #### Spielende
 
-Das Spiel endet, sobald einer der beiden Spieler vier Steine seiner Farbe in einer Reihe (horizontal, vertikal oder diagonal) platziert hat oder kein Züge mehr gespielt werden können. Nach Spielende wird der Gewinner, falls es einen gibt, angezeigt. Der Spieler kann in diesem Fall wie folgt fortfahren:
+Das Spiel endet, sobald einer der beiden Spieler vier Steine seiner Farbe in einer Reihe (horizontal, vertikal oder diagonal) platziert hat oder kein Züge mehr gespielt werden können. Nach Spielende wird der Gewinner, falls es einen gibt, angezeigt. Der Spieler kann in diesem Fall wie folgt weiter verfahren:
 
 1. Spiel Neustart mit den selben Einstellungen
 2. Letzten Zug rückgängig machen
@@ -108,6 +108,8 @@ Die komplette Datenbank besteht aus sieben einzelnen Transposition Tables, welch
 
 Der Dateiname einer solchen Transposition Table gibt an, wie viele Züge in den Spielen gespielt wurde, deren Evaluierungen in die Tabelle eingetragen wurden. Die Tabelle `00_table_0_5.txt` beinhaltet beispielsweise nur Spielstellungen, bei denen zwischen 0 und 5 Zügen gespielt wurde. Tabelle `01_table_6_11.txt` besteht aus Stellungen mit 6 bis 11 gespielten Zügen.
 
+Zu jedem Zeitpunkt des Spiels weiß man, anhand der Anzahl an gespielten Züge, in welcher Transposition Table die aktuelle Spielstellung zu finden ist. Dies lässt sich wie folgt berechnen: `floor((numberOfPlayedMoves / 6))`.  Der dadurch entstandene Wert (`ConnectFour.storageIndex`) entspricht dem Index der Transposition Table.
+
 #### Transposition Table
 
 *Im Code*
@@ -121,8 +123,8 @@ Eine Transposition Table beinhaltet Spielstellungen und deren Bewertungen für e
 
 `#Hash# #Move# #Score# #Player#`
 
-- **Hash**: der Zobrist-Hash des Boards
-- **Move**: der bestmögliche Zug für dieses Board
+- **Hash**: der Zobrist-Hash der Spielstellung
+- **Move**: der bestmögliche Zug für diese Spielstellung
 - **Score**: die Bewertung des Zugs
 - **Player**: der durchführende Spieler
 
@@ -131,6 +133,8 @@ Beispiel: `1369919444299124995 3 -5727.0 -1`
 Ein solcher Eintrag einer Transposition Table wird mit Hilfe der Klasse `Minimax.Storage.Record` repräsentiert. Diese beinhaltet unter anderem die oben genannten Werte als Instanzvariablen.
 
 Die einzelnen Transposition Table werden als Instanz der Klasse `Minimax.Storage` realisiert. Diese kümmert sich um das Lesen und Schreiben der dazugehörigen Textdatei. Außerdem beinhaltet sie eine `HashMap`, welche die Tabelleneinträge als Instanz der Klasse `Minimax.Storage.Record` umfasst.
+
+Insgesamt gibt es sieben Instanzen der Klasse `Minimax.Storage`, für jede Transposition Table eine. Bei Programmstart werden diese Instanzen in dem statische Array `Minimax.Storage.storages` abgelegt. Ausgelesen werden sie wieder mittels der statischen Methode `Minimax.Storage.doStorageLookup()` und des Wertes von `ConnectFour.storageIndex`.
 
 #### Zobrist Hash
 
@@ -179,22 +183,24 @@ Ein großer Vorteil dieses Verfahrens ist, dass der Hash nicht nach jedem Spielz
 
 #### Befüllung
 
-Um die einzelnen Transposition Tables zu befüllen, 
+*Im Code:*
 
+- `Minimax.Storage.seedByMovesPlayed()`
 
+---
 
-Da die Transposition Tables basierend auf der Anzahl an gespielten Zügen voneinander getrennt sind, ist es möglich, gezielt einzelne dieser zu befüllen.
-
-Im Code ist dies mittels der Methode `Minimax.Storage.seedByMovesPlayed` möglich. Diese erwartet zwei Parameter:
+Um die einzelnen Transposition Tables zu befüllen, wurde eine eigene Methode entwickelt: `Minimax.Storage.seedByMovesPlayed`. Diese erwartet zwei Parameter:
 
 - `amount: Int` - Anzahl an Datensätzen, die erstellt werden sollen
 - `movesPlayed: Int` - Anzahl an gespielten Zügen
 
-Der Algorithmus generiert also `amount` viele Datensätze bestehend aus Spielen mit `movesPlayed` gespielten Zügen.
+Hierbei generiert der Algorithmus ein Spiel, in dem genau `movesPlayed` zufällige Züge gespielt wurden. Anschließend wird geprüft, ob die hierbei entstandene Spielstellung oder eine Symmetrie dieser bereits in der Datenbank vorhanden ist. Ist dies nicht der Fall, wird mit Hilfe des Minimax-Algorithmus der bestmögliche Zug für die Stellung berechnet und in die Datenbank eingetragen.
+
+Dieses Verfahren wird genau `amount` mal wiederholt. Es werden also bis zu `amount` viele Datensätze für Spiele bestehend aus `movesPlayed` zufällig gespielten Zügen generiert. 
 
 ### Symmetrien
 
-Wie viele andere Spiele auch, beinhaltet Vier-Gewinnt Symmetrien in dessen Spielbrett. Diese entstehen beispielsweise durch Drehungen oder Spiegelungen des Spielbretts. Sie haben die Eigenschaft, dass sie jeweils zu dem selben Spielergebnis führen bzw. die selbe Evaluierung haben. Die Verwendung solcher Symmetrien kann die Anzahl der zu berechnenden Boards reduzieren und somit einen großen Einfluss auf die Laufzeit des KI-Algorithmus haben.
+Wie viele andere Spiele auch, beinhaltet Vier-Gewinnt Symmetrien in dessen Spielbrett. Diese entstehen beispielsweise durch Drehungen oder Spiegelungen des Spielbretts. Sie haben die Eigenschaft, dass sie jeweils zu dem selben Spielergebnis führen bzw. die selbe Evaluierung haben. Die Verwendung solcher Symmetrien kann die Anzahl der zu berechnenden Spielstellungen reduzieren und somit einen großen Einfluss auf die Laufzeit des KI-Algorithmus haben.
 
 #### Arten von Symmetrien
 
@@ -245,7 +251,7 @@ Wichtig hierbei ist, dass dies nur gilt, wenn man die Board-Stellung in beiden S
 
 **Hinweis:** Maßnahmen zur Anpassung eines aus dem Speicher geladenen Zugs und wann diese verwendet werden dürfen, werden im Abschnitt "Processing-Methode" genauer behandelt.
 
-##### 2. Invertierung des Spielboards
+##### 2. Invertierung des Spielbretts
 
 Hierbei werden die einzelnen gesetzten Steine der Spieler invertiert.
 
@@ -282,7 +288,7 @@ Hat man nun beispielsweise den bestmöglichen Zug für `Board #1` bereits berech
 
 Wichtig hierbei ist, dass dies nur gilt, wenn man die Board-Stellung in `Board #2` aus der Sicht des anderen Spielers als in `Board #1` betrachtet. Im Falle von `Board #2` also als Spieler O, da in `Board #1` das Board als Spieler X betrachtet wurde.
 
-##### 3. Spiegelung an der mittleren Y-Achse und Invertierung des Spielboards
+##### 3. Spiegelung an der mittleren Y-Achse und Invertierung des Spielbretts
 
 Diese Symmetrie ist eine Kombination aus den ersten beiden. Zuerst wird das Board gespiegelt und anschließend invertiert.
 
@@ -390,10 +396,32 @@ Sind alle Kriterien für einen Hash erfüllt, gibt die Processing Methode eine n
 
 Damit der Minimax-Algorithmus ein Board aus der Sicht eines beliebigen Spielers bewerten kann, ist eine `evaluate`-Methode notwendig. Im Projekt wurde eine solche Evaluierung mittels der **Monte-Carlo-Methode** umgesetzt.
 
-Hierbei wird ausgehend von einer gegebenen Stellung abwechselnd für jeden Spieler ein zufälliger Zug ausgeführt, bis das schließlich Spiel beendet ist (keine Züge mehr möglich oder Sieg eines Spielers). Dieses Vorgehen wird eine gewünschte Anzahl, im Projekt 200, Mal wiederholt.
+Hierbei wird ausgehend von einer gegebenen Stellung abwechselnd für jeden Spieler ein zufälliger Zug ausgeführt, bis das schließlich Spiel beendet ist (keine Züge mehr möglich oder Sieg eines Spielers). Dieses Vorgehen wird eine gewünschte Anzahl, hier 200, Mal wiederholt.
 
-Anhand der Anzahl der Gewinne für einen gegebenen Spieler wird ein Score ermittelt, welcher als Evaluationswert für das aktuelle Board dient. Je höher dieser Wert für den Maximizer bzw. umso niedriger er für den Minimizer ist, desto
+Anhand der Anzahl der Gewinne für einen gegebenen Spieler wird ein Score ermittelt, welcher als Evaluationswert für die aktuelle Spielstellung dient. Je höher dieser Wert für den Maximizer bzw. umso niedriger er für den Minimizer ist, desto
 besser ist der Score und dementsprechend auch der Zug, der zu der gegebenen Ausgangsstellung führte.
+
+### Bitboards
+
+### Interface
+
+*Im Code:*
+
+- `Minimax`
+
+---
+
+Das Minimax Interface ist ein generisches Interface, welches wichtige Attribute und Methoden zur Implementierung von 2-Personen spielen beinhaltet bzw. vorschreibt.
+
+- Berechnung des bestmöglichen Zugs
+- Datenbankverwaltung
+- Spielsteuerung (`move, undoMove...`)
+
+Der Interface-Kopf sieht wie folgt aus: `interface Minimax<Board, Move>`. Er erwartet also zwei Parameter als generische Datentypen. Einen für das Spielbrett und einen für die Züge.
+
+Das Interface beinhaltet außerdem noch zwei geschachtelte Klassen: `Storage` und `Storage.Record`. Diese dienen zur Datenbankverwaltung. Siehe dazu Abschnitt "Datenbank".
+
+
 
 
 ## Tests (TST)
@@ -416,6 +444,12 @@ Folgender Abschnitt beinhaltet die Umsetzung der GUI sowie die Interaktion zwisc
 
 ### Startseite
 
+*Im Code:*
+
+- `src/main/resources/public/index.html`
+
+---
+
 Die Startseite ist sehr einfach gehalten: Der Benutzer hat hier zwei Buttons als Auswahlmöglichkeit:
 
 1. Neues Spiel starten
@@ -426,6 +460,12 @@ Die Startseite ist sehr einfach gehalten: Der Benutzer hat hier zwei Buttons als
 Startet der Benutzer ein neues Spiel, öffnet sich ein Bootstrap-Modal, in dem man die Spieleinstellungen festlegen kann. Nachdem der Benutzer diese festgelegt hat, wird eine neue Instanz der JavaScript Klasse `Game` erstellt, welche die gewählten Einstellungen beinhaltet.
 
 ##### Klasse `Game`
+
+*Im Code:*
+
+- `src/main/resources/public/assets/index.js`
+
+---
 
 Die `Game` Klasse dient sowohl als Container für die Spieleinstellungen als auch als Schnittstelle zwischen dem Benutzer und dem Server bzw. Javalin. Sie beinhaltet unter anderem folgende Attribute:
 
@@ -453,14 +493,38 @@ Möchte der Benutzer die Testdurchläufe ausführen, wird ein HTTP Request an de
 
 ### Spielseite
 
-Die Spielseite wird angezeigt, sobald ein neues Spiel gestartet wurde. Der Inhalt des Spiels wird komplett serverseitig in `ConnectFour.toHtml()` generiert. Es besteht aus zwei Teilen:
+*Im Code:*
+
+- `ConnectFour.toHtml()`
+
+---
+
+Die Spielseite wird angezeigt, sobald ein neues Spiel gestartet wurde. Der Inhalt des Spiels wird komplett serverseitig in `ConnectFour.toHtml()` generiert. Er besteht aus zwei Teilen:
 
 1. Metadaten => Spielstatus, Dauer der Zugberechnung, Aktions-Buttons
-2. Spielbrett
+2. Spielbrett => Vier-Gewinnt Spielbrett
 
-Die Metadaten stehen innerhalb einer Leiste über dem Spielbrett. Dort sind sowohl Infos über die Dauer der Zugberechnung, den aktuellen Spieler oder Sieger als auch die Aktionsbuttons zu finden.
+Die Metadaten stehen innerhalb einer Leiste über dem Spielbrett. Dort sind sowohl Infos wie über die Dauer der Zugberechnung, den aktuellen Spieler oder Sieger als auch die Aktionsbuttons zu finden.
 
 Die Event-Listeners zum Ausführen von Aktionen werden ebenfalls serverseitig innerhalb von `ConnectFour.toHTML()` per HTML-Attribut gesetzt. Diese rufen die Methoden in der zu Spielbeginn erstellten `Game` Klasse auf.
+
+### Server Endpunkte
+
+*Im Code:*
+
+- `Server`
+
+---
+
+Die Serverendpunkte dienen als Schnittstelle zwischen dem Client und der Spiel-Engine. Zur Erstellung des HTTP-Servers wurde das Javalin Framework verwendet. Es gibt insgesamt fünf Server Endpunkte:
+
+1. `GET /tests` => Führt die Testdurchläufe aus
+2. `GET /start/:id` => Startet ein neues Spiel mit der gegebenen ID
+3. `GET /:id/move/:column` => Führt einen Zug in der gegebenen Spalte aus
+4. `GET /:id/ai-move` => Lässt die KI einen Zug ausführen
+5. `GET /:id/undo` => Macht einen Zug rückgängig
+
+Der übergebene Pfadparameter `id` entspricht der ID des jeweiligen Spiels. Er weist den Request dem dazugehörigen Spiel zu.
 
 ## Hinweise
 

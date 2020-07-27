@@ -453,10 +453,8 @@ class ConnectFour(
                     "<button class='btn btn-primary mr-2' onclick='game.restart()'>Neustart</button>" +
                     "<button class='btn btn-secondary' onclick='game.undoMove()'>Rückgängig</button></div>"
 
-
             return content
         }
-
 
         var res: String
 
