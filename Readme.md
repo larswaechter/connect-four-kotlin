@@ -8,26 +8,37 @@ Ich habe die Zulassung für PiS im SoSe 2020 bei Herrn Herzberg erhalten.
 
 ### Spielregeln
 
-Die Spielregeln entsprechen dem des klassischen Vier-Gewinnts: Ziel ist es, vier Steine seiner eigenen Farbe in einer Reihe (horizontal, vertikal oder diagonal) zu platzieren. Die Spieler wechseln sich dabei gegenseitig ab. Erreicht dies kein Spieler bis alle Züge (42) gespielt wurden, endet das Spiel Unentschieden.
+Die Spielregeln entsprechen dem des klassischen Vier-Gewinnts: Ziel ist es, vier Steine seiner eigenen Farbe, Rot oder Gelb, in einer Reihe (horizontal, vertikal oder diagonal) zu platzieren. Die Spieler wechseln sich dabei gegenseitig ab. Erreicht dies kein Spieler bis alle möglichen Züge (42) gespielt wurden, endet das Spiel Unentschieden.
 
 ### Bedienungsanleitung
 
-Auf der Startseite kann man entweder ein neues Spiel starten oder die Testdurchläufe ausführen. Diese werden im Abschnitt "Tests (TST)" genauer behandelt.
+Auf der Startseite kann der Benutzer entweder ein neues Spiel starten oder die Testdurchläufe ausführen. Diese werden im Abschnitt "Tests (TST)" genauer behandelt.
 
 #### Spielstart
 
-Zu Beginn des Spiels öffnet sich ein Modal, in dem man die Anzahl der menschlichen Spieler auswählt und den Startspieler (Rot oder Gelb) festlegt:
+Startet der Benutzer ein neues Spiel, öffnet sich ein Modal, in dem man die Anzahl der menschlichen Spieler auswählt und den Startspieler (Rot oder Gelb) festlegt:
 
 - 1 Spieler: Mensch gegen KI
 - 2 Spieler: Mensch gegen Mensch
 
-Wählt man hierbei 1 Spieler und als Startspieler "Gelb" aus, beginnt die KI das Spiel. Andernfalls der menschliche Spieler.
+Im ersten Fall, Mensch gegen KI, ist die Farbe der KI Gelb. Wählt man hierbei also Gelb als Startspieler, beginnt diese das Spiel. Andernfalls der menschliche Spieler.
 
 #### Spielablauf
 
+Der Spielablauf ist immer gleich: beide Spieler spielen abwechselnd ihre Züge indem sie einen Stein in eine freie Spalte platzieren. Der menschliche Spieler hat dabei folgende Auswahlmöglichkeiten:
 
+1. Er spielt den Zug selbst
+2. Er lässt die KI den Zug für sich spielen
+3. Er macht einen Zug rückgängig
 
-...
+Nachdem der menschliche Spieler eine Auswahl getroffen hat, spielt daraufhin die KI ihren Zug. Anschließend ist wieder der menschliche Spieler an der Reihe. Hat man bei Spielstart den 2 Spieler Modus ausgewählt, wäre anstelle der KI der zweite Menschliche Spieler an der Reihe.
+
+#### Spielende
+
+Das Spiel endet, sobald einer der beiden Spieler vier Steine seiner Farbe in einer Reihe (horizontal, vertikal oder diagonal) platziert hat oder kein Züge mehr gespielt werden können. Nach Spielende wird der Gewinner, falls es einen gibt, angezeigt. Der Spieler kann in diesem Fall wie folgt fortfahren:
+
+1. Spiel Neustart mit den selben Einstellungen
+2. Letzten Zug rückgängig machen
 
 ### Dateiübersicht
 
@@ -57,11 +68,11 @@ connect-four\src\main\resources\transposition_tables\zobrist_hashes.txt
 
 ## Spiel-Engine (ENG)
 
-| Feature    | M    | H + S | MC   | eD   | B+I  | Summe    |
-| ---------- | ---- | ----- | ---- | ---- | ---- | -------- |
-| Umsetzung  | 100  | 100   | 100  | 130  | 66.6 |          |
-| Gewichtung | 0.4  | 0.3   | 0.3  | 0.3  | 0.3  |          |
-| Ergebnis   | 40   | 30    | 30   | 39   | 20   | **159%** |
+| Feature    | M    | H + S | MC   | eD   | B + I | Summe    |
+| ---------- | ---- | ----- | ---- | ---- | ----- | -------- |
+| Umsetzung  | 100  | 100   | 100  | 130  | 66.6  |          |
+| Gewichtung | 0.4  | 0.3   | 0.3  | 0.3  | 0.3   |          |
+| Ergebnis   | 40   | 30    | 30   | 39   | 20    | **159%** |
 
 Folgender Abschnitt behandelt die Implementierung der Spiel-Engine sowie Besonderheiten im Code.
 
@@ -87,7 +98,7 @@ Bevor innerhalb des Minimax-Algorithmus alle möglichen Züge bewertet werden, w
 
 ### Datenbank
 
-Eine weitere Performance-Optimierung ist das Anlegen einer Datenbank, auch Transposition Tables genannt, bestehend aus bereits evaluierten Spielstellungen und deren bestmöglichen Züge. Eine Datenbank ermöglicht, dass innerhalb des Minimax-Algorithmus nicht jede Stellung neu bewertet werden muss, da diese, solange sie vorhanden ist, aus der Datenbank augelesen werden kann.
+Eine weitere Performance-Optimierung ist das Anlegen einer Datenbank, auch Transposition Tables genannt, bestehend aus bereits evaluierten Spielstellungen und deren bestmöglichen Züge. Eine Datenbank ermöglicht, dass innerhalb des Minimax-Algorithmus nicht jede Stellung neu bewertet werden muss, da diese, solange sie vorhanden ist, aus der Datenbank ausgelesen werden kann.
 
 Anknüpfend wird die Realisierung einer solchen Datenbank beschrieben.
 
@@ -399,11 +410,57 @@ Die Testausführung protokolliert sich über die Konsole wie folgt:
 
 ## Umsetzung der GUI
 
+Folgender Abschnitt beinhaltet die Umsetzung der GUI sowie die Interaktion zwischen Browser und Server mittels JavaScript.
+
+**Hinweis:** Zum Versenden von HTTP Requests wurde die [fetch-Schnittstelle](https://developer.mozilla.org/de/docs/Web/API/Fetch_API) verwendet.
+
 ### Startseite
 
+Die Startseite ist sehr einfach gehalten: Der Benutzer hat hier zwei Buttons als Auswahlmöglichkeit:
 
+1. Neues Spiel starten
+2. Testdurchläufe starten
 
-### Spielbrett
+#### Neues Spiel
+
+Startet der Benutzer ein neues Spiel, öffnet sich ein Bootstrap-Modal, in dem man die Spieleinstellungen festlegen kann. Nachdem der Benutzer diese festgelegt hat, wird eine neue Instanz der JavaScript Klasse `Game` erstellt, welche die gewählten Einstellungen beinhaltet.
+
+##### Klasse `Game`
+
+Die `Game` Klasse dient sowohl als Container für die Spieleinstellungen als auch als Schnittstelle zwischen dem Benutzer und dem Server bzw. Javalin. Sie beinhaltet unter anderem folgende Attribute:
+
+- ID => die zufällig generierte ID des Spiels
+- Anzahl Spieler => die Anzahl menschlicher Spieler
+- Startspieler => der Startspieler (Rot oder Gelb)
+
+Für jedes Spiel wird eine neue ID bestehend aus 16 zufälligen Buchstaben generiert. Dies ermöglicht es, dass mehrere Spiele gleichzeitig, z.B. von mehreren Tabs oder Rechnern, gespielt werden können. Vom Client gesendete HTTP Requests enthalten die jeweilige ID des Spiels, wodurch der Request serverseitig dem jeweiligen Spiel zugeordnet werden kann. Auf der Serverseite werden die einzelnen Spiele mit ihrer ID als `Key-Value` Paar in einer HashMap gespeichert.
+
+Neben den eben genannten Attributen enthält die Klasse auch noch Methoden, um HTTP Requests an den Server zu senden und dort die gewünschten Aktionen auszuführen:
+
+- `function start` => Legt ein neues Spiel mit den gewählten Spieleinstellungen an
+- `function restart` => Startet das Spiel mit den selben Einstellungen, allerdings mit einer neuen ID neu
+- `function move` => Spielt den vom menschlichen Spieler gewählten Zug
+- `function aiMove` => Lässt die KI den bestmöglichen Zug spielen
+- `function undoMove` => Macht einen Zug rückgängig
+
+Sobald ein HTTP Request an den Server gesendet wird, werden weitere Eingaben durch das Attribut `isRequestPending` blockiert. Zu Beginn des Requests wird es auf `true` und nach Beendigung auf `false` gesetzt. In der Zwischenzeit können keine weiteren Requests gesendet werden.
+
+Nachdem ein Request beendet wurde, wird ein Ausschnitt des HTML Dokuments mit dem vom Server erhaltenen HTML geupdated.
+
+#### Testdurchläufe
+
+Möchte der Benutzer die Testdurchläufe ausführen, wird ein HTTP Request an den Server übermittelt, welcher diese startet. Weitere Ausgaben erfolgen über die Server-Konsole.
+
+### Spielseite
+
+Die Spielseite wird angezeigt, sobald ein neues Spiel gestartet wurde. Der Inhalt des Spiels wird komplett serverseitig in `ConnectFour.toHtml()` generiert. Es besteht aus zwei Teilen:
+
+1. Metadaten => Spielstatus, Dauer der Zugberechnung, Aktions-Buttons
+2. Spielbrett
+
+Die Metadaten stehen innerhalb einer Leiste über dem Spielbrett. Dort sind sowohl Infos über die Dauer der Zugberechnung, den aktuellen Spieler oder Sieger als auch die Aktionsbuttons zu finden.
+
+Die Event-Listeners zum Ausführen von Aktionen werden ebenfalls serverseitig innerhalb von `ConnectFour.toHTML()` per HTML-Attribut gesetzt. Diese rufen die Methoden in der zu Spielbeginn erstellten `Game` Klasse auf.
 
 ## Hinweise
 
