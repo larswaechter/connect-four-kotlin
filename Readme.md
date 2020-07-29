@@ -14,6 +14,8 @@ Die Spielregeln entsprechen dem des klassischen Vier-Gewinnts: Ziel ist es, vier
 
 Auf der Startseite kann der Benutzer entweder ein neues Spiel starten oder die Testdurchläufe ausführen. Diese werden im Abschnitt "Tests (TST)" genauer behandelt.
 
+![Start](./screenshot_01_start.png)
+
 #### Spielstart
 
 Startet der Benutzer ein neues Spiel, öffnet sich ein Modal, in dem man die Anzahl der menschlichen Spieler auswählt und den Startspieler (Rot oder Gelb) festlegt:
@@ -22,6 +24,8 @@ Startet der Benutzer ein neues Spiel, öffnet sich ein Modal, in dem man die Anz
 - 2 Spieler: Mensch gegen Mensch
 
 Im ersten Fall, Mensch gegen KI, ist die Farbe der KI Gelb. Wählt man hierbei also Gelb als Startspieler, beginnt diese das Spiel. Andernfalls der menschliche Spieler.
+
+![Neues Spiel](./screenshot_02_neues-spiel.png)
 
 #### Spielablauf
 
@@ -35,6 +39,10 @@ Nachdem der menschliche Spieler eine Auswahl getroffen hat, spielt daraufhin die
 
 **Achtung:** Macht man als menschlicher Spieler einen Zug der KI rückgängig, ist der menschliche Spieler wieder an der Reihe und nicht die KI. Es kommt also sozusagen zu einem Farb- bzw. Spielerwechsel. Andernfalls würde die KI wieder direkt mit einem Zug antworten und es wäre unmöglich, einen einzelnen Zug der KI rückgängig zu machen.
 
+In der Kopfzeile wird der aktuelle Spieler angezeigt. Ist die KI am Zug, wird während der Berechnung des bestmöglichen Zugs eine kleine Ladeanimation angezeigt. Nachdem sie ihren Zug durchgeführt hat, wird die dafür benötigte Zeit in Millisekunden angezeigt. 
+
+![Spiel](./screenshot_03_spiel-laufend.png)
+
 #### Spielende
 
 Das Spiel endet, sobald einer der beiden Spieler vier Steine seiner Farbe in einer Reihe (horizontal, vertikal oder diagonal) platziert hat oder kein Züge mehr gespielt werden können. Nach Spielende wird der Gewinner, falls es einen gibt, angezeigt. Der Spieler kann in diesem Fall wie folgt weiter verfahren:
@@ -42,10 +50,18 @@ Das Spiel endet, sobald einer der beiden Spieler vier Steine seiner Farbe in ein
 1. Spiel Neustart mit den selben Einstellungen
 2. Letzten Zug rückgängig machen
 
+![Spiel Ende](./screenshot_04_spiel-ende.png)
+
 ### Dateiübersicht
 
 ````
+connect-four\build.gradle
 connect-four\Readme.md
+
+connect-four\screenshot_01_start.png
+connect-four\screenshot_02_neues-spiel.png
+connect-four\screenshot_03_spiel-laufend.png
+connect-four\screenshot_04_spiel-ende.png
 
 connect-four\src\main\kotlin\connect\four\App.kt
 connect-four\src\main\kotlin\connect\four\ConnectFour.kt
@@ -76,11 +92,11 @@ connect-four\src\main\resources\transposition_tables\zobrist_hashes.txt
 | Gewichtung | 0.4  | 0.3   | 0.3  | 0.3  | 0.3   |          |
 | Ergebnis   | 40   | 30    | 30   | 39   | 20    | **159%** |
 
-Folgender Abschnitt behandelt die Implementierung der Spiel-Engine sowie Besonderheiten im Code.
+Die folgenden Abschnitt behandeln die Implementierung der Spiel-Engine sowie Besonderheiten im Code.
 
 ### KI-Algorithmus
 
-*Im Code*
+*Im Code:*
 
 - `Minimax.minimax()`
 
@@ -114,7 +130,7 @@ Zu jedem Zeitpunkt des Spiels weiß man, anhand der Anzahl an gespielten Züge, 
 
 #### Transposition Table
 
-*Im Code*
+*Im Code:*
 
 - `Minimax.Storage` 
 - `Minimax.Storage.Record`
@@ -140,7 +156,7 @@ Insgesamt gibt es sieben Instanzen der Klasse `Minimax.Storage`, für jede Trans
 
 #### Zobrist Hash
 
-*Im Code*
+*Im Code:*
 
 - `Minimax.Storage`
 
@@ -150,7 +166,7 @@ Der Zobrist Hash wird verwendet, um die verschiedenen Spielsituationen als Hashw
 
 ##### Vorbereitung
 
-*Im Code*
+*Im Code:*
 
 - `Minimax.Storage.generateZobristHashes()` 
 - `Minimax.Storage.readZobristHashes()`
@@ -162,7 +178,7 @@ Um den Zobrist Hash einer Spielstellung zu berechnen, müssen zuerst für jede v
 
 Die erzeugten Schlüssel werden persistent in einer Textdatei abgespeichert: `src/main/resources/transposition_tables/zobrist_hashes.txt`
 
-Bei Programmstart werden die Schlüssel aus der Textdatei geladen und in ein 2D-Array hinterlegt. Dies passiert mittels der Methode `Minimax.Storage.buildZobristTable()`.
+Bei Programmstart werden die Schlüssel aus der Textdatei geladen und in ein 2D-Array hinterlegt. Dies passiert mit Hilfe der Methode `Minimax.Storage.buildZobristTable()`.
 
 Folgende Tabelle verdeutlicht nochmal den Aufbau: Für jede Zelle des Spielbretts gibt es für beide Spieler eine zufällige Zahl (aus Platzgründen sind diese hier verkürzt dargestellt).
 
@@ -173,13 +189,13 @@ Folgende Tabelle verdeutlicht nochmal den Aufbau: Für jede Zelle des Spielbrett
 
 ##### Berechnung
 
-*Im Code*
+*Im Code:*
 
 - `ConnectFour.calcZobristHash()`
 
 ---
 
-Nachdem eine Tabelle mit zufälligen (pseudo) Zahlen erstellt wurde, ist es möglich, den Zobrist-Hash für eine jeweilige Stellung zu berechnen. Hierfür wird für jeden gesetzten Stein beider Spieler der Wert der dazugehörigen Zelle aus der zuvor erzeugten Tabelle (siehe oben) entnommen und per `XOR` Operation miteinander verknüpft. Der dadurch entstandene Wert entspricht dem Zobrist-Hash der jeweiligen Stellung.
+Nachdem eine Tabelle mit (pseudo) zufälligen Zahlen erstellt wurde, ist es möglich, den Zobrist-Hash für eine jeweilige Stellung zu berechnen. Hierfür wird für jeden gesetzten Stein beider Spieler der Wert der dazugehörigen Zelle aus der zuvor erzeugten Tabelle (siehe oben) entnommen und per `XOR` Operation miteinander verknüpft. Der dadurch entstandene Wert entspricht dem Zobrist-Hash der jeweiligen Stellung.
 
 **Beispiel:** Spieler 1 hat einen Stein in Zelle #0 und Spieler 2 einen Stein in Zelle #1. Der Zobrist Hash berechnet sich dann wie folgt:   `...6389... XOR ...2805...`.
 
@@ -190,6 +206,7 @@ Ein großer Vorteil dieses Verfahrens ist, dass der Hash nicht nach jedem Spielz
 *Im Code:*
 
 - `Minimax.Storage.seedByMovesPlayed()`
+- `ConnectFour.playRandomMoves()`
 
 ---
 
@@ -328,7 +345,7 @@ Wie auch im vorherigen Fall, gilt dies nur, wenn man die Board-Stellung in `Boar
 
 #### Implementierung der Symmetrien
 
-*Im Code*
+*Im Code:*
 
 - `ConnectFour.getStorageRecordKeys()`
 - `ConncetFour.searchBestMoveInStorage()`
@@ -397,7 +414,7 @@ Sind alle Kriterien für einen Hash erfüllt, gibt die Processing Methode eine n
 
 Folgender Code-Ausschnitt (`ConnectFour.getStorageRecordKeys()`) soll das Verfahren nochmal veranschaulichen:
 
-Der `Pair.first` Value entspricht dem ersten Hash einer Spielstellung (ohne jegliche angewandte Symmetrie). Der `Pair.second` Value entspricht der Processing-Methode. Diese überprüft, ob der aktuelle Spieler dem des Spielers aus dem Datenbankeintrag entspricht. Ist dies der Fall, wird der Eintrag zurückgegeben, andernfalls `null`.
+Der `Pair.first` Value entspricht dem ersten Hash einer Spielstellung (ohne jegliche angewandte Symmetrie). Der `Pair.second` Value entspricht der Processing-Methode. Diese überprüft, ob der aktuelle Spieler dem des Spielers aus dem Datenbankeintrag, welcher als Parameter mitgegeben wird, entspricht. Ist dies der Fall, wird der Eintrag zurückgegeben, andernfalls `null`.
 
 ````kotlin
 val key1 = fun(): Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.Storage.Record<Move>?> =
@@ -423,6 +440,8 @@ Hierbei wird ausgehend von einer gegebenen Stellung abwechselnd für jeden Spiel
 Anhand der Anzahl der Gewinne für einen gegebenen Spieler wird ein Score ermittelt, welcher als Evaluationswert für die aktuelle Spielstellung dient. Je höher dieser Wert für den Maximizer bzw. umso niedriger er für den Minimizer ist, desto
 besser ist der Score und dementsprechend auch der Zug, der zu der gegebenen Ausgangsstellung führte.
 
+Für die Simulation der 200 Spiele, wurde unter anderem die `kotlinx-coroutines-core` Bibliothek verwendet. Diese ermöglicht die Verwendung von sogenannten "coroutines" in Kotlin. Mittels coroutines können alle Simulation simultan ausgeführt werden, was einen Geschwindigkeitsvorteil bietet.
+
 ### Bitboards
 
 ### Interface
@@ -433,13 +452,13 @@ besser ist der Score und dementsprechend auch der Zug, der zu der gegebenen Ausg
 
 ---
 
-Das Minimax Interface ist ein generisches Interface, welches wichtige Attribute und Methoden zur Implementierung von 2-Personen spielen beinhaltet bzw. vorschreibt:
+Das Minimax Interface ist ein generisches Interface, welches wichtige Attribute und Methoden zur Implementierung von 2-Personen Spielen beinhaltet bzw. vorschreibt:
 
 - Berechnung des bestmöglichen Zugs
 - Datenbankverwaltung
 - Spielsteuerung (`move, undoMove...`)
 
-Der Interface-Kopf sieht wie folgt aus: `interface Minimax<Board, Move>`. Er erwartet zwei Parameter als generische Datentypen. Einen für das Spielbrett und einen für die Züge.
+Der Interface-Kopf sieht wie folgt aus: `interface Minimax<Board, Move>`. Er erwartet zwei Parameter als generische Datentypen. Einen für das Spielbrett und einen für die Züge. Da es generisch ist, kann es außerdem sehr leicht in andere Spiele implementiert werden.
 
 Das Interface beinhaltet außerdem noch zwei geschachtelte Klassen: `Storage` und `Storage.Record`. Diese dienen zur Datenbankverwaltung. Siehe dazu Abschnitt "Datenbank".
 
@@ -452,19 +471,77 @@ Das Interface beinhaltet außerdem noch zwei geschachtelte Klassen: `Storage` un
 
 | Szenario | 1    | 2    | 3    | 4    | 5    | Summe |
 | -------- | ---- | ---- | ---- | ---- | ---- | ----- |
-| ok       | X    | X    | X    | X    | -    | 0.8   |
+| ok       | X    | X    | -    | X    | X    | 0.8   |
 
 Die Tests werden wie folgt ausgeführt:
 
-...
+### Test 1
+
+Testszenario:
+
+````
+. . . . . . .
+. . . . . . .
+. . . . . . .
+X . . . . . .
+X . . . . . .
+X . . . O O O
+````
+
+### Test 2
+
+Testszenario:
+
+````
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . O
+. . X X . . O
+````
+
+### Test 3
+
+leer
+
+### Test 4
+
+Testszenario:
+
+````
+. . . . . . .
+. . . . . . .
+. . . . . . .
+X . . . . . .
+X . . . . . .
+X O O . . . .
+````
+
+### Test 5
+
+Testszenario:
+
+````
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . X X . . O
+````
+
+
+
+
+
+
 
 Die Testausführung protokolliert sich über die Konsole wie folgt:
 
 ## Umsetzung der GUI
 
 Folgender Abschnitt beinhaltet die Umsetzung der GUI sowie die Interaktion zwischen Browser und Server mittels JavaScript.
-
-**Hinweis:** Zum Versenden von HTTP Requests wurde die [fetch-Schnittstelle](https://developer.mozilla.org/de/docs/Web/API/Fetch_API) verwendet.
 
 ### Startseite
 
@@ -497,7 +574,7 @@ Die `Game` Klasse dient sowohl als Container für die Spieleinstellungen als auc
 - Anzahl Spieler => die Anzahl menschlicher Spieler
 - Startspieler => der Startspieler (Rot oder Gelb)
 
-Für jedes Spiel wird eine neue ID bestehend aus 16 zufälligen Buchstaben generiert. Dies ermöglicht es, dass mehrere Spiele gleichzeitig, z.B. von mehreren Tabs oder Rechnern, gespielt werden können. Vom Client gesendete HTTP Requests enthalten die jeweilige ID des Spiels, wodurch der Request serverseitig dem jeweiligen Spiel zugeordnet werden kann. Auf der Serverseite werden die einzelnen Spiele mit ihrer ID als `Key-Value` Paar in einer HashMap gespeichert.
+Für jedes Spiel wird eine neue ID bestehend aus 16 zufälligen Buchstaben generiert. Dies ermöglicht es, dass mehrere Spiele gleichzeitig, z.B. von mehreren Tabs oder Rechnern aus, gespielt werden können. Vom Client gesendete HTTP Requests enthalten die jeweilige ID des Spiels, wodurch der Request serverseitig dem jeweiligen Spiel zugeordnet werden kann. Auf der Serverseite werden die einzelnen Spiele mit ihrer ID als `Key-Value` Paar in einer HashMap gespeichert.
 
 Neben den eben genannten Attributen enthält die Klasse auch noch Methoden, um HTTP Requests an den Server zu senden und dort die gewünschten Aktionen auszuführen:
 
@@ -540,7 +617,7 @@ Die Event-Listeners zum Ausführen von Aktionen werden ebenfalls serverseitig in
 
 ---
 
-Die Serverendpunkte dienen als Schnittstelle zwischen dem Client und der Spiel-Engine. Zur Erstellung des HTTP-Servers wurde das Javalin Framework verwendet. Es gibt insgesamt fünf Server Endpunkte, welche vom Client angefragt werden können:
+Die Server Endpunkte dienen als Schnittstelle zwischen dem Client und der Spiel-Engine. Zur Erstellung des HTTP-Servers wurde das Javalin Framework verwendet. Es gibt insgesamt fünf Server Endpunkte, welche vom Client angefragt werden können:
 
 1. `GET /tests` => Führt die Testdurchläufe aus
 2. `GET /start/:id` => Startet ein neues Spiel mit der gegebenen ID
@@ -552,4 +629,13 @@ Der übergebene Pfadparameter `id` entspricht der ID des jeweiligen Spiels. Er w
 
 ## Hinweise
 
+- Zu Beginn jedes Abschnitts stehen die dazugehörigen Klassen- bzw. Methodennamen aus dem Code
+- Zum Versenden von HTTP Requests per JS wurde die [fetch-Schnittstelle](https://developer.mozilla.org/de/docs/Web/API/Fetch_API) verwendet
+
 ## Quellennachweis
+
+- [https://de.wikipedia.org/wiki/Minimax-Algorithmus](https://de.wikipedia.org/wiki/Minimax-Algorithmus)
+- [https://en.wikipedia.org/wiki/Negamax](https://en.wikipedia.org/wiki/Negamax)
+- [https://github.com/denkspuren/BitboardC4/blob/master/BitboardDesign.md](https://github.com/denkspuren/BitboardC4/blob/master/BitboardDesign.md)
+- [https://www.geeksforgeeks.org/minimax-algorithm-in-game-theory-set-5-zobrist-hashing/](https://www.geeksforgeeks.org/minimax-algorithm-in-game-theory-set-5-zobrist-hashing/)
+- [https://de.qwe.wiki/wiki/Zobrist_hashing](https://de.qwe.wiki/wiki/Zobrist_hashing)

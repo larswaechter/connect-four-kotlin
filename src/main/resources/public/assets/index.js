@@ -1,16 +1,4 @@
-const $content = document.querySelector("#game-wrapper");
-const $startBtn = document.querySelector("#start-game");
-const $players = document.querySelector("#players");
-const $startPlayer = document.querySelector("#start-player")
-
 let game;
-
-/**
- *
- * TODO: Fix undo AI move
- *
- *
- */
 
 class Game {
     constructor(id, players, starter) {
@@ -22,13 +10,8 @@ class Game {
     }
 
     start = async () => {
-        $content.innerHTML = await (await fetch("/start/" + this.id + "?starter=" + this.starter)).text();
-
-        // AI starts after 1s
-        if (this.players === 1 && this.starter === 2)
-            setTimeout(async () => {
-                await this.aiMove()
-            }, 1000)
+        document.querySelector("#game-wrapper").innerHTML = await (await fetch("/start/" + this.id + "?starter=" + this.starter)).text();
+        if (this.players === 1 && this.starter === 2) await this.aiMove()
     }
 
     restart = async () => {
@@ -40,7 +23,7 @@ class Game {
     move = async (column) => {
         if (!this.isRequestPending && !this.isGameOver) {
             this.isRequestPending = true;
-            $content.innerHTML = await (await fetch(this.id + "/move/" + column)).text();
+            document.querySelector("#game-wrapper").innerHTML = await (await fetch(this.id + "/move/" + column)).text();
             this.isRequestPending = false;
 
             // Check if game is over
@@ -58,7 +41,7 @@ class Game {
             this.isRequestPending = true;
             $duration.classList.add("fetching");
 
-            $content.innerHTML = await (await fetch(this.id + "/ai-move")).text();
+            document.querySelector("#game-wrapper").innerHTML = await (await fetch(this.id + "/ai-move")).text();
 
             this.isRequestPending = false;
             $duration.classList.remove("fetching");
@@ -72,7 +55,7 @@ class Game {
         if (!this.isRequestPending) {
             this.isGameOver = false;
             this.isRequestPending = true;
-            $content.innerHTML = await (await fetch(this.id + "/undo")).text();
+            document.querySelector("#game-wrapper").innerHTML = await (await fetch(this.id + "/undo")).text();
             this.isRequestPending = false;
         }
     }
@@ -86,13 +69,13 @@ class Game {
 }
 
 const createLocalGame = async () => {
-    game = new Game(Game.createRandomString(), parseInt($players.value), parseInt($startPlayer.value));
+    game = new Game(Game.createRandomString(), parseInt(document.querySelector("#players").value), parseInt(document.querySelector("#start-player").value));
     await game.start();
 }
 
 const runTests = async () => await fetch("/tests")
 
-$startBtn.addEventListener("click", async () => {
+document.querySelector("#start-game").addEventListener("click", async () => {
     $("#setup-modal").modal("hide");
     $("#welcome").hide();
     await createLocalGame();

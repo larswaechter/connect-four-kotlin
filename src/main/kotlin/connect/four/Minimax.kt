@@ -35,7 +35,9 @@ interface Minimax<Board, Move> {
              * Register all storages
              */
             fun <Move> registerStorages() {
-                for (i in storages.indices) Storage<Move>(i).register()
+                for (i in storages.indices) {
+                    Storage<Move>(i).register()
+                }
             }
 
             /**
@@ -138,9 +140,12 @@ interface Minimax<Board, Move> {
                 val file = File("$transpositionTablesPath/zobrist_hashes.txt")
                 var res = ""
 
-                for (i in 0..47)
-                    for (k in 0..1)
+                for (i in 0..47) {
+                    for (k in 0..1) {
                         res += "${Random.nextLong(2F.pow(64).toLong())}\n"
+                    }
+                }
+
 
                 file.writeText(res)
             }
@@ -156,9 +161,11 @@ interface Minimax<Board, Move> {
                 val table = Array(48) { Array(2) { 0L } }
 
                 var count = 0
-                for (i in 0..47)
-                    for (k in 0..1)
+                for (i in 0..47) {
+                    for (k in 0..1) {
                         table[i][k] = keys[count++]
+                    }
+                }
 
                 return table
             }

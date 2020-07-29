@@ -17,16 +17,17 @@ class Server {
     }
 
     init {
+
+        Minimax.Storage.registerStorages<Move>()
+
         val app = Javalin.create { config ->
             config.addStaticFiles("/public")
         }.start(7070)
 
-        Minimax.Storage.registerStorages<Move>()
-
         /**
          * Run tests
          */
-        app.get("/tests") { ctx -> Tests() }
+        app.get("/tests") { Tests() }
 
         /**
          * Start new game

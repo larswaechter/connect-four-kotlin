@@ -69,9 +69,10 @@ class ConnectFour(
 
             for (player in intArrayOf(1, -1)) {
                 val tmpBoard: Long = if (player == 1) board[0] else board[1]
-                for (cell in 0..47)
+                for (cell in 0..47) {
                     if (1L shl cell and tmpBoard != 0L)
                         hash = hash xor Minimax.Storage.getZobristHash(cell, player)
+                }
             }
 
             return hash
@@ -107,8 +108,10 @@ class ConnectFour(
          */
         fun calcNumberOfPlayedMoves(board: LongArray): Int {
             var count = 0
-            for (i in 0..47)
+            for (i in 0..47) {
                 if ((1L shl i and board[0] != 0L) || (1L shl i and board[1] != 0L)) count++
+            }
+
             return count
         }
 
