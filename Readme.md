@@ -152,7 +152,7 @@ Ein solcher Eintrag einer Transposition Table wird mit Hilfe der Klasse `Minimax
 
 Die einzelnen Transposition Table werden als Instanz der Klasse `Minimax.Storage` realisiert. Diese kümmert sich um das Lesen und Schreiben der dazugehörigen Textdatei. Außerdem beinhaltet sie eine `HashMap`, welche die Tabelleneinträge als Instanz der Klasse `Minimax.Storage.Record` umfasst.
 
-Insgesamt gibt es sieben Instanzen der Klasse `Minimax.Storage`, für jede Transposition Table eine. Bei Programmstart werden diese Instanzen in dem statische Array `Minimax.Storage.storages` abgelegt. Ausgelesen werden sie wieder mittels der statischen Methode `Minimax.Storage.doStorageLookup()` und des Wertes von `ConnectFour.storageIndex`.
+Insgesamt gibt es sieben Instanzen der Klasse `Minimax.Storage`, für jede Transposition Table eine. Bei Programmstart werden diese Instanzen in dem statische Array `Minimax.Storage.storages` abgelegt. Ausgelesen werden sie wieder mittels der Methode `Minimax.Storage.doStorageLookup()` und des Wertes von `ConnectFour.storageIndex`.
 
 #### Zobrist Hash
 
@@ -444,6 +444,16 @@ Für die Simulation der 200 Spiele, wurde unter anderem die `kotlinx-coroutines-
 
 ### Bitboards
 
+*Im Code:*
+
+- `ConnectFour.board`
+
+---
+
+Das Spielbrett ist als Bitboard implementiert. Dies ist ein Array bestehend aus zwei Einträgen, für jeden Spieler einen, welche jeweils Zahlen vom Typ `Long` im Binärformat beinhalten.
+
+Beispiel: `0b0_0000000_0000000___0000000_0000000_0000000_0000000_0000000_0000000_0000000`
+
 ### Interface
 
 *Im Code:*
@@ -461,10 +471,6 @@ Das Minimax Interface ist ein generisches Interface, welches wichtige Attribute 
 Der Interface-Kopf sieht wie folgt aus: `interface Minimax<Board, Move>`. Er erwartet zwei Parameter als generische Datentypen. Einen für das Spielbrett und einen für die Züge. Da es generisch ist, kann es außerdem sehr leicht in andere Spiele implementiert werden.
 
 Das Interface beinhaltet außerdem noch zwei geschachtelte Klassen: `Storage` und `Storage.Record`. Diese dienen zur Datenbankverwaltung. Siehe dazu Abschnitt "Datenbank".
-
-### Spiellogik
-
-
 
 
 ## Tests (TST)
@@ -771,7 +777,7 @@ Der übergebene Pfadparameter `id` entspricht der ID des jeweiligen Spiels. Er w
 
 ## Hinweise
 
-- Zu Beginn jedes Abschnitts stehen die dazugehörigen Klassen- bzw. Methodennamen aus dem Code
+- Zu Beginn jedes Abschnitts stehen die dazugehörigen Klassen- bzw. Methodennamen und Attribute aus dem Code
 - Zum Versenden von HTTP Requests per JS wurde die [fetch-Schnittstelle](https://developer.mozilla.org/de/docs/Web/API/Fetch_API) verwendet
 - Möchte man eigene Spielstellungen erstellen, z.B. für eigene Testszenarien, muss lediglich das Array `board` für die Bitsboards angegeben werden. Das Array `heights`, welches die "Höhe" der gesetzten Steine pro Spalte beinhaltet, wird automatisch berechnet
 

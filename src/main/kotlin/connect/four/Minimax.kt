@@ -57,7 +57,7 @@ interface Minimax<Board, Move> {
              *
              * @param [amount] number of data records
              * @param [movesPlayed] number of played moves
-             * */
+             */
             fun <Move> seedByMovesPlayed(amount: Int, movesPlayed: Int) {
                 assert(movesPlayed < 42)
 
@@ -141,7 +141,6 @@ interface Minimax<Board, Move> {
                         res += "${Random.nextLong(2F.pow(64).toLong())}\n"
                     }
                 }
-
 
                 file.writeText(res)
             }

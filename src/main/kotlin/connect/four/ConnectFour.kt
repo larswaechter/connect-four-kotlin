@@ -160,8 +160,8 @@ class ConnectFour(
         }
 
         // Calculate new zobrist-hash
-        val insertedAt = this.heights[move.column]
-        val newZobristHash = this.storageRecordPrimaryKey xor Minimax.Storage.getZobristHash(insertedAt, this.currentPlayer)
+        val cellPlacedAt = this.heights[move.column]
+        val newZobristHash = this.storageRecordPrimaryKey xor Minimax.Storage.getZobristHash(cellPlacedAt, this.currentPlayer)
 
         return ConnectFour(
                 board = newBoards,
@@ -200,13 +200,14 @@ class ConnectFour(
                 if (storage.map.containsKey(key.first)) {
                     val storageRecord = storage.map[key.first]!! // Load from storage
 
-                    // Create new storageRecord based on key
+                    // Call "Processing-Method" => create new storageRecord based on key
                     val newStorageRecord = key.second(storageRecord)
                     if (newStorageRecord != null) return newStorageRecord
                 }
             }
         }
 
+        // no match in storage
         return null
     }
 
