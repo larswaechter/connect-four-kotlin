@@ -43,7 +43,6 @@ class ConnectFour(
 
         /**
          * Play exactly n given random moves with ending up in a draw position.
-         * This method is mainly used to create different random game positions for the transposition tables.
          *
          * @param [n] number of moves to play
          * @return game with n played moves
@@ -216,9 +215,6 @@ class ConnectFour(
         /**
          * ##### Symmetries #####
          *
-         * Applying the following actions to the board do not change its evaluation
-         * but we might have to modify the StorageRecord entry which we return -> second pair value.
-         *
          * We encapsulate the keys in functions to avoid unnecessary key calculations.
          * The keys gets calculated when we call the according method.
          *
@@ -336,6 +332,11 @@ class ConnectFour(
     fun getWinner(): Int {
         assert(this.isGameOver()) { "The game has not ended yet! There is no winner." }
         return if (this.hasWinner()) -this.currentPlayer else 0
+    }
+
+    fun getPlayerSymbol(player: Int = this.currentPlayer): String = when (player) {
+        1 -> "X"
+        else -> "O"
     }
 
     fun toHtml(): String = this.metadataToHtml() + this.boardToHtml()

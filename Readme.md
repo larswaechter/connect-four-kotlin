@@ -112,7 +112,7 @@ Eine Abbruchbedingung des Minimax-Algorithmus ist, wenn einer der beiden Spieler
 
 **2. Eine Überprüfung, ob der aktuelle Spieler mit einem der möglichen Züge sofort gewinnen kann:**
 
-Bevor innerhalb des Minimax-Algorithmus alle möglichen Züge bewertet werden, wird einmal über die Liste aller möglichen Züge iteriert und geprüft, ob der aktuelle Spieler mit einem dieser Züge direkt gewinnen kann. Ist dies der Fall, spart man sich die Evaluierung der restlichen Züge.
+Bevor innerhalb des Minimax-Algorithmus alle möglichen Züge bewertet werden, wird einmal über die Liste aller möglichen Züge iteriert und geprüft, ob der aktuelle Spieler mit einem dieser Züge direkt gewinnen kann. Ist dies der Fall, spart man sich die Evaluierung der restlichen Züge und somit Rechenzeit.
 
 ### Datenbank
 
@@ -475,9 +475,15 @@ Das Interface beinhaltet außerdem noch zwei geschachtelte Klassen: `Storage` un
 
 Die Tests werden wie folgt ausgeführt:
 
+Alle Tests sind in jeweils einer eigener Funktion in der Klasse `Tests` implementiert. Dieser werden der Reihe nach aufgerufen. Nach jedem Zug wird das Spielbrett und in welcher Spalte der Stein geworfen wurde ausgegeben.
+
+Die Testszenarien sehen wie folgt aus:
+
 ### Test 1
 
-Testszenario:
+> Die Spiel-Engine kann im nächsten Zug gewinnen (Sichttiefe 1)
+
+Spieler X ist am Zug: Er muss den Stein in Spalte #1 werfen, damit er das Spiel gewinnt.
 
 ````
 . . . . . . .
@@ -490,7 +496,9 @@ X . . . O O O
 
 ### Test 2
 
-Testszenario:
+> Die Spiel-Engine kann im übernächsten Zug gewinnen (Sichttiefe 3)
+
+Spieler X ist am Zug: Er muss den Stein in Spalte #2 oder #5 werfen, damit er im übernächsten Zug gewinnt.
 
 ````
 . . . . . . .
@@ -503,11 +511,15 @@ Testszenario:
 
 ### Test 3
 
+> Die Spiel-Engine kann im überübernächsten Zug gewinnen (Sichttiefe 5)
+
 leer
 
 ### Test 4
 
-Testszenario:
+> Die Spiel-Engine vereitelt eine unmittelbare Gewinnbedrohung des Gegners (Sichttiefe 2)
+
+Spieler O ist am Zug: Er muss den Stein in Spalte #1 werfen, andernfalls gewinnt Spieler X im nächsten Zug.
 
 ````
 . . . . . . .
@@ -520,7 +532,9 @@ X O O . . . .
 
 ### Test 5
 
-Testszenario:
+> Die Spiel-Engine vereitelt ein Drohung, die den Gegner im übernächsten Zug ansonsten einen Gewinn umsetzen lässt (Sichttiefe 4)
+
+Spieler O ist am Zug: Er muss den Stein in Spalte #2 oder #5 werfen, andernfalls gewinnt Spieler X im übernächsten Zug.
 
 ````
 . . . . . . .
@@ -531,13 +545,141 @@ Testszenario:
 . . X X . . O
 ````
 
-
-
-
-
-
+---
 
 Die Testausführung protokolliert sich über die Konsole wie folgt:
+
+**Anmerkung:** Die Spalten werden hier ab 0 gezählt.
+
+````
+----- Starting tests -----
+
+Running test #1...
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+X . . . . . . 
+X . . . . . . 
+X . . . O O O 
+
+X is playing: 0
+. . . . . . . 
+. . . . . . . 
+X . . . . . . 
+X . . . . . . 
+X . . . . . . 
+X . . . O O O 
+
+Success: Player X has won!
+----------------------------------------------
+
+Running test #2...
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . O 
+. . X X . . O 
+
+X is playing: 4
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . O 
+. . X X X . O 
+
+O is playing: 3
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . O . . O 
+. . X X X . O 
+
+X is playing: 5
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . O . . O 
+. . X X X X O 
+
+Success: Player X has won!
+----------------------------------------------
+Running test #3...
+empty
+----------------------------------------------
+Running test #4...
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+X . . . . . . 
+X . . . . . . 
+X O O . . . . 
+
+O is playing: 0
+. . . . . . . 
+. . . . . . . 
+O . . . . . . 
+X . . . . . . 
+X . . . . . . 
+X O O . . . . 
+
+X is playing: 3
+. . . . . . . 
+. . . . . . . 
+O . . . . . . 
+X . . . . . . 
+X . . . . . . 
+X O O X . . . 
+
+Success: Player X has not won!
+----------------------------------------------
+Running test #5...
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . X X . . O 
+
+O is playing: 1
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. O X X . . O 
+
+X is playing: 3
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . X . . . 
+. O X X . . O 
+
+O is playing: 3
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . O . . . 
+. . . X . . . 
+. O X X . . O 
+
+X is playing: 2
+. . . . . . . 
+. . . . . . . 
+. . . . . . . 
+. . . O . . . 
+. . X X . . . 
+. O X X . . O 
+
+Success: Player X has not won!
+----------------------------------------------
+Tests completed! Finished 4 / 5 successfully.
+````
 
 ## Umsetzung der GUI
 
@@ -631,6 +773,7 @@ Der übergebene Pfadparameter `id` entspricht der ID des jeweiligen Spiels. Er w
 
 - Zu Beginn jedes Abschnitts stehen die dazugehörigen Klassen- bzw. Methodennamen aus dem Code
 - Zum Versenden von HTTP Requests per JS wurde die [fetch-Schnittstelle](https://developer.mozilla.org/de/docs/Web/API/Fetch_API) verwendet
+- Möchte man eigene Spielstellungen erstellen, z.B. für eigene Testszenarien, muss lediglich das Array `board` für die Bitsboards angegeben werden. Das Array `heights`, welches die "Höhe" der gesetzten Steine pro Spalte beinhaltet, wird automatisch berechnet
 
 ## Quellennachweis
 

@@ -42,7 +42,6 @@ interface Minimax<Board, Move> {
 
             /**
              * Get storage based on storage index
-             * Always use this method to access a storage
              *
              * @param [index] storage index
              * @return Storage
@@ -55,9 +54,6 @@ interface Minimax<Board, Move> {
 
             /**
              * Seed transposition tables amount-times with boards of movesPlayed-moves.
-             *
-             * Make sure that we evaluate boards and their best moves only for the AI (player -1)
-             * since the human player (player 1) always plays for himself.
              *
              * @param [amount] number of data records
              * @param [movesPlayed] number of played moves
@@ -172,7 +168,6 @@ interface Minimax<Board, Move> {
 
             /**
              * Read zobrist-hashes from .txt file.
-             * Create new ones if they don't exist yet.
              *
              * @return array of hashes
              */
@@ -440,7 +435,6 @@ interface Minimax<Board, Move> {
          *
          * We add the currentDepth, otherwise the AI plays randomly if it will lose definitely.
          * This way the AI tries to "survive" as long as possible, even if it can't win anymore.
-         * (if the opponent plays perfect)
          */
         possibleMoves.forEach { move ->
             val tmpGame = game.move(move)

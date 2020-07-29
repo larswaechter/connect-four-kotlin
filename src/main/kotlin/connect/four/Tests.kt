@@ -1,22 +1,23 @@
 package connect.four
 
 class Tests {
+    private var successCounter: Int = 0
+
     init {
-        println("\nStarting tests!")
+        println("\n----- Starting tests -----")
         this.runTest1()
         this.runTest2()
         this.runTest3()
         this.runTest4()
         this.runTest5()
-        println("Tests finished!")
+        println("Tests completed! Finished ${this.successCounter} / 5 successfully.")
+    }
+
+    private fun printMove(player: String, move: Move) {
+        println("$player is playing: $move")
     }
 
     /**
-     * "Die Spiel-Engine kann im nächsten Zug gewinnen (Sichttiefe 1)"
-     *
-     * It's player X's turn:
-     * He has to play in column 0 to win the game
-     *
      *      . . . . . . .
      *      . . . . . . .
      *      . . . . . . .
@@ -26,7 +27,7 @@ class Tests {
      *
      */
     private fun runTest1() {
-        println("Running test #1...")
+        println("\nRunning test #1...")
 
         val board = longArrayOf(
                 0b0_0000000_0000000___0000000_0000000_0000000_0000000_0000000_0000000_0000111, // X
@@ -34,19 +35,23 @@ class Tests {
         )
 
         var game = ConnectFour(board = board)
+        println(game)
 
         // player X should play win-move
-        game = game.bestMove()
+        val bestMove = game.minimax().move!!
+        printMove(game.getPlayerSymbol(), bestMove)
+        game = game.move(bestMove)
+        println(game)
 
-        assert(game.getWinner() == 1) {"Failed test #1: Player 1 (X) should have won!"}
+        if (game.getWinner() == 1) {
+            this.successCounter++
+            println("Success: Player X has won!")
+        } else println("Error: Player X should have won!")
+
+        println("----------------------------------------------")
     }
 
     /**
-     * "Die Spiel-Engine kann im übernächsten Zug gewinnen (Sichttiefe 3)"
-     *
-     * It's player X's turn:
-     * He has to play in column 1 or 4 to win his his next move
-     *
      *      . . . . . . .
      *      . . . . . . .
      *      . . . . . . .
@@ -56,7 +61,7 @@ class Tests {
      *
      */
     private fun runTest2() {
-        println("Running test #2...")
+        println("\nRunning test #2...")
 
         val board = longArrayOf(
                 0b0_0000000_0000000___0000000_0000000_0000000_0000001_0000001_0000000_0000000, // X
@@ -64,30 +69,41 @@ class Tests {
         )
 
         var game = ConnectFour(board = board)
+        println(game)
 
         // player X plays move
-        game = game.bestMove()
+        val move1 = game.minimax().move!!
+        printMove(game.getPlayerSymbol(), move1)
+        game = game.move(move1)
+        println(game)
 
         // player O plays move
-        game = game.bestMove()
+        val move2 = game.minimax().move!!
+        printMove(game.getPlayerSymbol(), move2)
+        game = game.move(move2)
+        println(game)
 
         // player X should play win-move
-        game = game.bestMove()
+        val move3 = game.minimax().move!!
+        printMove(game.getPlayerSymbol(), move3)
+        game = game.move(move3)
+        println(game)
 
-        assert(game.getWinner() == 1) {"Failed test #2: Player 1 (X) should have won!"}
+        if (game.getWinner() == 1) {
+            this.successCounter++
+            println("Success: Player X has won!")
+        } else println("Error: Player X should have won!")
+
+        println("----------------------------------------------")
     }
 
-    // Die Spiel-Engine kann im überübernächsten Zug gewinnen (Sichttiefe 5)
     private fun runTest3() {
         println("Running test #3...")
+        println("empty")
+        println("----------------------------------------------")
     }
 
     /**
-     * "Die Spiel-Engine vereitelt eine unmittelbare Gewinnbedrohung des Gegners (Sichttiefe 2)"
-     *
-     * It's player O's turn:
-     * He has to play in column 0 otherwise player X can win in his next move
-     *
      *      . . . . . . .
      *      . . . . . . .
      *      . . . . . . .
@@ -105,23 +121,30 @@ class Tests {
         )
 
         var game = ConnectFour(board = board, currentPlayer = -1)
+        println(game)
 
         // player O plays move -> prevent player X from win-move
-        game = game.bestMove()
+        val move1 = game.minimax().move!!
+        printMove(game.getPlayerSymbol(), move1)
+        game = game.move(move1)
+        println(game)
 
         // player X cannot play win-move
-        game = game.bestMove()
+        val move2 = game.minimax().move!!
+        printMove(game.getPlayerSymbol(), move2)
+        game = game.move(move2)
+        println(game)
 
-        assert(!game.hasWinner(1)) {"Failed test #1: Player 1 (X) should not have won!"}
+        if (!game.hasWinner(1)) {
+            this.successCounter++
+            println("Success: Player X has not won!")
+        } else println("Error: Player X should not have won!")
+
+        println("----------------------------------------------")
     }
 
 
     /**
-     * "Die Spiel-Engine vereitelt ein Drohung, die den Gegner im übernächsten Zug ansonsten einen Gewinn umsetzen lässt (Sichttiefe 4)"
-     *
-     * It's player O's turn:
-     * He has to play in column 1 or 4 otherwise player X can definitely win
-     *
      *      . . . . . . .
      *      . . . . . . .
      *      . . . . . . .
@@ -139,19 +162,37 @@ class Tests {
         )
 
         var game = ConnectFour(board = board, currentPlayer = -1)
+        println(game)
 
         // player O plays move -> player X cannot play win-move in his next-next move
-        game = game.bestMove()
+        val move1 = game.minimax().move!!
+        printMove(game.getPlayerSymbol(), move1)
+        game = game.move(move1)
+        println(game)
 
         // player X plays move
-        game = game.bestMove()
+        val move2 = game.minimax().move!!
+        printMove(game.getPlayerSymbol(), move2)
+        game = game.move(move2)
+        println(game)
 
         // player O plays move
-        game = game.bestMove()
+        val move3 = game.minimax().move!!
+        printMove(game.getPlayerSymbol(), move3)
+        game = game.move(move3)
+        println(game)
 
         // player X plays move
-        game = game.bestMove()
+        val move4 = game.minimax().move!!
+        printMove(game.getPlayerSymbol(), move4)
+        game = game.move(move4)
+        println(game)
 
-        assert(!game.hasWinner(1)) {"Failed test #5: Player 1 (X) should not have won"}
+        if (!game.hasWinner(1)) {
+            this.successCounter++
+            println("Success: Player X has not won!")
+        } else println("Error: Player X should not have won!")
+
+        println("----------------------------------------------")
     }
 }
