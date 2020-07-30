@@ -121,9 +121,9 @@ class ConnectFour(
          * @return mirrored board as bit representation
          */
         fun mirrorPlayerBoard(board: Long): Long {
-            var mirror = board and 0b111111 shl 42
-            mirror = mirror or (board and 0b111111_0000000 shl 28)
-            mirror = mirror or (board and 0b111111_0000000_0000000 shl 14)
+            var mirror = board and 0b1111111 shl 42
+            mirror = mirror or (board and 0b1111111_0000000 shl 28)
+            mirror = mirror or (board and 0b1111111_0000000_0000000 shl 14)
             mirror = mirror or (board and 0b1111111_0000000_0000000_0000000)
             mirror = mirror or (board and 0b1111111_0000000_0000000_0000000_0000000 shr 14)
             mirror = mirror or (board and 0b1111111_0000000_0000000_0000000_0000000_0000000 shr 28)

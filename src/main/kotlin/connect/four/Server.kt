@@ -17,7 +17,6 @@ class Server {
     }
 
     init {
-
         Minimax.Storage.registerStorages<Move>()
 
         val app = Javalin.create { config ->

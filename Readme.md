@@ -452,7 +452,80 @@ Für die Simulation der 200 Spiele, wurde unter anderem die `kotlinx-coroutines-
 
 Das Spielbrett ist als Bitboard implementiert. Dies ist ein Array bestehend aus zwei Einträgen, für jeden Spieler einen, welche jeweils Zahlen vom Typ `Long` im Binärformat beinhalten.
 
-Beispiel: `0b0_0000000_0000000___0000000_0000000_0000000_0000000_0000000_0000000_0000000`
+Über diese beiden Einträge wird gesteuert, in welchen Zellen die beiden Spieler bereits ihre Steine platziert haben. Hat ein Spieler einen Stein in einer Zelle platziert, wird innerhalb seines Bitstrings der Bit an der Position dieser Zelle zu einer `1` umgewandelt.
+
+Die einzelnen Zellen des Spielbretts befinden sich dabei an den Position `0` bis `47` . Hierbei sind allerdings auch unbenutzte Zellen enthalten, welche nur zum Prüfen auf Vier-in-Reihe benötigt werden. Folgende Darstellung soll den Aufbau nochmal verdeutlichen. Die zusätzlichen unbenutzten Zellen sind hierbei durch `...` gekennzeichnet.
+
+````
+		  ...
++---------------------+ 
+| 5 12 19 26 33 40 47 |
+| 4 11 18 25 32 39 46 |
+| 3 10 17 24 31 38 45 |  ...
+| 2  9 16 23 30 37 44 |
+| 1  8 15 22 29 36 43 |
+| 0  7 14 21 28 35 42 |
++---------------------+
+````
+
+Innerhalb des Bitstrings befindet sich Zelle `0` an der Position des *least significant bit*, also ganz Rechts.
+
+Beispiel: (weiter linksstehende Bits sind abgeschnitten)
+
+````
+... 0000010_0000001
+	 col 1	 col 0
+````
+
+Hierbei hat der Spieler einen Stein in der Zelle `0` und `8` platziert.
+
+#### Vier-in-Reihe
+
+*Im Code*:
+
+- `ConnectFour.fourInARow()`
+
+---
+
+Um zu überprüfen, ob sich vier Steine eines Spielers in einer Reihe befinden sind folgende Operationen nötig:
+
+- `shr` => Verschiebt die Bits um eine gegebene Anzahl nach rechts
+- `and` => Führt eine logische "und-Operation" durch
+
+Dabei wird der Bitstring eines Spielers so weit verschoben, wie der Abstand einer Zelle zur einer benachbarten groß ist:
+
+- Vertikal: 1
+- Horizontal: 7
+- Diagonal OL nach UR: 6
+- Diagonal OR nach UL: 8
+
+Um nun mehre (4) Zellen miteinander zu vergleichen, müssen diese um ein solches Vielfaches von deren Abstand verschoben, dass alle Zellen übereinander liegen.
+
+Hat man nun die einzelnen Zellen durch das Verschieben übereinandergelegt und per `and`-Operation miteinander verglichen, erhält man ein Ergebnis `> 0`, falls vier in einer Reihe sind.
+
+#### Spiegelung
+
+*Im Code:*
+
+- `ConnectFour.mirrorPlayerBoard()`
+
+---
+
+Wie bereits im Abschnitt "Symmetrien" beschrieben, werden Spiegelungen des Spielbretts verwendet, um die Zahl der zu berechnenden Spielstellungen zu reduzieren.
+
+Das Spielbrett wird gespiegelt, indem die einzelnen Spalten gespiegelt werden. Hierbei werden die dazugehörigen Bitblöcke innerhalb des Bitstrings des Spielers nach rechts bzw. links verschoben.
+
+Um zum Beispiel Spalte #2 nach Spalte #6 zu spiegeln und andersherum ist folgende Operation notwendig:
+
+````kotlin
+// Spiegel Spalte #2 nach #6
+board and 0b1111111_0000000 shl 28
+
+// Spiegel Spalte #6 nach #2
+board and 0b1111111_0000000_0000000_0000000_0000000_0000000 shr 28
+````
+
+Hierbei ist `board` das Bitboard eines Spielers.
 
 ### Interface
 
@@ -468,9 +541,9 @@ Das Minimax Interface ist ein generisches Interface, welches wichtige Attribute 
 - Datenbankverwaltung
 - Spielsteuerung (`move, undoMove...`)
 
-Der Interface-Kopf sieht wie folgt aus: `interface Minimax<Board, Move>`. Er erwartet zwei Parameter als generische Datentypen. Einen für das Spielbrett und einen für die Züge. Da es generisch ist, kann es außerdem sehr leicht in andere Spiele implementiert werden.
+Der Interface-Kopf sieht wie folgt aus: `interface Minimax<Board, Move>`. Er erwartet zwei Datentypen als Parameter. Einen für das Spielbrett und einen für die Züge. Da das Interface generisch ist, kann es sehr leicht in andere Spiele implementiert werden. Hierfür sind nur wenige Anpassungen innerhalb des Interface selbst nötig.
 
-Das Interface beinhaltet außerdem noch zwei geschachtelte Klassen: `Storage` und `Storage.Record`. Diese dienen zur Datenbankverwaltung. Siehe dazu Abschnitt "Datenbank".
+Es beinhaltet außerdem noch zwei geschachtelte Klassen: `Storage` und `Storage.Record`. Diese dienen zur Datenbankverwaltung. Siehe dazu Abschnitt "Datenbank".
 
 
 ## Tests (TST)
@@ -481,7 +554,7 @@ Das Interface beinhaltet außerdem noch zwei geschachtelte Klassen: `Storage` un
 
 Die Tests werden wie folgt ausgeführt:
 
-Alle Tests sind in jeweils einer eigener Funktion in der Klasse `Tests` implementiert. Dieser werden der Reihe nach aufgerufen. Nach jedem Zug wird das Spielbrett und in welcher Spalte der Stein geworfen wurde ausgegeben.
+Alle Tests sind jeweils in einer eigener Funktion innerhalb der Klasse `Tests` implementiert. Dieser werden der Reihe nach aufgerufen. Nach jedem Zug wird das Spielbrett und in welcher Spalte der Stein geworfen wurde ausgegeben.
 
 Die Testszenarien sehen wie folgt aus:
 
@@ -778,8 +851,8 @@ Der übergebene Pfadparameter `id` entspricht der ID des jeweiligen Spiels. Er w
 ## Hinweise
 
 - Zu Beginn jedes Abschnitts stehen die dazugehörigen Klassen- bzw. Methodennamen und Attribute aus dem Code
-- Zum Versenden von HTTP Requests per JS wurde die [fetch-Schnittstelle](https://developer.mozilla.org/de/docs/Web/API/Fetch_API) verwendet
-- Möchte man eigene Spielstellungen erstellen, z.B. für eigene Testszenarien, muss lediglich das Array `board` für die Bitsboards angegeben werden. Das Array `heights`, welches die "Höhe" der gesetzten Steine pro Spalte beinhaltet, wird automatisch berechnet
+- Zum Versenden von HTTP Requests per JS wird die [fetch-Schnittstelle](https://developer.mozilla.org/de/docs/Web/API/Fetch_API) verwendet
+- Möchte man eigene Spielstellungen erstellen, z.B. für eigene Testszenarien, muss lediglich das Array `ConnectFour.board` für die Bitsboards angegeben werden. Das Array `ConnectFour.heights`, welches die "Höhe" der gesetzten Steine pro Spalte beinhaltet, wird automatisch berechnet
 
 ## Quellennachweis
 
