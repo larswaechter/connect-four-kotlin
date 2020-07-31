@@ -4,6 +4,56 @@ Autor: Lars Wächter, 5280456
 
 Ich habe die Zulassung für PiS im SoSe 2020 bei Herrn Herzberg erhalten.
 
+## Inhaltsverzeichnis
+
+- [Vier Gewinnt (PiS, SoSe 2020)](#vier-gewinnt-pis-sose-2020)
+	- [Inhaltsverzeichnis](#inhaltsverzeichnis)
+	- [Einleitung](#einleitung)
+		- [Spielregeln](#spielregeln)
+		- [Bedienungsanleitung](#bedienungsanleitung)
+			- [Spielstart](#spielstart)
+			- [Spielablauf](#spielablauf)
+			- [Spielende](#spielende)
+		- [Dateiübersicht](#dateiübersicht)
+	- [Spiel-Engine (ENG)](#spiel-engine-eng)
+		- [KI-Algorithmus](#ki-algorithmus)
+		- [Datenbank](#datenbank)
+			- [Aufbau](#aufbau)
+			- [Transposition Table](#transposition-table)
+			- [Zobrist Hash](#zobrist-hash)
+				- [Vorbereitung](#vorbereitung)
+				- [Berechnung](#berechnung)
+			- [Befüllung](#befüllung)
+		- [Symmetrien](#symmetrien)
+			- [Arten von Symmetrien](#arten-von-symmetrien)
+				- [1. Spiegelung an der mittleren Y-Achse](#1-spiegelung-an-der-mittleren-y-achse)
+				- [2. Invertierung des Spielbretts](#2-invertierung-des-spielbretts)
+				- [3. Spiegelung an der mittleren Y-Achse und Invertierung des Spielbretts](#3-spiegelung-an-der-mittleren-y-achse-und-invertierung-des-spielbretts)
+			- [Implementierung der Symmetrien](#implementierung-der-symmetrien)
+				- [Hashes](#hashes)
+				- [Verwendung in Minimax](#verwendung-in-minimax)
+					- [Processing-Methode](#processing-methode)
+		- [Stellungsbewertung](#stellungsbewertung)
+		- [Bitboards](#bitboards)
+			- [Vier-in-Reihe](#vier-in-reihe)
+			- [Spiegelung](#spiegelung)
+		- [Interface](#interface)
+	- [Tests (TST)](#tests-tst)
+		- [Test 1](#test-1)
+		- [Test 2](#test-2)
+		- [Test 3](#test-3)
+		- [Test 4](#test-4)
+		- [Test 5](#test-5)
+	- [Umsetzung der GUI](#umsetzung-der-gui)
+		- [Startseite](#startseite)
+			- [Neues Spiel](#neues-spiel)
+				- [Klasse `Game`](#klasse-game)
+			- [Testdurchläufe](#testdurchläufe)
+		- [Spielseite](#spielseite)
+		- [Server Endpunkte](#server-endpunkte)
+	- [Hinweise](#hinweise)
+	- [Quellennachweis](#quellennachweis)
+
 ## Einleitung
 
 ### Spielregeln
@@ -12,7 +62,7 @@ Die Spielregeln entsprechen dem des klassischen Vier-Gewinnts: Ziel ist es, vier
 
 ### Bedienungsanleitung
 
-Auf der Startseite kann der Benutzer entweder ein neues Spiel starten oder die Testdurchläufe ausführen. Diese werden im Abschnitt "Tests (TST)" genauer behandelt.
+Auf der Startseite kann der Benutzer entweder ein neues Spiel starten oder die Testdurchläufe ausführen. Diese werden im Abschnitt [Tests (TST)](#tests-tst) genauer behandelt.
 
 #### Spielstart
 
@@ -35,7 +85,7 @@ Nachdem der menschliche Spieler eine Auswahl getroffen hat, spielt daraufhin die
 
 **Achtung:** Macht man als menschlicher Spieler einen Zug der KI rückgängig, ist der menschliche Spieler wieder an der Reihe und nicht die KI. Erst danach ist die KI wieder am Zug. Es kommt also sozusagen zu einem Farb- bzw. Spielerwechsel. Andernfalls würde die KI wieder direkt mit einem Zug antworten und es wäre unmöglich, einen einzelnen Zug der KI rückgängig zu machen.
 
-In der Kopfzeile wird der aktuelle Spieler angezeigt. Ist die KI am Zug, wird während der Berechnung des bestmöglichen Zugs eine kleine Ladeanimation angezeigt. Nachdem sie ihren Zug durchgeführt hat, wird die dafür benötigte Zeit in Millisekunden angezeigt. 
+In der Kopfzeile wird der aktuelle Spieler angezeigt. Ist die KI am Zug, wird während der Berechnung des bestmöglichen Zugs eine kleine Ladeanimation angezeigt. Nachdem sie ihren Zug durchgeführt hat, wird die dafür benötigte Zeit in Millisekunden angezeigt.
 
 ![Spiel](./screenshot_01.png)
 
@@ -129,7 +179,7 @@ Eine weitere Performance Optimierung ist das Anlegen einer Datenbank, auch Trans
 
 Anknüpfend wird die Realisierung einer solchen Datenbank beschrieben.
 
-#### Aufbau 
+#### Aufbau
 
 Die komplette Datenbank besteht aus sieben einzelnen Transposition Tables, welche als Textdateien umgesetzt sind. Zu finden sind diese in `src/main/resources/transposition_tables`.
 
@@ -145,7 +195,7 @@ Der dadurch entstandene Wert (`ConnectFour.storageIndex`) entspricht dem Index d
 
 *Im Code:*
 
-- `Minimax.Storage` 
+- `Minimax.Storage`
 - `Minimax.Storage.Record`
 
 ---
@@ -186,7 +236,7 @@ Der Zobrist Hash wird verwendet, um die verschiedenen Spielstellungen als Hashwe
 
 *Im Code:*
 
-- `Minimax.Storage.generateZobristHashes()` 
+- `Minimax.Storage.generateZobristHashes()`
 - `Minimax.Storage.readZobristHashes()`
 - `Minimax.Storage.buildZobristTable()`
 
@@ -237,7 +287,7 @@ Um die einzelnen Transposition Tables zu befüllen, wurde eine eigene Methode en
 
 Hierbei generiert der Algorithmus ein Spiel, in dem genau `movesPlayed` zufällige Züge gespielt wurden. Zu beachten ist, dass nach diesen Zügen noch kein Gewinner feststeht. Anschließend wird geprüft, ob die hierbei entstandene Spielstellung, oder eine Symmetrie dieser, bereits in der Datenbank vorhanden ist. Ist das nicht der Fall, wird mit Hilfe des Minimax-Algorithmus der bestmögliche Zug für die Stellung berechnet und in die Datenbank eingetragen.
 
-Dieses Verfahren wird genau `amount` mal wiederholt. Es werden also bis zu `amount` viele Datensätze für Spiele bestehend aus `movesPlayed` zufällig gespielten Zügen generiert. 
+Dieses Verfahren wird genau `amount` mal wiederholt. Es werden also bis zu `amount` viele Datensätze für Spiele bestehend aus `movesPlayed` zufällig gespielten Zügen generiert.
 
 Es erweist sich als effektiv die Spielstellungen von "hinten nach vorne" zu berechnen. Also zuerst Spielstellungen mit möglichst vielen gespielten Zügen zu berechnen und diese Schrittweise zu reduzieren. Hierdurch kann der Minimax-Algorithmus in den niedrigeren Bereichen auf bereits ausgewertete Stellungen zurückgreifen.
 
@@ -292,7 +342,7 @@ Hat man nun beispielsweise den bestmöglichen Zug für `Board #1` bereits berech
 
 Wichtig ist, dass dies nur gilt, wenn man die Board-Stellung in beiden Situationen aus der Sicht desselben Spielers (X) betrachtet. Für Spieler O wären die eben genannten Züge nicht die bestmöglichen.
 
-**Hinweis:** Maßnahmen zur Anpassung eines aus dem Speicher geladenen Zugs und wann diese verwendet werden dürfen, werden im Abschnitt "Processing-Methode" genauer behandelt.
+**Hinweis:** Maßnahmen zur Anpassung eines aus dem Speicher geladenen Zugs und wann diese verwendet werden dürfen, werden im Abschnitt [Processing-Methode](#processing-methode) genauer behandelt.
 
 ##### 2. Invertierung des Spielbretts
 
@@ -385,7 +435,7 @@ Der erste Hash ist der Zobrist Hash der aktuellen Spielstellung ohne jegliche an
 Die anderen drei Hashes werden mittels des Zobrist Hashs nach Anwendung einer Symmetrie auf das Board berechnet:
 
 - Zweiter Hash: 1. Symmetrie (Spiegelung) => Berechnung des neuen Hashs
-- Dritter Hash: 2. Symmetrie (Invertierung) => Berechnung des neuen Hashs 
+- Dritter Hash: 2. Symmetrie (Invertierung) => Berechnung des neuen Hashs
 - Vierter Hash: 3. Symmetrie (Spiegelung & Invertierung) => Berechnung des neuen Hashs
 
 Jede Spielstellung besitzt also vier Hashes: Einen für die Ausgangsstellung und drei für die verschiedenen Symmetrien.
@@ -489,7 +539,7 @@ Folgende Darstellung soll den Aufbau nochmal verdeutlichen. Die zusätzlichen un
 
 ````
 		  ...
-+---------------------+ 
++---------------------+
 | 5 12 19 26 33 40 47 |
 | 4 11 18 25 32 39 46 |
 | 3 10 17 24 31 38 45 |  ...
@@ -541,7 +591,7 @@ Um nun mehre (4) Zellen miteinander zu vergleichen, müssen diese um ein solches
 
 ---
 
-Wie bereits im Abschnitt "Symmetrien" beschrieben, werden Spiegelungen des Spielbretts verwendet, um die Zahl der zu berechnenden Spielstellungen zu reduzieren.
+Wie bereits im Abschnitt [Symmetrien](#symmetrien) beschrieben, werden Spiegelungen des Spielbretts verwendet, um die Zahl der zu berechnenden Spielstellungen zu reduzieren.
 
 Das Spielbrett wird gespiegelt, indem die einzelnen Spalten gespiegelt werden. Hierbei werden die dazugehörigen Bitblöcke innerhalb des Bitstrings des Spielers nach rechts bzw. links verschoben.
 
@@ -577,7 +627,7 @@ Der Interface-Kopf sieht wie folgt aus:
 
 Er erwartet zwei Datentypen als Parameter. Einen für das Spielbrett und einen für die Züge. Da das Interface generisch ist, kann es sehr leicht in andere Spiele implementiert werden. Hierfür sind nur wenige Anpassungen innerhalb des Interface selbst nötig.
 
-Es beinhaltet außerdem noch zwei geschachtelte Klassen: `Storage` und `Storage.Record`, welche zur Datenbankverwaltung dienen. Siehe dazu Abschnitt "Datenbank".
+Es beinhaltet außerdem noch zwei geschachtelte Klassen: `Storage` und `Storage.Record`, welche zur Datenbankverwaltung dienen. Siehe dazu Abschnitt [Datenbank](#datenbank).
 
 
 ## Tests (TST)
@@ -668,55 +718,55 @@ Die Testausführung protokolliert sich über die Konsole wie folgt:
 ----- Starting tests -----
 
 Running test #1...
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-X . . . . . . 
-X . . . . . . 
-X . . . O O O 
+. . . . . . .
+. . . . . . .
+. . . . . . .
+X . . . . . .
+X . . . . . .
+X . . . O O O
 
 X is playing: 0
-. . . . . . . 
-. . . . . . . 
-X . . . . . . 
-X . . . . . . 
-X . . . . . . 
-X . . . O O O 
+. . . . . . .
+. . . . . . .
+X . . . . . .
+X . . . . . .
+X . . . . . .
+X . . . O O O
 
 Success: Player X has won!
 ----------------------------------------------
 
 Running test #2...
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . . . . O 
-. . X X . . O 
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . O
+. . X X . . O
 
 X is playing: 4
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . . . . O 
-. . X X X . O 
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . O
+. . X X X . O
 
 O is playing: 3
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . O . . O 
-. . X X X . O 
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . O . . O
+. . X X X . O
 
 X is playing: 5
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . O . . O 
-. . X X X X O 
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . O . . O
+. . X X X X O
 
 Success: Player X has won!
 ----------------------------------------------
@@ -724,70 +774,70 @@ Running test #3...
 empty
 ----------------------------------------------
 Running test #4...
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-X . . . . . . 
-X . . . . . . 
-X O O . . . . 
+. . . . . . .
+. . . . . . .
+. . . . . . .
+X . . . . . .
+X . . . . . .
+X O O . . . .
 
 O is playing: 0
-. . . . . . . 
-. . . . . . . 
-O . . . . . . 
-X . . . . . . 
-X . . . . . . 
-X O O . . . . 
+. . . . . . .
+. . . . . . .
+O . . . . . .
+X . . . . . .
+X . . . . . .
+X O O . . . .
 
 X is playing: 3
-. . . . . . . 
-. . . . . . . 
-O . . . . . . 
-X . . . . . . 
-X . . . . . . 
-X O O X . . . 
+. . . . . . .
+. . . . . . .
+O . . . . . .
+X . . . . . .
+X . . . . . .
+X O O X . . .
 
 Success: Player X has not won!
 ----------------------------------------------
 Running test #5...
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . X X . . O 
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . X X . . O
 
 O is playing: 1
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. O X X . . O 
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. O X X . . O
 
 X is playing: 3
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . X . . . 
-. O X X . . O 
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . X . . .
+. O X X . . O
 
 O is playing: 3
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . O . . . 
-. . . X . . . 
-. O X X . . O 
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . O . . .
+. . . X . . .
+. O X X . . O
 
 X is playing: 2
-. . . . . . . 
-. . . . . . . 
-. . . . . . . 
-. . . O . . . 
-. . X X . . . 
-. O X X . . O 
+. . . . . . .
+. . . . . . .
+. . . . . . .
+. . . O . . .
+. . X X . . .
+. O X X . . O
 
 Success: Player X has not won!
 ----------------------------------------------
@@ -796,7 +846,7 @@ Tests completed! Finished 4 / 5 successfully.
 
 ## Umsetzung der GUI
 
-Folgender Abschnitt beinhaltet die Umsetzung der GUI sowie die Kommunikation zwischen Browser und Server mittels JavaScript. 
+Folgender Abschnitt beinhaltet die Umsetzung der GUI sowie die Kommunikation zwischen Browser und Server mittels JavaScript.
 
 Für die Gestaltung des Interfaces wird das [Bootstrap Framework](https://getbootstrap.com/) verwendet. Zum Versenden von HTTP Requests per JavaScript dient die [fetch-Schnittstelle](https://developer.mozilla.org/de/docs/Web/API/Fetch_API).
 
