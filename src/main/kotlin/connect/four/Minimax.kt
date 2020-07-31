@@ -217,7 +217,6 @@ interface Minimax<Board, Move> {
          */
         fun register() {
             if (!this.isRegistered()) {
-                println("Register storage #${this.index}...")
                 this.initMap()
                 storages[this.index] = this
             }

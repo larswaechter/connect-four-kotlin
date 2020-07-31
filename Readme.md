@@ -33,7 +33,7 @@ Der Spielablauf ist immer gleich: beide Spieler spielen abwechselnd ihre Züge, 
 
 Nachdem der menschliche Spieler eine Auswahl getroffen hat, spielt daraufhin die KI ihren Zug. Anschließend ist wieder der menschliche Spieler an der Reihe. Hat man bei Spielstart den 2 Spieler Modus ausgewählt, wäre anstelle der KI der zweite menschliche Spieler am Zug.
 
-**Achtung:** Macht man als menschlicher Spieler einen Zug der KI rückgängig, ist der menschliche Spieler wieder an der Reihe und nicht die KI. Es kommt also sozusagen zu einem Farb- bzw. Spielerwechsel. Andernfalls würde die KI wieder direkt mit einem Zug antworten und es wäre unmöglich, einen einzelnen Zug der KI rückgängig zu machen.
+**Achtung:** Macht man als menschlicher Spieler einen Zug der KI rückgängig, ist der menschliche Spieler wieder an der Reihe und nicht die KI. Erst danach ist die KI wieder am Zug. Es kommt also sozusagen zu einem Farb- bzw. Spielerwechsel. Andernfalls würde die KI wieder direkt mit einem Zug antworten und es wäre unmöglich, einen einzelnen Zug der KI rückgängig zu machen.
 
 In der Kopfzeile wird der aktuelle Spieler angezeigt. Ist die KI am Zug, wird während der Berechnung des bestmöglichen Zugs eine kleine Ladeanimation angezeigt. Nachdem sie ihren Zug durchgeführt hat, wird die dafür benötigte Zeit in Millisekunden angezeigt. 
 
@@ -79,12 +79,12 @@ Das Spiel endet, sobald einer der beiden Spieler vier Steine seiner Farbe in ein
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Kotlin                           6            221            448            678
+Kotlin                           6            222            448            677
 HTML                             1              0              1             70
 JavaScript                       1             16              3             63
 CSS                              1             11              0             41
 -------------------------------------------------------------------------------
-SUM:                             9            248            452            852
+SUM:                             9            249            452            851
 -------------------------------------------------------------------------------
 ````
 
@@ -121,7 +121,7 @@ Eine Abbruchbedingung des Minimax-Algorithmus ist, wenn einer der beiden Spieler
 
 **2. Eine Überprüfung, ob der aktuelle Spieler mit einem der möglichen Züge sofort gewinnen kann:**
 
-Bevor innerhalb des Minimax-Algorithmus alle möglichen Züge bewertet werden, wird einmal über die Liste aller möglichen Züge iteriert und geprüft, ob der aktuelle Spieler mit einem dieser Züge direkt das Spiel gewinnen kann. Ist dies der Fall, spart man sich die Evaluierung der restlichen Züge und somit Rechenzeit.
+Bevor innerhalb des Minimax-Algorithmus alle möglichen Züge bewertet werden, wird einmal über die Liste aller möglichen Züge iteriert und geprüft, ob der aktuelle Spieler mit einem dieser Züge das Spiel direkt gewinnen kann. Ist dies der Fall, spart man sich die Evaluierung der restlichen Züge und somit Rechenzeit.
 
 ### Datenbank
 
@@ -213,7 +213,7 @@ Folgende Tabelle verdeutlicht nochmal den Aufbau: Für jede Zelle des Spielbrett
 
 ---
 
-Nachdem eine Tabelle mit (pseudo) zufälligen Zahlen erstellt wurde, ist es möglich, den Zobrist Hash für eine jeweilige Stellung zu berechnen. Hierfür wird für jeden gesetzten Stein beider Spieler, der Wert der dazugehörigen Zelle aus der zuvor erzeugten Tabelle (siehe oben) entnommen und per `XOR` Operation miteinander verknüpft. Der dadurch entstandene Wert entspricht dem Zobrist Hash der jeweiligen Stellung.
+Nachdem eine Tabelle mit (pseudo) zufälligen Zahlen erstellt wurde, ist es möglich, den Hash für eine jeweilige Stellung zu berechnen. Hierfür wird für jeden gesetzten Stein beider Spieler, der Wert der dazugehörigen Zelle aus der zuvor erzeugten Tabelle (siehe oben) entnommen und per `XOR` Operation miteinander verknüpft. Der dadurch entstandene Wert entspricht dem Zobrist Hash der jeweiligen Stellung.
 
 **Beispiel:** Spieler 1 hat einen Stein in Zelle #0 und Spieler 2 einen Stein in Zelle #1. Der Hash berechnet sich dann wie folgt:   `...6389... XOR ...2805...`.
 
@@ -286,7 +286,7 @@ Ausgehend von einer Board-Stellung wie in `Board #1`, wäre für Spieler X der b
 
 Ausgehend von einer Board-Stellung wie in `Board #2`, wäre für Spieler X der bestmögliche Zug, einen Stein in Spalte 6 zu werfen. Er hätte damit ebenfalls gewonnen.
 
-Hierbei ist zu erkennen, dass beide Board-Stellungen zu demselben Ergebnis führen: Spieler X gewinnt.
+Hierbei ist zu erkennen, dass beide Stellungen zu demselben Ergebnis führen: Spieler X gewinnt.
 
 Hat man nun beispielsweise den bestmöglichen Zug für `Board #1` bereits berechnet und im Speicher vorliegen, kann man im Fall von `Board #2` das Board spiegeln, wodurch man `Board #1` erhält, und den bestmöglichen Zug von `Board #1` aus dem Speicher lesen und übernehmen. Es gilt zu beachten, dass dieser Zug dann ebenfalls gespiegelt werden muss. Aus dem Zug `2` wird also `6`.
 
@@ -402,9 +402,11 @@ Die erste Methode dient dazu, die jeweiligen Hashes für die aktuelle Spielstell
 
 Die zweite Methode (`ConnectFour.searchBestMoveInStorage()`) wird verwendet, um nach bereits vorhandenen Spielstellungen, einschließlich Symmetrien, in der Datenbank zu suchen. Hierzu ruft sie die erste Methode auf und iteriert über die von ihr erhaltenen Listenelemente. Anschließend wird geprüft, ob einer von den erhaltenen Hashwerten in der Datenbank vorhanden ist und dessen "Processing-Methode" wird aufgerufen.
 
+Durch dieses System lassen sich sehr leicht neue Symmetrien implementieren: Hat man beispielsweise eine neue Symmetrie "entdeckt", muss nur die von `ConnectFour.getStorageRecordKeys()` zurückgegebene Liste erweitert werden.
+
 ###### Processing-Methode
 
-Die Processing Methode wird benötigt, da nicht ohne Weiteres ein aus dem Speicher gelesener Eintrag verwendet werden darf. Je nach Symmetrie gibt es verschiedene Kriterien, die erfüllt sein müssen, damit ein Eintrag aus dem Speicher verwendet werden darf.
+Die Processing Methode wird benötigt, da nicht ohne Weiteres ein aus dem Speicher gelesener Eintrag verwendet werden darf. Je nach Symmetrie gibt es verschiedene Kriterien, die erfüllt sein müssen, damit dieser verwendet werden darf.
 
 Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Kriterien der Symmetrie zu überprüfen. Die Kriterien lauten wie folgt:
 
@@ -426,7 +428,7 @@ Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Krit
   - Zusätzlich muss der Score des Eintrags invertiert werden
   - Da hierbei eine Spiegelung stattfindet, muss ebenfalls der im Eintrag gespeicherte Zug gespiegelt werden
 
-Wie bereits oben beschrieben, werden ein Hashwert und dessen Processing-Methode im Code als `Pair()` repräsentiert. Der `first` Value entspricht dem Hash und der `second` Value beinhaltet die Processing-Methode.
+Wie oben bereits erwähnt, werden ein Hashwert und dessen Processing-Methode im Code als `Pair()` repräsentiert. Der `first` Value entspricht dem Hash und der `second` Value beinhaltet die Processing-Methode.
 
 Um einen Eintrag im Speicher auf die Kriterien eines Hashs zu überprüfen, wird dieser als Argument beim Aufruf der Processing Methode mit übergeben.
 
@@ -455,14 +457,14 @@ val key1 = fun(): Pair<Long, (record: Minimax.Storage.Record<Move>) -> Minimax.S
 
 ---
 
-Damit der Minimax-Algorithmus ein Board aus der Sicht eines beliebigen Spielers bewerten kann, ist eine `evaluate`-Methode notwendig. Im Projekt wurde eine solche Evaluierung mittels der **Monte-Carlo-Methode** umgesetzt.
+Damit der Minimax-Algorithmus ein Board aus der Sicht eines beliebigen Spielers bewerten kann, ist eine `evaluate`-Methode notwendig. Im Projekt wurde eine solche Evaluierung mit Hilfe der **Monte-Carlo-Methode** umgesetzt.
 
 Hierbei wird ausgehend von einer gegebenen Stellung abwechselnd für jeden Spieler ein zufälliger Zug ausgeführt, bis das schließlich Spiel beendet ist (keine Züge mehr möglich oder Sieg eines Spielers). Dieses Vorgehen wird eine gewünschte Anzahl, hier 200, Mal wiederholt.
 
 Anhand der Anzahl der Gewinne für einen gegebenen Spieler wird ein Score ermittelt, welcher als Evaluationswert für die aktuelle Spielstellung dient. Je höher dieser Wert für den Maximizer bzw. umso niedriger er für den Minimizer ist, desto
 besser ist der Score und dementsprechend auch der Zug, der zu der gegebenen Ausgangsstellung führte. Zu der Anzahl der Gewinne wird zusätzlich ein Faktor addiert, welcher frühe Gewinne höher bewertet als spätere.
 
-Für die Simulation der 200 Spiele, wird unter anderem die `kotlinx-coroutines-core` Bibliothek verwendet. Diese ermöglicht die Verwendung von sogenannten "coroutines" in Kotlin. Mittels coroutines können die Simulation gleichzeitig ausgeführt werden, was einen Geschwindigkeitsvorteil bietet.
+Für die Simulation der 200 Spiele, wird unter anderem die `kotlinx-coroutines-core` Bibliothek verwendet. Diese ermöglicht die Verwendung von sogenannten "coroutines" in Kotlin. Mittels coroutines können die Simulationen gleichzeitig ausgeführt werden, was einen Geschwindigkeitsvorteil bietet.
 
 ### Bitboards
 
@@ -481,7 +483,9 @@ Das Spielbrett ist als Bitboard implementiert. Dies ist ein Array bestehend aus 
 
 Über diese beiden Einträge wird gesteuert, in welchen Zellen die beiden Spieler bereits ihre Steine platziert haben. Hat ein Spieler einen Stein in einer Zelle platziert, wird innerhalb seines Bitstrings der Bit an der Position dieser Zelle zu einer `1` umgewandelt.
 
-Die einzelnen Zellen des Spielbretts befinden sich dabei an den Position `0` bis `47` . Hierbei sind allerdings auch unbenutzte Zellen enthalten, welche nur zum Prüfen auf Vier-in-Reihe benötigt werden. Folgende Darstellung soll den Aufbau nochmal verdeutlichen. Die zusätzlichen unbenutzten Zellen sind hierbei durch `...` gekennzeichnet.
+Die einzelnen Zellen des Spielbretts befinden sich dabei an den Position `0` bis `47` . Hierbei sind allerdings auch unbenutzte Zellen enthalten, welche nur zum Prüfen auf Vier-in-Reihe benötigt werden.
+
+Folgende Darstellung soll den Aufbau nochmal verdeutlichen. Die zusätzlichen unbenutzten Zellen sind hierbei durch `...` gekennzeichnet:
 
 ````
 		  ...
@@ -517,8 +521,8 @@ Hierbei hat der Spieler einen Stein in der Zelle `0` und `8` platziert.
 
 Um zu überprüfen, ob sich vier Steine eines Spielers in einer Reihe befinden sind folgende Operationen nötig:
 
-- `shr` => Verschiebt die Bits um eine gegebene Anzahl nach rechts
-- `and` => Führt eine logische "und-Operation" durch
+- `shr` => verschiebt die Bits um eine gegebene Anzahl nach rechts
+- `and` => führt eine logische "und-Operation" durch
 
 Dabei wird der Bitstring eines Spielers so weit verschoben, wie der Abstand einer Zelle zur einer benachbarten groß ist:
 
@@ -527,9 +531,7 @@ Dabei wird der Bitstring eines Spielers so weit verschoben, wie der Abstand eine
 - Diagonal OL nach UR: 6
 - Diagonal OR nach UL: 8
 
-Um nun mehre (4) Zellen miteinander zu vergleichen, müssen diese um ein solches Vielfaches von deren Abstand verschoben, dass alle Zellen übereinander liegen.
-
-Hat man nun die einzelnen Zellen durch das Verschieben übereinandergelegt und per `and`-Operation miteinander verglichen, erhält man ein Ergebnis `> 0`, falls vier in einer Reihe sind.
+Um nun mehre (4) Zellen miteinander zu vergleichen, müssen diese um ein solches Vielfaches von deren Abstand verschoben, dass alle Zellen übereinander liegen. Hat man nun die einzelnen Zellen durch das Verschieben übereinandergelegt und per `and`-Operation miteinander verglichen, erhält man ein Ergebnis `> 0`, falls vier Steine in einer Reihe sind.
 
 #### Spiegelung
 
@@ -543,7 +545,7 @@ Wie bereits im Abschnitt "Symmetrien" beschrieben, werden Spiegelungen des Spiel
 
 Das Spielbrett wird gespiegelt, indem die einzelnen Spalten gespiegelt werden. Hierbei werden die dazugehörigen Bitblöcke innerhalb des Bitstrings des Spielers nach rechts bzw. links verschoben.
 
-Um zum Beispiel Spalte #2 nach Spalte #6 zu spiegeln und andersherum ist folgende Operation notwendig:
+Um zum Beispiel Spalte #2 nach Spalte #6 zu spiegeln und andersherum, ist folgende Operation notwendig:
 
 ````kotlin
 // Spiegel Spalte #2 nach #6
@@ -586,7 +588,7 @@ Es beinhaltet außerdem noch zwei geschachtelte Klassen: `Storage` und `Storage.
 
 Die Tests werden wie folgt ausgeführt:
 
-Alle Tests sind jeweils in einer eigener Funktion innerhalb der Klasse `Tests` implementiert. Dieser werden der Reihe nach aufgerufen. Nach jedem Zug wird das Spielbrett und in welcher Spalte der Stein geworfen wurde ausgegeben.
+Alle Tests sind jeweils in einer eigener Funktion innerhalb der Klasse `Tests` implementiert. Dieser werden der Reihe nach aufgerufen. Für jedes Testszenario gibt es eine eigene Ausgangsstellung. Der Computer spielt hierbei eine gegebene Anzahl an Zügen gegen sich selbst. Nach jedem Zug wird das Spielbrett und in welcher Spalte der Stein geworfen wurde ausgegeben. Am Ende des Tests wird geprüft, ob dieser erfolgreich war.
 
 Die Testszenarien sehen wie folgt aus:
 
@@ -813,7 +815,7 @@ Die Startseite ist sehr einfach gehalten: Der Benutzer hat hier zwei Buttons als
 
 #### Neues Spiel
 
-Startet der Benutzer ein neues Spiel, öffnet sich ein Bootstrap-Modal, in dem man die Spieleinstellungen bestimmen kann. Nachdem der Benutzer diese festgelegt hat, wird eine neue Instanz der JavaScript Klasse `Game` erstellt, welche die gewählten Einstellungen beinhaltet. Diese wird anschließend in einer globalen Variable gespeichert.
+Startet der Benutzer ein neues Spiel, öffnet sich ein Bootstrap-Modal, in dem man die Spieleinstellungen bestimmen kann. Nachdem der Benutzer diese festgelegt hat, wird eine neue Instanz der JavaScript Klasse `Game` erstellt, welche die gewählten Einstellungen beinhaltet. Diese wird anschließend in einer globalen Variable gespeichert und der Spielinhalt wird in das HTML Dokument per Ajax geladen.
 
 ##### Klasse `Game`
 
@@ -825,19 +827,19 @@ Startet der Benutzer ein neues Spiel, öffnet sich ein Bootstrap-Modal, in dem m
 
 Die `Game` Klasse dient sowohl als Container für die Spieleinstellungen als auch als Schnittstelle zwischen dem Benutzer und dem Server bzw. Javalin. Sie beinhaltet unter anderem folgende Attribute:
 
-- `id` => die zufällig generierte ID des Spiels
-- `players` => die Anzahl menschlicher Spieler
-- `starter` => der Startspieler (Rot oder Gelb)
+- `id` => zufällig generierte ID des Spiels
+- `players` => Anzahl menschlicher Spieler
+- `starter` => Startspieler (Rot oder Gelb)
 
 Für jedes Spiel wird eine neue ID bestehend aus 16 zufälligen Buchstaben generiert. Dies ermöglicht es, dass mehrere Spiele gleichzeitig, beispielsweise von mehreren Tabs oder Rechnern aus, gespielt werden können. Vom Client gesendete HTTP Requests enthalten die jeweilige ID des Spiels, wodurch der Request serverseitig dem dazugehörigen Spiel zugeordnet werden kann. Auf der Serverseite werden die einzelnen Spiele mit ihrer `id` als Key-Value-Pair in einer HashMap gespeichert.
 
 Neben den eben genannten Attributen, enthält die Klasse auch noch Methoden, um HTTP Requests an den Server zu senden und dort die gewünschten Aktionen auszuführen:
 
-- `function start` => Legt ein neues Spiel mit den gewählten Spieleinstellungen an
-- `function restart` => Startet das Spiel mit den selben Einstellungen, allerdings mit einer neuen ID, neu
-- `function move` => Spielt den vom menschlichen Spieler gewählten Zug
-- `function aiMove` => Lässt die KI den bestmöglichen Zug spielen
-- `function undoMove` => Macht einen Zug rückgängig
+- `function start` => legt ein neues Spiel mit den gewählten Spieleinstellungen an
+- `function restart` => startet das Spiel mit den selben Einstellungen, allerdings mit einer neuen ID, neu
+- `function move` => spielt den vom menschlichen Spieler gewählten Zug
+- `function aiMove` => lässt die KI den bestmöglichen Zug spielen
+- `function undoMove` => macht einen Zug rückgängig
 
 Sobald ein HTTP Request an den Server gesendet wird, werden weitere Eingaben durch das Attribut `isRequestPending` blockiert. Zu Beginn des Requests wird es auf `true` und nach Beendigung auf `false` gesetzt. In der Zwischenzeit können keine weiteren Requests versendet werden.
 
@@ -855,14 +857,14 @@ Möchte der Benutzer die Testdurchläufe ausführen, wird ein HTTP Request an de
 
 ---
 
-Die Spielseite wird angezeigt, sobald ein neues Spiel gestartet wurde. Das Layout des Spiels wird komplett serverseitig in `ConnectFour.toHtml()` generiert. Es besteht aus zwei Teilen:
+Die Spielseite bzw. der Spielinhalt wird angezeigt, sobald ein neues Spiel gestartet wurde. Das Layout des Spiels wird komplett serverseitig in `ConnectFour.toHtml()` generiert. Es besteht aus zwei Teilen:
 
-1. Metadaten => Spielstatus, Dauer der Zugberechnung, Aktions-Buttons
+1. Metadaten => Spielstatus, Dauer der Zugberechnung, Action-Buttons
 2. Spielbrett => Vier-Gewinnt Spielbrett
 
-Basierend auf der aktuellen Spielsituation werden die verschiedenen HTML Elemente zusammengebaut. Die Metadaten stehen innerhalb einer Leiste über dem Spielbrett. Dort sind sowohl Infos wie über die Dauer der Zugberechnung, den aktuellen Spieler oder Sieger als auch die Aktionsbuttons zu finden.
+Basierend auf der aktuellen Spielsituation werden die verschiedenen HTML Elemente zusammengebaut. Die Metadaten stehen innerhalb einer Leiste über dem Spielbrett. Dort sind sowohl Infos wie über die Dauer der Zugberechnung, den aktuellen Spieler oder Sieger als auch die Action-Buttons zu finden.
 
-Die Event-Listeners zum Ausführen von Aktionen werden ebenfalls serverseitig innerhalb von `ConnectFour.toHTML()` per HTML-Attribut gesetzt. Diese rufen die Methoden in der zu Spielbeginn erstellten `Game` Klasse auf.
+Die Event-Listeners zum Ausführen von Aktionen werden ebenfalls serverseitig innerhalb von `ConnectFour.toHTML()` per HTML-Attribut gesetzt. Diese rufen die Methoden in der zu Spielbeginn erstellten JS `Game` Klasse auf.
 
 ### Server Endpunkte
 
@@ -874,18 +876,18 @@ Die Event-Listeners zum Ausführen von Aktionen werden ebenfalls serverseitig in
 
 Die Server Endpunkte dienen als Schnittstelle zwischen dem Client und der Spiel-Engine. Zur Erstellung des HTTP-Servers wurde das Javalin Framework verwendet. Es gibt insgesamt fünf Endpunkte, welche vom Client angefragt werden können:
 
-1. `GET /tests` => Führt die Testdurchläufe aus
-2. `GET /start/:id` => Startet ein neues Spiel mit der gegebenen ID
-3. `GET /:id/move/:column` => Führt einen Zug in der gegebenen Spalte aus
-4. `GET /:id/ai-move` => Lässt die KI einen Zug ausführen
-5. `GET /:id/undo` => Macht einen Zug rückgängig
+1. `GET /tests` => führt die Testdurchläufe aus
+2. `GET /start/:id` => startet ein neues Spiel mit der gegebenen ID
+3. `GET /:id/move/:column` => führt einen Zug in der gegebenen Spalte aus
+4. `GET /:id/ai-move` => lässt die KI einen Zug ausführen
+5. `GET /:id/undo` => macht einen Zug rückgängig
 
 Der übergebene Pfadparameter `id` entspricht der ID des jeweiligen Spiels. Er weist den Request dem dazugehörigen Spiel zu.
 
 ## Hinweise
 
 - Zu Beginn jedes Abschnitts stehen die dazugehörigen Klassen-, Methodennamen und Attribute aus dem Code als auch verwendete Quellen
-- An zwei Stellen wurde die Java Bibliothek verwendet, da es keine analogen Funktionen in Kotlin gibt
+- An zwei Stellen wurde die Java Bibliothek verwendet, da es keine analogen Funktionen in Kotlin gab
   - `java.io.File` => zum Lesen und Schreiben von Dateien ([Doku](https://kotlinlang.org/docs/tutorials/kotlin-for-py/file-io.html))
   - `java.util.concurrent.atomic.AtomicInteger` => "Shared-State" in coroutines ([Doku](https://kotlinlang.org/docs/reference/coroutines/shared-mutable-state-and-concurrency.html#thread-safe-data-structures))
 
