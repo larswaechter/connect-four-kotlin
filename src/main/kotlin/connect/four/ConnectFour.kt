@@ -36,6 +36,7 @@ class ConnectFour(
     override val storageIndex = floor((this.numberOfPlayedMoves.toDouble() / 6)).toInt()
 
     companion object {
+
         /**
          * Most top column cells in bitboards
          */
@@ -320,8 +321,9 @@ class ConnectFour(
     fun bestMove(): ConnectFour {
         val startTime = System.currentTimeMillis()
         val bestMove = this.minimax().move!!
-        val endTime = (System.currentTimeMillis() - startTime).toInt()
-        return this.move(bestMove, endTime)
+        val duration = (System.currentTimeMillis() - startTime).toInt()
+
+        return this.move(bestMove, duration)
     }
 
 
@@ -335,11 +337,24 @@ class ConnectFour(
         return if (this.hasWinner()) -this.currentPlayer else 0
     }
 
+    /**
+     * Get symbol of given player
+     * - 1 => X
+     * - -1 => O
+     *
+     * @param [player] player to get symbol from
+     * @return symbol of given player
+     */
     fun getPlayerSymbol(player: Int = this.currentPlayer): String = when (player) {
         1 -> "X"
         else -> "O"
     }
 
+    /**
+     * Create HTML string for game representation
+     *
+     * @return game as html
+     */
     fun toHtml(): String = this.metadataToHtml() + this.boardToHtml()
 
     /**
@@ -426,6 +441,11 @@ class ConnectFour(
         else -> this.board[1]
     }
 
+    /**
+     * Create HTML string for metadata representation
+     *
+     * @return metadata as html
+     */
     private fun metadataToHtml(): String {
         fun running(): String {
             val currentPlayer = when (this.currentPlayer) {
@@ -476,6 +496,11 @@ class ConnectFour(
         return res
     }
 
+    /**
+     * Create HTML string for board representation
+     *
+     * @return board as html
+     */
     private fun boardToHtml(): String {
         var res = "<div class='board row mx-auto shadow-lg'>"
 

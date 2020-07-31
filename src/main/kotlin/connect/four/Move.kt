@@ -2,6 +2,11 @@ package connect.four
 
 import kotlin.math.abs
 
+/**
+ * Class that represents a move
+ *
+ * @param [column] the column where to place the move at
+ */
 class Move(val column: Int) {
     companion object {
         /**

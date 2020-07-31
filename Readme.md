@@ -49,45 +49,42 @@ Das Spiel endet, sobald einer der beiden Spieler vier Steine seiner Farbe in ein
 ### Dateiübersicht
 
 ````
-connect-four\build.gradle
-connect-four\Readme.md
+\build.gradle
+\Readme.md
 
-connect-four\screenshot_01_start.png
-connect-four\screenshot_02_neues-spiel.png
-connect-four\screenshot_03_spiel-laufend.png
-connect-four\screenshot_04_spiel-ende.png
+\screenshot_01.png
 
-connect-four\src\main\kotlin\connect\four\App.kt
-connect-four\src\main\kotlin\connect\four\ConnectFour.kt
-connect-four\src\main\kotlin\connect\four\Minimax.kt
-connect-four\src\main\kotlin\connect\four\Move.kt
-connect-four\src\main\kotlin\connect\four\Server.kt
-connect-four\src\main\kotlin\connect\four\Tests.kt
+\src\main\kotlin\connect\four\App.kt
+\src\main\kotlin\connect\four\ConnectFour.kt
+\src\main\kotlin\connect\four\Minimax.kt
+\src\main\kotlin\connect\four\Move.kt
+\src\main\kotlin\connect\four\Server.kt
+\src\main\kotlin\connect\four\Tests.kt
 
-connect-four\src\main\resources\public\index.html
-connect-four\src\main\resources\public\assets\index.css
-connect-four\src\main\resources\public\assets\index.js
+\src\main\resources\public\index.html
+\src\main\resources\public\assets\index.css
+\src\main\resources\public\assets\index.js
 
-connect-four\src\main\resources\transposition_tables\00_table_0_5.txt
-connect-four\src\main\resources\transposition_tables\01_table_6_11.txt
-connect-four\src\main\resources\transposition_tables\02_table_12_17.txt
-connect-four\src\main\resources\transposition_tables\03_table_18_23.txt
-connect-four\src\main\resources\transposition_tables\04_table_24_29.txt
-connect-four\src\main\resources\transposition_tables\05_table_30_35.txt
-connect-four\src\main\resources\transposition_tables\06_table_36_41.txt
-connect-four\src\main\resources\transposition_tables\zobrist_hashes.txt
+\src\main\resources\transposition_tables\00_table_0_5.txt
+\src\main\resources\transposition_tables\01_table_6_11.txt
+\src\main\resources\transposition_tables\02_table_12_17.txt
+\src\main\resources\transposition_tables\03_table_18_23.txt
+\src\main\resources\transposition_tables\04_table_24_29.txt
+\src\main\resources\transposition_tables\05_table_30_35.txt
+\src\main\resources\transposition_tables\06_table_36_41.txt
+\src\main\resources\transposition_tables\zobrist_hashes.txt
 ````
 
 ````
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Kotlin                           6            219            417            678
+Kotlin                           6            221            448            678
 HTML                             1              0              1             70
 JavaScript                       1             16              3             63
 CSS                              1             11              0             41
 -------------------------------------------------------------------------------
-SUM:                             9            246            421            852
+SUM:                             9            248            452            852
 -------------------------------------------------------------------------------
 ````
 
@@ -120,7 +117,7 @@ Neben Performance Optimierungen wie einer Datenbank und Symmetrien, welche spät
 
 **1. Eine Überprüfung, ob der vorherige Spieler gewonnen hat:**
 
-Eine Abbruchbedingung des Minimax-Algorithmus ist, wenn einer der beiden Spieler das Spiel gewonnen hat. Da in Vier-Gewinnt der Zug eines Spielers nicht zum Sieg des anderen Spielers führen kann, ohne dass dieser noch einen Zug spielen muss, muss man innerhalb des Algorithmus nicht jedes Mal auf den Sieg beider Spieler prüfen. Es reicht zu überprüfen, ob der vorherige Spieler das Spiel gewonnen hat, da dieser den letzten Zug gespielt hat. Für den aktuellen Spieler spielt der Zug des vorherigen Spielers keine Rolle, weshalb dieser nicht als Sieger geprüft werden muss.
+Eine Abbruchbedingung des Minimax-Algorithmus ist, wenn einer der beiden Spieler das Spiel gewonnen hat. Da in Vier-Gewinnt der Zug eines Spielers nicht zum Sieg des anderen Spielers führen kann, ohne dass dieser noch einen Zug spielen muss, braucht man innerhalb des Algorithmus nicht jedes Mal auf den Sieg beider Spieler prüfen. Es reicht zu überprüfen, ob der vorherige Spieler das Spiel gewonnen hat. Für den aktuellen Spieler spielt der Zug des vorherigen Spielers keine Rolle, weshalb dieser nicht als Sieger geprüft werden muss.
 
 **2. Eine Überprüfung, ob der aktuelle Spieler mit einem der möglichen Züge sofort gewinnen kann:**
 
@@ -157,7 +154,7 @@ Eine Transposition Table beinhaltet Spielstellungen und deren Bewertungen für e
 
 `#Hash# #Move# #Score# #Player#`
 
-- **Hash**: der Zobrist-Hash der Spielstellung
+- **Hash**: der Zobrist Hash der Spielstellung
 - **Move**: der bestmögliche Zug (Spalte) für diese Spielstellung
 - **Score**: die Bewertung des Zugs
 - **Player**: der durchführende Spieler
@@ -183,7 +180,7 @@ Insgesamt gibt es sieben Instanzen der Klasse `Minimax.Storage`, für jede Trans
 
 ---
 
-Der Zobrist Hash wird verwendet, um die verschiedenen Spielstellungen als Hashwert abbilden zu können. Wenn keine Kollisionen auftreten, sollte jede mögliche Stellung ihren eigenen einzigartigen Zobrist-Hash besitzen. Unter diesem Hashwert werden die Spielstellungen in die Datenbank gespeichert und später wieder ausgelesen.
+Der Zobrist Hash wird verwendet, um die verschiedenen Spielstellungen als Hashwert abbilden zu können. Wenn keine Kollisionen auftreten, sollte jede mögliche Stellung ihren eigenen einzigartigen Zobrist Hash besitzen. Unter diesem Hashwert werden die Spielstellungen in die Datenbank gespeichert und später wieder ausgelesen.
 
 ##### Vorbereitung
 
@@ -216,11 +213,13 @@ Folgende Tabelle verdeutlicht nochmal den Aufbau: Für jede Zelle des Spielbrett
 
 ---
 
-Nachdem eine Tabelle mit (pseudo) zufälligen Zahlen erstellt wurde, ist es möglich, den Zobrist-Hash für eine jeweilige Stellung zu berechnen. Hierfür wird für jeden gesetzten Stein beider Spieler, der Wert der dazugehörigen Zelle aus der zuvor erzeugten Tabelle (siehe oben) entnommen und per `XOR` Operation miteinander verknüpft. Der dadurch entstandene Wert entspricht dem Zobrist-Hash der jeweiligen Stellung.
+Nachdem eine Tabelle mit (pseudo) zufälligen Zahlen erstellt wurde, ist es möglich, den Zobrist Hash für eine jeweilige Stellung zu berechnen. Hierfür wird für jeden gesetzten Stein beider Spieler, der Wert der dazugehörigen Zelle aus der zuvor erzeugten Tabelle (siehe oben) entnommen und per `XOR` Operation miteinander verknüpft. Der dadurch entstandene Wert entspricht dem Zobrist Hash der jeweiligen Stellung.
 
-**Beispiel:** Spieler 1 hat einen Stein in Zelle #0 und Spieler 2 einen Stein in Zelle #1. Der Zobrist Hash berechnet sich dann wie folgt:   `...6389... XOR ...2805...`.
+**Beispiel:** Spieler 1 hat einen Stein in Zelle #0 und Spieler 2 einen Stein in Zelle #1. Der Hash berechnet sich dann wie folgt:   `...6389... XOR ...2805...`.
 
-Ein großer Vorteil dieses Verfahrens ist, dass der Hash nicht nach jedem Spielzug komplett neu berechnet werden muss: Führt ein Spieler einen Zug aus, muss nur der Zobrist-Schlüssel für diesen Spieler und der Spielfeldzelle, in die der Stein gesetzt wurde, aus der Tabelle geladen und per `XOR` Operation mit dem Zobrist-Hash der aktuellen Spielstellung verknüpft werden.
+Ein großer Vorteil dieses Verfahrens ist, dass der Hash nicht nach jedem Spielzug komplett neu berechnet werden muss: Führt ein Spieler einen Zug aus, muss nur der Zobrist Schlüssel für diesen Spieler und der Spielfeldzelle, in die der Stein gesetzt wurde, aus der Tabelle geladen und per `XOR` Operation mit dem Hash der aktuellen Spielstellung verknüpft werden.
+
+**Achtung:** Generiert man die Zobrist Schlüssel neu, werden alle bisherigen Einträge in der Datenbank ungültig, da mit neuen Schlüsseln auch neue Hashwerte für die Stellungen entstehen.
 
 #### Befüllung
 
@@ -289,7 +288,7 @@ Ausgehend von einer Board-Stellung wie in `Board #2`, wäre für Spieler X der b
 
 Hierbei ist zu erkennen, dass beide Board-Stellungen zu demselben Ergebnis führen: Spieler X gewinnt.
 
-Hat man nun beispielsweise den bestmöglichen Zug für `Board #1` bereits berechnet und im Speicher vorliegen, kann man im Falle von `Board #2` das Board spiegeln, wodurch man `Board #1` erhält, und den bestmöglichen Zug von `Board #1` aus dem Speicher lesen und übernehmen. Es gilt zu beachten, dass dieser Zug dann ebenfalls gespiegelt werden muss. Aus dem Zug `2` wird also `6`.
+Hat man nun beispielsweise den bestmöglichen Zug für `Board #1` bereits berechnet und im Speicher vorliegen, kann man im Fall von `Board #2` das Board spiegeln, wodurch man `Board #1` erhält, und den bestmöglichen Zug von `Board #1` aus dem Speicher lesen und übernehmen. Es gilt zu beachten, dass dieser Zug dann ebenfalls gespiegelt werden muss. Aus dem Zug `2` wird also `6`.
 
 Wichtig ist, dass dies nur gilt, wenn man die Board-Stellung in beiden Situationen aus der Sicht desselben Spielers (X) betrachtet. Für Spieler O wären die eben genannten Züge nicht die bestmöglichen.
 
@@ -334,7 +333,7 @@ Wichtig hierbei ist, dass dies nur gilt, wenn man die Board-Stellung in `Board #
 
 ##### 3. Spiegelung an der mittleren Y-Achse und Invertierung des Spielbretts
 
-Diese Symmetrie ist eine Kombination aus den ersten beiden. Zuerst wird die Spielstellung gespiegelt und anschließend werden die Steine invertiert.
+Diese Symmetrie ist eine Kombination aus den ersten beiden. Zuerst wird das Spielbrett gespiegelt und anschließend werden die Steine invertiert.
 
 Beispiel:
 
@@ -377,13 +376,13 @@ Wie auch im vorherigen Fall, gilt dies nur, wenn man die Board-Stellung in `Boar
 
 Folgender Abschnitt thematisiert die Implementierung der Symmetrien sowie deren Anwendung innerhalb des Minimax-Algorithmus.
 
-Für jede mögliche Spielstellung gibt es vier dazugehörige Hashes, welche aus dem Zobrist-Hash der aktuellen Stellung und deren nach Anwendung der jeweiligen Symmetrie entstandenen berechnet werden. Basierend auf diesen Hashes wird überprüft, ob eine Stellung in der Datenbank vorhanden ist oder nicht.
+Für jede mögliche Spielstellung gibt es vier dazugehörige Hashes, welche aus dem Zobrist Hash der aktuellen Stellung und deren nach Anwendung der jeweiligen Symmetrie entstandenen berechnet werden. Basierend auf diesen Hashes wird überprüft, ob eine Stellung in der Datenbank vorhanden ist oder nicht.
 
 ##### Hashes
 
-Der erste Hash ist der Zobrist-Hash der aktuellen Spielstellung ohne jegliche angewandte Symmetrie. Unter diesem Hash werden bewertete Spielstellungen in den Transposition-Tables gespeichert. Im Code wird dieser als `storageRecordPrimaryKey` bezeichnet.
+Der erste Hash ist der Zobrist Hash der aktuellen Spielstellung ohne jegliche angewandte Symmetrie. Unter diesem Hash werden bewertete Spielstellungen in den Transposition-Tables gespeichert. Im Code wird dieser als `storageRecordPrimaryKey` bezeichnet.
 
-Die anderen drei Hashes werden mittels des Zobrist-Hashs nach Anwendung einer Symmetrie auf das Board berechnet:
+Die anderen drei Hashes werden mittels des Zobrist Hashs nach Anwendung einer Symmetrie auf das Board berechnet:
 
 - Zweiter Hash: 1. Symmetrie (Spiegelung) => Berechnung des neuen Hashs
 - Dritter Hash: 2. Symmetrie (Invertierung) => Berechnung des neuen Hashs 
@@ -399,7 +398,7 @@ Die einzelnen Hashes werden innerhalb des Minimax-Algorithmus verwendet, um zu �
 
 2. `ConnectFour.searchBestMoveInStorage()`
 
-Die erste Methode dient dazu, die jeweiligen Hashes für die aktuelle Spielstellung zu generieren. Sie gibt eine Liste bestehend aus vier Funktionen (für jede Symmetrie eine + Ausgangsstellung) zurück. Ruft man eine in der Liste enthaltene Funktion auf, erhält man von dieser ein `Pair<>` bestehend aus dem Hashwert und einer weiteren Funktion (hier "Processing-Methode" genannt), welche benötigt wird, um einen Speicher Eintrag weiterzuverarbeiten. Das `Pair<>` ist in eine zusätzliche Funktion gebettet, da man hierdurch nicht alle möglichen Hashwerte sofort berechnen muss. In manchen Fällen braucht man nicht alle Hashwerte und man spart sich somit unnötige Berechnungen.
+Die erste Methode dient dazu, die jeweiligen Hashes für die aktuelle Spielstellung zu generieren. Sie gibt eine Liste bestehend aus vier Funktionen (für jede Symmetrie eine + Ausgangsstellung) zurück. Ruft man eine in der Liste enthaltene Funktion auf, erhält man von dieser ein `Pair()` bestehend aus dem Hashwert und einer weiteren Funktion (hier "Processing-Methode" genannt), welche benötigt wird, um einen Speicher Eintrag weiterzuverarbeiten. Das `Pair()` ist in eine zusätzliche Funktion gebettet, da man hierdurch nicht alle möglichen Hashwerte sofort berechnen muss. Sie werden erst nach dem Funktionsaufruf berechnet. In manchen Fällen braucht man nicht alle Hashwerte und man spart sich somit unnötige Berechnungen.
 
 Die zweite Methode (`ConnectFour.searchBestMoveInStorage()`) wird verwendet, um nach bereits vorhandenen Spielstellungen, einschließlich Symmetrien, in der Datenbank zu suchen. Hierzu ruft sie die erste Methode auf und iteriert über die von ihr erhaltenen Listenelemente. Anschließend wird geprüft, ob einer von den erhaltenen Hashwerten in der Datenbank vorhanden ist und dessen "Processing-Methode" wird aufgerufen.
 
@@ -424,10 +423,10 @@ Die Processing-Methode dient also dazu, um einen Eintrag auf die jeweiligen Krit
 - Vierter Hash (Spiegelung & Invertierung):
   - Wurde ein Eintrag unter diesem Hash gefunden, darf der Eintrag nur verwendet werden,
     wenn der aktuelle Spieler NICHT dem des Spielers im Eintrag entspricht, da die Steine invertiert wurden
-  - Da hierbei eine Spiegelung stattfindet, muss ebenfalls der im Eintrag gespeicherte Zug gespiegelt werden
   - Zusätzlich muss der Score des Eintrags invertiert werden
+  - Da hierbei eine Spiegelung stattfindet, muss ebenfalls der im Eintrag gespeicherte Zug gespiegelt werden
 
-Ein Hashwert und dessen Processing-Methode werden im Code als `Pair<>` repräsentiert. Der `first` Value entspricht dem Hash und der `second` Value beinhaltet die Processing-Methode.
+Wie bereits oben beschrieben, werden ein Hashwert und dessen Processing-Methode im Code als `Pair()` repräsentiert. Der `first` Value entspricht dem Hash und der `second` Value beinhaltet die Processing-Methode.
 
 Um einen Eintrag im Speicher auf die Kriterien eines Hashs zu überprüfen, wird dieser als Argument beim Aufruf der Processing Methode mit übergeben.
 
@@ -463,7 +462,7 @@ Hierbei wird ausgehend von einer gegebenen Stellung abwechselnd für jeden Spiel
 Anhand der Anzahl der Gewinne für einen gegebenen Spieler wird ein Score ermittelt, welcher als Evaluationswert für die aktuelle Spielstellung dient. Je höher dieser Wert für den Maximizer bzw. umso niedriger er für den Minimizer ist, desto
 besser ist der Score und dementsprechend auch der Zug, der zu der gegebenen Ausgangsstellung führte. Zu der Anzahl der Gewinne wird zusätzlich ein Faktor addiert, welcher frühe Gewinne höher bewertet als spätere.
 
-Für die Simulation der 200 Spiele, wurde unter anderem die `kotlinx-coroutines-core` Bibliothek verwendet. Diese ermöglicht die Verwendung von sogenannten "coroutines" in Kotlin. Mittels coroutines können die Simulation gleichzeitig ausgeführt werden, was einen Geschwindigkeitsvorteil bietet.
+Für die Simulation der 200 Spiele, wird unter anderem die `kotlinx-coroutines-core` Bibliothek verwendet. Diese ermöglicht die Verwendung von sogenannten "coroutines" in Kotlin. Mittels coroutines können die Simulation gleichzeitig ausgeführt werden, was einen Geschwindigkeitsvorteil bietet.
 
 ### Bitboards
 
@@ -570,7 +569,11 @@ Das Minimax Interface ist ein generisches Interface, welches wichtige Attribute 
 - Datenbankverwaltung
 - Spielsteuerung (`move, undoMove...`)
 
-Der Interface-Kopf sieht wie folgt aus: `interface Minimax<Board, Move>`. Er erwartet zwei Datentypen als Parameter. Einen für das Spielbrett und einen für die Züge. Da das Interface generisch ist, kann es sehr leicht in andere Spiele implementiert werden. Hierfür sind nur wenige Anpassungen innerhalb des Interface selbst nötig.
+Der Interface-Kopf sieht wie folgt aus:
+
+`interface Minimax<Board, Move>`
+
+Er erwartet zwei Datentypen als Parameter. Einen für das Spielbrett und einen für die Züge. Da das Interface generisch ist, kann es sehr leicht in andere Spiele implementiert werden. Hierfür sind nur wenige Anpassungen innerhalb des Interface selbst nötig.
 
 Es beinhaltet außerdem noch zwei geschachtelte Klassen: `Storage` und `Storage.Record`, welche zur Datenbankverwaltung dienen. Siehe dazu Abschnitt "Datenbank".
 
@@ -791,7 +794,9 @@ Tests completed! Finished 4 / 5 successfully.
 
 ## Umsetzung der GUI
 
-Folgender Abschnitt beinhaltet die Umsetzung der GUI sowie die Interaktion zwischen Browser und Server mittels JavaScript.
+Folgender Abschnitt beinhaltet die Umsetzung der GUI sowie die Kommunikation zwischen Browser und Server mittels JavaScript. 
+
+Für die Gestaltung des Interfaces wird das [Bootstrap Framework](https://getbootstrap.com/) verwendet. Zum Versenden von HTTP Requests per JavaScript dient die [fetch-Schnittstelle](https://developer.mozilla.org/de/docs/Web/API/Fetch_API).
 
 ### Startseite
 
@@ -808,7 +813,7 @@ Die Startseite ist sehr einfach gehalten: Der Benutzer hat hier zwei Buttons als
 
 #### Neues Spiel
 
-Startet der Benutzer ein neues Spiel, öffnet sich ein Bootstrap-Modal, in dem man die Spieleinstellungen bestimmen kann. Nachdem der Benutzer diese festgelegt hat, wird eine neue Instanz der JavaScript Klasse `Game` erstellt, welche die gewählten Einstellungen beinhaltet.
+Startet der Benutzer ein neues Spiel, öffnet sich ein Bootstrap-Modal, in dem man die Spieleinstellungen bestimmen kann. Nachdem der Benutzer diese festgelegt hat, wird eine neue Instanz der JavaScript Klasse `Game` erstellt, welche die gewählten Einstellungen beinhaltet. Diese wird anschließend in einer globalen Variable gespeichert.
 
 ##### Klasse `Game`
 
@@ -820,11 +825,11 @@ Startet der Benutzer ein neues Spiel, öffnet sich ein Bootstrap-Modal, in dem m
 
 Die `Game` Klasse dient sowohl als Container für die Spieleinstellungen als auch als Schnittstelle zwischen dem Benutzer und dem Server bzw. Javalin. Sie beinhaltet unter anderem folgende Attribute:
 
-- ID => die zufällig generierte ID des Spiels
-- Anzahl Spieler => die Anzahl menschlicher Spieler
-- Startspieler => der Startspieler (Rot oder Gelb)
+- `id` => die zufällig generierte ID des Spiels
+- `players` => die Anzahl menschlicher Spieler
+- `starter` => der Startspieler (Rot oder Gelb)
 
-Für jedes Spiel wird eine neue ID bestehend aus 16 zufälligen Buchstaben generiert. Dies ermöglicht es, dass mehrere Spiele gleichzeitig, beispielsweise von mehreren Tabs oder Rechnern aus, gespielt werden können. Vom Client gesendete HTTP Requests enthalten die jeweilige ID des Spiels, wodurch der Request serverseitig dem dazugehörigen Spiel zugeordnet werden kann. Auf der Serverseite werden die einzelnen Spiele mit ihrer ID als `Key-Value` Paar in einer HashMap gespeichert.
+Für jedes Spiel wird eine neue ID bestehend aus 16 zufälligen Buchstaben generiert. Dies ermöglicht es, dass mehrere Spiele gleichzeitig, beispielsweise von mehreren Tabs oder Rechnern aus, gespielt werden können. Vom Client gesendete HTTP Requests enthalten die jeweilige ID des Spiels, wodurch der Request serverseitig dem dazugehörigen Spiel zugeordnet werden kann. Auf der Serverseite werden die einzelnen Spiele mit ihrer `id` als Key-Value-Pair in einer HashMap gespeichert.
 
 Neben den eben genannten Attributen, enthält die Klasse auch noch Methoden, um HTTP Requests an den Server zu senden und dort die gewünschten Aktionen auszuführen:
 
@@ -880,8 +885,9 @@ Der übergebene Pfadparameter `id` entspricht der ID des jeweiligen Spiels. Er w
 ## Hinweise
 
 - Zu Beginn jedes Abschnitts stehen die dazugehörigen Klassen-, Methodennamen und Attribute aus dem Code als auch verwendete Quellen
-- Zum Versenden von HTTP Requests per JS wird die [fetch-Schnittstelle](https://developer.mozilla.org/de/docs/Web/API/Fetch_API) verwendet
-- Möchte man eigene Spielstellungen erstellen, z.B. für eigene Testszenarien, muss lediglich das Array `ConnectFour.board` für die Bitsboards angegeben werden. Das Array `ConnectFour.heights`, welches die "Höhe" der gesetzten Steine pro Spalte beinhaltet, wird automatisch berechnet
+- An zwei Stellen wurde die Java Bibliothek verwendet, da es keine analogen Funktionen in Kotlin gibt
+  - `java.io.File` => zum Lesen und Schreiben von Dateien ([Doku](https://kotlinlang.org/docs/tutorials/kotlin-for-py/file-io.html))
+  - `java.util.concurrent.atomic.AtomicInteger` => "Shared-State" in coroutines ([Doku](https://kotlinlang.org/docs/reference/coroutines/shared-mutable-state-and-concurrency.html#thread-safe-data-structures))
 
 ## Quellennachweis
 
@@ -891,3 +897,4 @@ Der übergebene Pfadparameter `id` entspricht der ID des jeweiligen Spiels. Er w
 - [https://de.qwe.wiki/wiki/Zobrist_hashing](https://de.qwe.wiki/wiki/Zobrist_hashing)
 - [https://github.com/denkspuren/BitboardC4/blob/master/BitboardDesign.md](https://github.com/denkspuren/BitboardC4/blob/master/BitboardDesign.md)
 - [https://markusthill.github.io/programming/connect-4-board-representations/](https://markusthill.github.io/programming/connect-4-board-representations/)
+- [https://kotlinlang.org/docs/reference/coroutines/shared-mutable-state-and-concurrency.html](https://kotlinlang.org/docs/reference/coroutines/shared-mutable-state-and-concurrency.html)

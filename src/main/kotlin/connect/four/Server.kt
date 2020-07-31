@@ -2,6 +2,9 @@ package connect.four
 
 import io.javalin.Javalin
 
+/**
+ * Class that handles incoming HTTP requests
+ */
 class Server {
     private val localGames: HashMap<String, ConnectFour> = hashMapOf()
 

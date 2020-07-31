@@ -113,6 +113,7 @@ interface Minimax<Board, Move> {
                 val id = if (storageIndex < 10) "0$storageIndex" else "$storageIndex"
                 val from = storageIndex * 6
                 val to = from + 5
+
                 return "${id}_table_${from}_${to}.txt"
             }
 
@@ -149,7 +150,7 @@ interface Minimax<Board, Move> {
             /**
              * Load zobrist table based on zobrist-hashes
              *
-             * @return 3D array of keys for every board position and player
+             * @return 2D array of keys for every board position and player
              */
             private fun buildZobristTable(): Array<Array<Long>> {
                 val keys = readZobristHashes()
@@ -185,7 +186,7 @@ interface Minimax<Board, Move> {
                     keys[count++] = it.toLong()
                 }
 
-                assert(count == 96) { "There should be 96 zobrist-hashes" }
+                assert(count == 96) { "There should be 96 zobrist-hashes!" }
 
                 return keys
             }
@@ -324,7 +325,7 @@ interface Minimax<Board, Move> {
      * - For player 1 (maximizer) a higher value is better.
      * - For player -1 (minimizer) a lower value is better.
      *
-     * @return positive or negative float
+     * @return positive or negative score
      */
     fun evaluate(depth: Int): Float
 
