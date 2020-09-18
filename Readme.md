@@ -1,8 +1,10 @@
-# Vier Gewinnt (PiS, SoSe 2020)
+# Vier Gewinnt
 
-Autor: Lars Wächter, 5280456
+Connect-Four browser game built with Kotlin (German)
 
-Ich habe die Zulassung für PiS im SoSe 2020 bei Herrn Herzberg erhalten.
+Author: Lars Wächter
+Subject: Programmierung interaktiver Systeme / Programming of interactive systems
+University: Technische Hochschule Mittelhessen (SoSe 2020)
 
 ## Inhaltsverzeichnis
 
